@@ -1,3 +1,8 @@
+// ============================================
+// Interview Session Data Model — v3 (MongoDB + Intelligence)
+// ============================================
+
+// ─── Enums & Literal Types ───
 
 export type Role = 'Frontend Developer' | 'Backend Developer' | 'Fullstack Developer' | 'Custom';
 export type ExperienceLevel = 'Junior' | 'Mid' | 'Senior';
@@ -7,6 +12,7 @@ export type ConfidenceLevel = 'High' | 'Medium' | 'Low';
 export type InterviewMode = 'text' | 'voice' | 'hybrid';
 export type QuestionType = 'initial' | 'followup';
 export type HireRecommendation = 'Yes' | 'Maybe' | 'No';
+export type HireBand = 'Strong Hire' | 'Hire' | 'Borderline' | 'No Hire';
 
 // ─── Voice Metadata ───
 
@@ -65,6 +71,16 @@ export interface AggregatedScores {
     weakestDimension: string;
 }
 
+// ─── Weakness Tracker ───
+
+export interface WeaknessTracker {
+    technicalWeakCount: number;
+    depthWeakCount: number;
+    clarityWeakCount: number;
+    problemSolvingWeakCount: number;
+    communicationWeakCount: number;
+}
+
 // ─── Interview Session ───
 
 export interface InterviewSession {
@@ -78,7 +94,12 @@ export interface InterviewSession {
     totalQuestions: number;
     currentQuestionIndex: number;
     aggregatedScores: AggregatedScores | null;
+    weaknessTracker: WeaknessTracker;
+    topicScores: Record<string, number[]>;
+    finalReport: FinalReport | null;
+    promptVersion: string;
     createdAt: string;
+    updatedAt: string;
     completedAt: string | null;
 }
 
@@ -90,6 +111,7 @@ export interface FinalReport {
     weakestAreas: string[];
     confidenceLevel: ConfidenceLevel;
     hireRecommendation: HireRecommendation;
+    hireBand: HireBand;
     improvementRoadmap: string[];
     nextPreparationFocus: string[];
 }

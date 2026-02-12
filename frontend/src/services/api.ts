@@ -62,6 +62,7 @@ export interface FinalReport {
     weakestAreas: string[];
     confidenceLevel: 'High' | 'Medium' | 'Low';
     hireRecommendation: 'Yes' | 'Maybe' | 'No';
+    hireBand: 'Strong Hire' | 'Hire' | 'Borderline' | 'No Hire';
     improvementRoadmap: string[];
     nextPreparationFocus: string[];
 }

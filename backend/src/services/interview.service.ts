@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
 import {
-    InterviewSession,
     Role,
     ExperienceLevel,
     InterviewMode,
@@ -11,6 +10,7 @@ import {
     FollowUpQuestion,
     VoiceMetadata,
     AggregatedScores,
+    WeaknessTracker,
 } from '../models/interviewSession.model';
 import * as sessionService from './session.service';
 import * as scoringService from './scoring.service';
@@ -24,6 +24,16 @@ import {
     findWeakestDimension,
 } from '../utils/scoreCalculator';
 
+// ─── Weakness Dimension Map ───
+
+const WEAKNESS_DIMENSION_MAP: Record<string, keyof WeaknessTracker> = {
+    'Technical Accuracy': 'technicalWeakCount',
+    'Depth of Explanation': 'depthWeakCount',
+    'Clarity': 'clarityWeakCount',
+    'Problem Solving': 'problemSolvingWeakCount',
+    'Communication': 'communicationWeakCount',
+};
+
 /**
  * Start a new interview session
  */
@@ -32,8 +42,7 @@ export async function startInterview(
     experienceLevel: ExperienceLevel,
     mode: InterviewMode = 'text',
 ) {
-    // Create session
-    const session = sessionService.createSession(role, experienceLevel, mode);
+    const session = await sessionService.createSession(role, experienceLevel, mode);
     session.status = 'IN_PROGRESS';
 
     // Generate first question
@@ -56,7 +65,8 @@ export async function startInterview(
     session.questions.push(questionEntry);
     session.totalQuestions = 1;
     session.currentQuestionIndex = 0;
-    sessionService.updateSession(session);
+
+    await sessionService.updateSession(session);
 
     return {
         sessionId: session.sessionId,
@@ -65,27 +75,20 @@ export async function startInterview(
 }
 
 /**
- * Process an answer for the current question
- * Evaluates the answer, determines adaptive follow-up strategy
+ * Process an answer — evaluate, track weaknesses, determine adaptive follow-up
  */
 export async function processAnswer(
     sessionId: string,
     answer: string,
     voiceMeta?: VoiceMetadata,
 ) {
-    const session = sessionService.getSession(sessionId);
-    if (!session) {
-        throw new Error('Session not found');
-    }
-    if (session.status !== 'IN_PROGRESS') {
-        throw new Error('Session is not in progress');
-    }
+    const session = await sessionService.getSession(sessionId);
+    if (!session) throw new Error('Session not found');
+    if (session.status !== 'IN_PROGRESS') throw new Error('Session is not in progress');
 
     // Find the current unanswered question
     const currentQuestionIndex = session.questions.findIndex((q) => q.answer === null);
-    if (currentQuestionIndex === -1) {
-        throw new Error('No pending question found');
-    }
+    if (currentQuestionIndex === -1) throw new Error('No pending question found');
 
     const currentQuestion = session.questions[currentQuestionIndex];
 
@@ -96,14 +99,11 @@ export async function processAnswer(
     };
     if (voiceMeta) {
         answerInfo.voiceMeta = voiceMeta;
-        // Update session mode to hybrid if voice is used after text start
-        if (session.mode === 'text') {
-            session.mode = 'hybrid';
-        }
+        if (session.mode === 'text') session.mode = 'hybrid';
     }
     currentQuestion.answer = answerInfo;
 
-    // Evaluate the answer using AI (with voice context if available)
+    // Evaluate the answer using AI
     const rawEvaluation: Evaluation = await evaluateAnswer({
         question: currentQuestion.questionText,
         answer: answer,
@@ -112,18 +112,29 @@ export async function processAnswer(
         voiceMeta,
     });
 
-    // Process scores with role-aware weighting
     const evaluation = scoringService.processEvaluation(rawEvaluation, session.experienceLevel);
     currentQuestion.evaluation = evaluation;
 
-    // Get aggregated scoring summary
+    // ─── Track Weakness Frequency ───
+    const weakestDim = findWeakestDimension(evaluation);
+    const trackerKey = WEAKNESS_DIMENSION_MAP[weakestDim];
+    if (trackerKey && session.weaknessTracker) {
+        session.weaknessTracker[trackerKey]++;
+    }
+
+    // ─── Track Topic Scores for Mastery Detection ───
+    if (!session.topicScores) session.topicScores = {};
+    const topic = currentQuestion.topic;
+    if (!session.topicScores[topic]) session.topicScores[topic] = [];
+    session.topicScores[topic].push(evaluation.overallScore);
+
+    // ─── Aggregated Scores ───
     const completedEvaluations = session.questions
         .filter((q) => q.evaluation !== null)
         .map((q) => q.evaluation!);
 
     const scoringSummary = scoringService.getScoringSummary(completedEvaluations);
 
-    // Update aggregated scores on session
     const aggregated: AggregatedScores = {
         averageTechnical: scoringSummary.averageTechnical,
         averageDepth: scoringSummary.averageDepth,
@@ -138,59 +149,77 @@ export async function processAnswer(
 
     // ─── Adaptive Follow-up Strategy ───
     let nextQuestion: GeneratedQuestion;
-    let questionType: 'initial' | 'followup' = 'followup';
     let generatedFromWeakness: string | undefined;
 
-    // Rule: If technicalScore < 5, ask a clarifying follow-up on the same topic
+    // Check topic mastery: if > 8 twice on same topic → move to new domain
+    const topicMastered = hasTopicMastery(session.topicScores, topic);
+
+    // Find most frequently weak dimension
+    const mostFrequentWeakness = getMostFrequentWeakness(session.weaknessTracker);
+
     if (shouldAskClarifying(evaluation)) {
-        const followUp: FollowUpQuestion = await generateFollowUp({
+        // Priority 1: Address incorrect concept
+        const followUp = await generateFollowUp({
             weaknesses: evaluation.weaknesses,
-            topic: currentQuestion.topic,
+            topic,
             summary: answer.substring(0, 500),
+            weaknessFrequency: session.weaknessTracker,
+            topicMastered: false,
+            priority: 'incorrect_concept',
         });
-
-        const nextDifficulty = getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore);
         generatedFromWeakness = 'technicalAccuracy';
-
         nextQuestion = {
             question: followUp.question,
             topic: followUp.focusArea,
-            difficulty: nextDifficulty,
+            difficulty: getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore),
         };
-    }
-    // Rule: If depth is weakest and < 6, probe deeper
-    else if (shouldProbeDeeper(evaluation)) {
-        const followUp: FollowUpQuestion = await generateFollowUp({
+    } else if (shouldProbeDeeper(evaluation)) {
+        // Priority 2: Address shallow explanation
+        const followUp = await generateFollowUp({
             weaknesses: ['Needs deeper explanation', ...evaluation.weaknesses],
-            topic: currentQuestion.topic,
+            topic,
             summary: answer.substring(0, 500),
+            weaknessFrequency: session.weaknessTracker,
+            topicMastered: false,
+            priority: 'shallow_depth',
         });
-
-        const nextDifficulty = getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore);
         generatedFromWeakness = 'depth';
-
         nextQuestion = {
             question: followUp.question,
             topic: followUp.focusArea,
-            difficulty: nextDifficulty,
+            difficulty: getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore),
         };
-    }
-    // Default: Generate adaptive follow-up based on weaknesses
-    else {
-        const weakestDim = findWeakestDimension(evaluation);
-        const followUp: FollowUpQuestion = await generateFollowUp({
+    } else if (topicMastered) {
+        // Priority 4: Topic mastered — move to new domain
+        const followUp = await generateFollowUp({
             weaknesses: evaluation.weaknesses,
-            topic: currentQuestion.topic,
+            topic,
             summary: answer.substring(0, 500),
+            weaknessFrequency: session.weaknessTracker,
+            topicMastered: true,
+            priority: 'new_domain',
         });
-
-        const nextDifficulty = getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore);
-        generatedFromWeakness = weakestDim;
-
+        generatedFromWeakness = mostFrequentWeakness;
         nextQuestion = {
             question: followUp.question,
             topic: followUp.focusArea,
-            difficulty: nextDifficulty,
+            difficulty: getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore),
+        };
+    } else {
+        // Priority 3: Address problem-solving gap or weakest area
+        const followUp = await generateFollowUp({
+            weaknesses: evaluation.weaknesses,
+            topic,
+            summary: answer.substring(0, 500),
+            weaknessFrequency: session.weaknessTracker,
+            topicMastered: false,
+            priority: 'problem_solving_gap',
+        });
+        generatedFromWeakness = weakestDim;
+        nextQuestion = {
+            question: followUp.question,
+            topic: followUp.focusArea,
+            difficulty: getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore),
         };
     }
 
@@ -200,7 +229,7 @@ export async function processAnswer(
         questionText: nextQuestion.question,
         topic: nextQuestion.topic,
         difficulty: nextQuestion.difficulty,
-        type: questionType,
+        type: 'followup',
         generatedFromWeakness,
         answer: null,
         evaluation: null,
@@ -209,7 +238,8 @@ export async function processAnswer(
     session.questions.push(nextEntry);
     session.totalQuestions = session.questions.length;
     session.currentQuestionIndex = session.questions.length - 1;
-    sessionService.updateSession(session);
+
+    await sessionService.updateSession(session);
 
     return {
         evaluation,
@@ -222,10 +252,45 @@ export async function processAnswer(
 /**
  * Get session info
  */
-export function getSessionInfo(sessionId: string) {
-    const session = sessionService.getSession(sessionId);
-    if (!session) {
-        throw new Error('Session not found');
-    }
+export async function getSessionInfo(sessionId: string) {
+    const session = await sessionService.getSession(sessionId);
+    if (!session) throw new Error('Session not found');
     return session;
+}
+
+// ─── Helper Functions ───
+
+/**
+ * Check if candidate has mastered a topic (scored > 8 twice)
+ */
+function hasTopicMastery(topicScores: Record<string, number[]>, topic: string): boolean {
+    const scores = topicScores[topic];
+    if (!scores || scores.length < 2) return false;
+    const highScores = scores.filter((s) => s > 8);
+    return highScores.length >= 2;
+}
+
+/**
+ * Find the most frequently weak dimension from the tracker
+ */
+function getMostFrequentWeakness(tracker: WeaknessTracker): string {
+    const entries: [string, number][] = [
+        ['Technical Accuracy', tracker.technicalWeakCount],
+        ['Depth of Explanation', tracker.depthWeakCount],
+        ['Clarity', tracker.clarityWeakCount],
+        ['Problem Solving', tracker.problemSolvingWeakCount],
+        ['Communication', tracker.communicationWeakCount],
+    ];
+
+    let maxKey = entries[0][0];
+    let maxVal = entries[0][1];
+
+    for (const [key, val] of entries) {
+        if (val > maxVal) {
+            maxVal = val;
+            maxKey = key;
+        }
+    }
+
+    return maxKey;
 }

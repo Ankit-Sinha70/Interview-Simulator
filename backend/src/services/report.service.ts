@@ -1,47 +1,113 @@
-import { InterviewSession, FinalReport } from '../models/interviewSession.model';
 import * as sessionService from './session.service';
 import { generateReport } from '../ai/report.engine';
+import {
+    FinalReport,
+    HireBand,
+} from '../models/interviewSession.model';
+import {
+    calculateVariance,
+    getConfidenceFromVariance,
+    getHireBand,
+    getHireRecommendation,
+    getPersonalizedRoadmap,
+} from '../utils/scoreCalculator';
+import { AnalyticsModel } from '../schemas/analytics.schema';
 
 /**
- * Generate a final interview report
+ * Complete an interview and generate the final enriched report
  */
 export async function generateFinalReport(sessionId: string): Promise<FinalReport> {
-    const session = sessionService.getSession(sessionId);
-    if (!session) {
-        throw new Error('Session not found');
-    }
+    const session = await sessionService.getSession(sessionId);
+    if (!session) throw new Error('Session not found');
 
-    // Build the questions & evaluations summary for the AI prompt
+    // Build Q&A summary for AI
     const questionsAndEvaluations = session.questions
-        .filter((q) => q.answer !== null && q.evaluation !== null)
-        .map((q, index) => {
-            const e = q.evaluation!;
-            const a = q.answer!;
-            const voiceInfo = a.voiceMeta
-                ? `\nVoice: ${a.voiceMeta.wordsPerMinute} WPM, ${a.voiceMeta.fillerWordCount} filler words, ${a.voiceMeta.durationSeconds}s`
+        .filter((q) => q.answer && q.evaluation)
+        .map((q, i) => {
+            const answerText = q.answer?.text || '';
+            const voiceLine = q.answer?.voiceMeta
+                ? ` | Voice: ${q.answer.voiceMeta.wordsPerMinute} WPM, ${q.answer.voiceMeta.fillerWordCount} fillers, ${q.answer.voiceMeta.durationSeconds}s`
                 : '';
-
-            return `
-Question ${index + 1} [${q.type}]: ${q.questionText}
-Topic: ${q.topic} | Difficulty: ${q.difficulty}${q.generatedFromWeakness ? ` | Probing: ${q.generatedFromWeakness}` : ''}
-Answer: ${a.text}${voiceInfo}
-Scores: Technical=${e.technicalScore}, Depth=${e.depthScore}, Clarity=${e.clarityScore}, ProblemSolving=${e.problemSolvingScore}, Communication=${e.communicationScore}, Overall=${e.overallScore}
-Strengths: ${e.strengths.join(', ')}
-Weaknesses: ${e.weaknesses.join(', ')}
-`;
+            const typeLine = q.type === 'followup' && q.generatedFromWeakness
+                ? ` [Follow-up targeting: ${q.generatedFromWeakness}]`
+                : '';
+            return `Q${i + 1} (${q.difficulty}${typeLine}): ${q.questionText}
+Answer: ${answerText}${voiceLine}
+Scores: Tech=${q.evaluation!.technicalScore}, Depth=${q.evaluation!.depthScore}, Clarity=${q.evaluation!.clarityScore}, PS=${q.evaluation!.problemSolvingScore}, Comm=${q.evaluation!.communicationScore}, Overall=${q.evaluation!.overallScore}
+Strengths: ${q.evaluation!.strengths.join(', ')}
+Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         })
-        .join('\n---\n');
+        .join('\n\n');
 
-    const report = await generateReport({
+    // Generate AI report
+    const aiReport = await generateReport({
         questionsAndEvaluations,
         role: session.role,
         level: session.experienceLevel,
     });
 
-    // Mark session as completed
-    session.status = 'COMPLETED';
-    session.completedAt = new Date().toISOString();
-    sessionService.updateSession(session);
+    // ─── Enrich with calculated metrics ───
+    const overallScores = session.questions
+        .filter((q) => q.evaluation)
+        .map((q) => q.evaluation!.overallScore);
 
-    return report;
+    const variance = calculateVariance(overallScores);
+    const calculatedConfidence = getConfidenceFromVariance(variance, overallScores.length);
+    const calculatedHireBand = getHireBand(aiReport.averageScore);
+    const calculatedHireRec = getHireRecommendation(aiReport.averageScore);
+
+    // Use calculated values as fallback/override for consistency
+    const finalReport: FinalReport = {
+        averageScore: aiReport.averageScore,
+        strongestAreas: aiReport.strongestAreas || [],
+        weakestAreas: aiReport.weakestAreas || [],
+        confidenceLevel: calculatedConfidence,
+        hireRecommendation: calculatedHireRec,
+        hireBand: calculatedHireBand,
+        improvementRoadmap: aiReport.improvementRoadmap || [],
+        nextPreparationFocus: aiReport.nextPreparationFocus ||
+            getPersonalizedRoadmap(session.aggregatedScores?.weakestDimension || 'Technical Accuracy'),
+    };
+
+    // Save to session in DB
+    await sessionService.updateSession({
+        sessionId,
+        status: 'COMPLETED',
+        finalReport,
+        completedAt: new Date().toISOString(),
+    } as any);
+
+    // Save analytics record (fire and forget)
+    saveAnalytics(session, finalReport, calculatedHireBand).catch(() => { });
+
+    return finalReport;
+}
+
+/**
+ * Save analytics snapshot for future dashboards
+ */
+async function saveAnalytics(
+    session: any,
+    report: FinalReport,
+    hireBand: HireBand,
+): Promise<void> {
+    try {
+        await AnalyticsModel.create({
+            sessionId: session.sessionId,
+            userId: session.userId || null,
+            role: session.role,
+            experienceLevel: session.experienceLevel,
+            mode: session.mode,
+            averageScore: report.averageScore,
+            weakestDimension: session.aggregatedScores?.weakestDimension || 'N/A',
+            strongestDimension: session.aggregatedScores?.strongestDimension || 'N/A',
+            questionsCount: session.questions.length,
+            averageTimePerQuestion: 0, // Can be computed from voice meta later
+            voiceConfidenceScore: null, // Future enhancement
+            hireBand,
+            promptVersion: session.promptVersion,
+        });
+    } catch (err) {
+        console.error('[Analytics] Failed to save:', (err as Error).message);
+    }
 }

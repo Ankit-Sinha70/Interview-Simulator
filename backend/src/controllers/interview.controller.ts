@@ -1,17 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import * as interviewService from '../services/interview.service';
-import * as reportService from '../services/report.service';
+import { generateFinalReport } from '../services/report.service';
 
 /**
  * POST /api/interview/start
- * Start a new interview session
  */
 export async function startInterview(req: Request, res: Response, next: NextFunction) {
     try {
         const { role, experienceLevel, mode } = req.body;
         const result = await interviewService.startInterview(role, experienceLevel, mode);
 
-        res.status(201).json({
+        res.status(200).json({
             success: true,
             data: result,
         });
@@ -22,7 +21,6 @@ export async function startInterview(req: Request, res: Response, next: NextFunc
 
 /**
  * POST /api/interview/answer
- * Submit an answer for the current question
  */
 export async function submitAnswer(req: Request, res: Response, next: NextFunction) {
     try {
@@ -40,12 +38,11 @@ export async function submitAnswer(req: Request, res: Response, next: NextFuncti
 
 /**
  * POST /api/interview/complete
- * Complete the interview and generate final report
  */
 export async function completeInterview(req: Request, res: Response, next: NextFunction) {
     try {
         const { sessionId } = req.body;
-        const report = await reportService.generateFinalReport(sessionId);
+        const report = await generateFinalReport(sessionId);
 
         res.status(200).json({
             success: true,
@@ -57,13 +54,12 @@ export async function completeInterview(req: Request, res: Response, next: NextF
 }
 
 /**
- * GET /api/interview/:sessionId
- * Get session info
+ * GET /api/interview/session/:sessionId
  */
 export async function getSession(req: Request, res: Response, next: NextFunction) {
     try {
         const sessionId = req.params.sessionId as string;
-        const session = interviewService.getSessionInfo(sessionId);
+        const session = await interviewService.getSessionInfo(sessionId);
 
         res.status(200).json({
             success: true,

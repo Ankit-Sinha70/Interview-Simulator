@@ -2,35 +2,27 @@ import { Evaluation, ExperienceLevel, AggregatedScores } from '../models/intervi
 import {
     calculateOverallScore,
     calculateAggregatedScores,
-    findWeakestDimension,
-    shouldIncreaseDifficulty,
+    getWeightMap,
 } from '../utils/scoreCalculator';
 
 /**
- * Process evaluation scores — recalculate overall using role-aware weights
+ * Process an evaluation with role-aware weighted scoring
  */
-export function processEvaluation(evaluation: Evaluation, level: ExperienceLevel): Evaluation {
-    const calculatedOverall = calculateOverallScore(evaluation, level);
+export function processEvaluation(
+    rawEvaluation: Evaluation,
+    level: ExperienceLevel,
+): Evaluation {
+    const weightedOverall = calculateOverallScore(rawEvaluation, level);
+
     return {
-        ...evaluation,
-        overallScore: calculatedOverall,
+        ...rawEvaluation,
+        overallScore: weightedOverall,
     };
 }
 
 /**
- * Get aggregated scoring summary from all evaluations
+ * Get aggregated scoring summary across all evaluations
  */
-export function getScoringSummary(evaluations: Evaluation[]): AggregatedScores & {
-    shouldIncreaseDifficulty: boolean;
-    totalQuestionsAnswered: number;
-} {
-    const aggregated = calculateAggregatedScores(evaluations);
-    const recentOverallScores = evaluations.slice(-3).map((e) => e.overallScore);
-    const increaseDifficulty = shouldIncreaseDifficulty(recentOverallScores);
-
-    return {
-        ...aggregated,
-        shouldIncreaseDifficulty: increaseDifficulty,
-        totalQuestionsAnswered: evaluations.length,
-    };
+export function getScoringSummary(evaluations: Evaluation[]): AggregatedScores {
+    return calculateAggregatedScores(evaluations);
 }

@@ -53,13 +53,22 @@ export default function ReportView({ report, onNewSession }: ReportViewProps) {
                     <div className={`text-7xl font-black bg-gradient-to-r ${scoreGradient} bg-clip-text text-transparent leading-none mb-4`}>
                         {report.averageScore}/10
                     </div>
-                    <div className="flex items-center justify-center gap-3">
+                    <div className="flex items-center justify-center gap-3 flex-wrap">
                         <Badge className={`${confidenceColors[report.confidenceLevel]} text-[13px] font-bold px-5 py-1.5 border`}>
                             Confidence: {report.confidenceLevel}
                         </Badge>
                         <Badge className={`${hireColors[report.hireRecommendation]} text-[13px] font-bold px-5 py-1.5 border`}>
                             {hireEmoji[report.hireRecommendation]} Hire: {report.hireRecommendation}
                         </Badge>
+                        {report.hireBand && (
+                            <Badge className={`${report.hireBand === 'Strong Hire' ? 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' :
+                                    report.hireBand === 'Hire' ? 'text-sky-400 bg-sky-500/15 border-sky-500/30' :
+                                        report.hireBand === 'Borderline' ? 'text-amber-400 bg-amber-500/15 border-amber-500/30' :
+                                            'text-red-400 bg-red-500/15 border-red-500/30'
+                                } text-[13px] font-bold px-5 py-1.5 border`}>
+                                {report.hireBand}
+                            </Badge>
+                        )}
                     </div>
                 </CardContent>
             </Card>

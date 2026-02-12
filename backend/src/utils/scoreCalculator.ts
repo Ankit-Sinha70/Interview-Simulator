@@ -1,4 +1,4 @@
-import { Evaluation, ExperienceLevel, Difficulty, AggregatedScores } from '../models/interviewSession.model';
+import { Evaluation, ExperienceLevel, Difficulty, AggregatedScores, HireBand } from '../models/interviewSession.model';
 
 // ─── Role-Aware Weight Maps ───
 
@@ -49,14 +49,12 @@ export function calculateOverallScore(
     level: ExperienceLevel,
 ): number {
     const weights = WEIGHT_MAPS[level];
-
     const weighted =
         evaluation.technicalScore * weights.technicalScore +
         evaluation.depthScore * weights.depthScore +
         evaluation.clarityScore * weights.clarityScore +
         evaluation.problemSolvingScore * weights.problemSolvingScore +
         evaluation.communicationScore * weights.communicationScore;
-
     return Math.round(weighted * 100) / 100;
 }
 
@@ -66,14 +64,9 @@ export function calculateOverallScore(
 export function calculateAggregatedScores(evaluations: Evaluation[]): AggregatedScores {
     if (evaluations.length === 0) {
         return {
-            averageTechnical: 0,
-            averageDepth: 0,
-            averageClarity: 0,
-            averageProblemSolving: 0,
-            averageCommunication: 0,
-            overallAverage: 0,
-            strongestDimension: 'N/A',
-            weakestDimension: 'N/A',
+            averageTechnical: 0, averageDepth: 0, averageClarity: 0,
+            averageProblemSolving: 0, averageCommunication: 0, overallAverage: 0,
+            strongestDimension: 'N/A', weakestDimension: 'N/A',
         };
     }
 
@@ -98,12 +91,8 @@ export function calculateAggregatedScores(evaluations: Evaluation[]): Aggregated
         'Communication': Math.round((sum.communication / n) * 100) / 100,
     };
 
-    // Find strongest and weakest
-    let strongest = '';
-    let weakest = '';
-    let highScore = -Infinity;
-    let lowScore = Infinity;
-
+    let strongest = '', weakest = '';
+    let highScore = -Infinity, lowScore = Infinity;
     for (const [dim, avg] of Object.entries(averages)) {
         if (avg > highScore) { highScore = avg; strongest = dim; }
         if (avg < lowScore) { lowScore = avg; weakest = dim; }
@@ -132,17 +121,10 @@ export function findWeakestDimension(evaluation: Evaluation): string {
         'Problem Solving': evaluation.problemSolvingScore,
         'Communication': evaluation.communicationScore,
     };
-
-    let weakest = '';
-    let lowestScore = Infinity;
-
+    let weakest = '', lowestScore = Infinity;
     for (const [dim, score] of Object.entries(dimensions)) {
-        if (score < lowestScore) {
-            lowestScore = score;
-            weakest = dim;
-        }
+        if (score < lowestScore) { lowestScore = score; weakest = dim; }
     }
-
     return weakest;
 }
 
@@ -151,53 +133,108 @@ export function findWeakestDimension(evaluation: Evaluation): string {
 const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard'];
 
 /**
- * Get next difficulty level — gradual escalation, no jumps
+ * Get next difficulty level — gradual escalation
  */
 export function getNextDifficulty(currentDifficulty: Difficulty, overallScore: number): Difficulty {
     const currentIndex = DIFFICULTY_ORDER.indexOf(currentDifficulty);
-
-    // Score > 8 → escalate one step
-    if (overallScore > 8 && currentIndex < DIFFICULTY_ORDER.length - 1) {
-        return DIFFICULTY_ORDER[currentIndex + 1];
-    }
-
-    // Score < 4 → de-escalate one step
-    if (overallScore < 4 && currentIndex > 0) {
-        return DIFFICULTY_ORDER[currentIndex - 1];
-    }
-
-    // Otherwise maintain current difficulty
+    if (overallScore > 8 && currentIndex < DIFFICULTY_ORDER.length - 1) return DIFFICULTY_ORDER[currentIndex + 1];
+    if (overallScore < 4 && currentIndex > 0) return DIFFICULTY_ORDER[currentIndex - 1];
     return currentDifficulty;
 }
 
-/**
- * Rule: Should the next question probe deeper on the weak dimension?
- */
 export function shouldProbeDeeper(evaluation: Evaluation): boolean {
     const weakestScore = Math.min(
-        evaluation.technicalScore,
-        evaluation.depthScore,
-        evaluation.clarityScore,
-        evaluation.problemSolvingScore,
-        evaluation.communicationScore,
+        evaluation.technicalScore, evaluation.depthScore, evaluation.clarityScore,
+        evaluation.problemSolvingScore, evaluation.communicationScore,
     );
-    // If weakest dimension is depth and it's below 6, probe deeper
     return evaluation.depthScore === weakestScore && evaluation.depthScore < 6;
 }
 
-/**
- * Rule: Should the system ask a clarifying follow-up before moving to a new topic?
- * Triggered when technical score is very low (< 5)
- */
 export function shouldAskClarifying(evaluation: Evaluation): boolean {
     return evaluation.technicalScore < 5;
 }
 
-/**
- * Determine if difficulty should increase based on recent scores (legacy compat)
- */
 export function shouldIncreaseDifficulty(recentScores: number[]): boolean {
     if (recentScores.length < 2) return false;
-    const avg = recentScores.reduce((a, b) => a + b, 0) / recentScores.length;
-    return avg >= 7;
+    return recentScores.reduce((a, b) => a + b, 0) / recentScores.length >= 7;
+}
+
+// ─── Variance & Confidence ───
+
+/**
+ * Calculate score variance (for confidence level)
+ */
+export function calculateVariance(scores: number[]): number {
+    if (scores.length < 2) return 0;
+    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const squaredDiffs = scores.map((s) => Math.pow(s - mean, 2));
+    return Math.round((squaredDiffs.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100;
+}
+
+/**
+ * Determine confidence level from variance and question count
+ */
+export function getConfidenceFromVariance(variance: number, questionCount: number): 'High' | 'Medium' | 'Low' {
+    if (questionCount < 3) return 'Medium'; // Not enough data
+    if (variance < 1.0) return 'High';
+    if (variance > 2.5) return 'Low';
+    return 'Medium';
+}
+
+// ─── Hire Band Logic ───
+
+/**
+ * Determine granular hire band from average score
+ */
+export function getHireBand(avgScore: number): HireBand {
+    if (avgScore >= 8.5) return 'Strong Hire';
+    if (avgScore >= 7) return 'Hire';
+    if (avgScore >= 6) return 'Borderline';
+    return 'No Hire';
+}
+
+/**
+ * Get hire recommendation (simplified version)
+ */
+export function getHireRecommendation(avgScore: number): 'Yes' | 'Maybe' | 'No' {
+    if (avgScore >= 7) return 'Yes';
+    if (avgScore >= 5) return 'Maybe';
+    return 'No';
+}
+
+// ─── Personalized Roadmap ───
+
+const ROADMAP_SUGGESTIONS: Record<string, string[]> = {
+    'Technical Accuracy': [
+        'Review core language fundamentals and common patterns',
+        'Practice solving LeetCode/HackerRank problems daily',
+        'Study official documentation for your primary framework',
+    ],
+    'Depth of Explanation': [
+        'Study system design principles and architectural patterns',
+        'Practice explaining tradeoffs in technical decisions',
+        'Build projects and document your architecture choices',
+    ],
+    'Clarity': [
+        'Practice structured communication (STAR method)',
+        'Record yourself explaining concepts and review',
+        'Use diagrams and examples when explaining complex topics',
+    ],
+    'Problem Solving': [
+        'Practice breaking complex problems into smaller steps',
+        'Study common algorithms and data structure patterns',
+        'Work on open-source issues to develop debugging skills',
+    ],
+    'Communication': [
+        'Do mock interviews with peers or mentors',
+        'Reduce filler words by practicing deliberate pauses',
+        'Structure answers with clear intro, body, and conclusion',
+    ],
+};
+
+/**
+ * Get personalized improvement suggestions based on weakest dimension
+ */
+export function getPersonalizedRoadmap(weakestDimension: string): string[] {
+    return ROADMAP_SUGGESTIONS[weakestDimension] || ROADMAP_SUGGESTIONS['Technical Accuracy'];
 }
