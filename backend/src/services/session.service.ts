@@ -1,10 +1,14 @@
 import { v4 as uuidv4 } from 'uuid';
 import { InterviewSessionModel } from '../schemas/interviewSession.schema';
-import { InterviewSession, Role, ExperienceLevel, InterviewMode, WeaknessTracker } from '../models/interviewSession.model';
+import { InterviewSession, Role, ExperienceLevel, InterviewMode } from '../models/interviewSession.model';
+import { isDbConnected } from '../config/db.config';
 import { getCurrentPromptVersion } from './promptVersion.service';
 
+// ─── In-Memory Fallback Store ───
+const memoryStore = new Map<string, InterviewSession>();
+
 /**
- * Create a new interview session (persisted to MongoDB)
+ * Create a new interview session
  */
 export async function createSession(
     role: Role | string,
@@ -13,10 +17,11 @@ export async function createSession(
     userId?: string,
 ): Promise<InterviewSession> {
     const promptVersion = await getCurrentPromptVersion();
+    const now = new Date().toISOString();
 
-    const doc = await InterviewSessionModel.create({
+    const sessionData: InterviewSession = {
         sessionId: uuidv4(),
-        userId: userId || null,
+        userId: userId || undefined,
         role,
         experienceLevel,
         mode,
@@ -35,37 +40,52 @@ export async function createSession(
         topicScores: {},
         finalReport: null,
         promptVersion,
+        createdAt: now,
+        updatedAt: now,
         completedAt: null,
-    });
+    };
 
-    return docToSession(doc);
+    if (isDbConnected()) {
+        const doc = await InterviewSessionModel.create(sessionData);
+        return docToSession(doc);
+    }
+
+    // In-memory fallback
+    memoryStore.set(sessionData.sessionId, sessionData);
+    return sessionData;
 }
 
 /**
  * Get a session by sessionId
  */
 export async function getSession(sessionId: string): Promise<InterviewSession | null> {
-    const doc = await InterviewSessionModel.findOne({ sessionId });
-    return doc ? docToSession(doc) : null;
+    if (isDbConnected()) {
+        const doc = await InterviewSessionModel.findOne({ sessionId });
+        return doc ? docToSession(doc) : null;
+    }
+
+    return memoryStore.get(sessionId) || null;
 }
 
 /**
  * Update a session
  */
 export async function updateSession(session: Partial<InterviewSession> & { sessionId: string }): Promise<void> {
-    await InterviewSessionModel.findOneAndUpdate(
-        { sessionId: session.sessionId },
-        { $set: session },
-        { new: true },
-    );
-}
+    if (isDbConnected()) {
+        await InterviewSessionModel.findOneAndUpdate(
+            { sessionId: session.sessionId },
+            { $set: session },
+            { new: true },
+        );
+        return;
+    }
 
-/**
- * Get all sessions (for debugging)
- */
-export async function getAllSessions(): Promise<InterviewSession[]> {
-    const docs = await InterviewSessionModel.find().sort({ createdAt: -1 }).limit(50);
-    return docs.map(docToSession);
+    // In-memory fallback
+    const existing = memoryStore.get(session.sessionId);
+    if (existing) {
+        Object.assign(existing, session, { updatedAt: new Date().toISOString() });
+        memoryStore.set(session.sessionId, existing);
+    }
 }
 
 /**

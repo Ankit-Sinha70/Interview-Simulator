@@ -4,18 +4,30 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/interview-simulator';
 
+let _isConnected = false;
+
 /**
- * Connect to MongoDB with retry logic
+ * Check if MongoDB is connected
+ */
+export function isDbConnected(): boolean {
+    return _isConnected;
+}
+
+/**
+ * Connect to MongoDB with graceful fallback
  */
 export async function connectDatabase(): Promise<void> {
     try {
-        await mongoose.connect(MONGODB_URI);
-        console.log('[DB] Connected to MongoDB');
+        await mongoose.connect(MONGODB_URI, {
+            serverSelectionTimeoutMS: 5000, // Fail fast if no server
+        });
+        _isConnected = true;
+        console.log('[DB] ✅ Connected to MongoDB');
     } catch (error) {
-        console.error('[DB] MongoDB connection failed:', (error as Error).message);
-        console.log('[DB] Retrying in 5 seconds...');
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        return connectDatabase();
+        _isConnected = false;
+        console.warn('[DB] ⚠️  MongoDB not available — using in-memory fallback');
+        console.warn(`[DB]    Tried: ${MONGODB_URI}`);
+        console.warn('[DB]    Install MongoDB or set MONGODB_URI in .env to persist data');
     }
 }
 
@@ -23,6 +35,9 @@ export async function connectDatabase(): Promise<void> {
  * Disconnect from MongoDB
  */
 export async function disconnectDatabase(): Promise<void> {
-    await mongoose.disconnect();
-    console.log('[DB] Disconnected from MongoDB');
+    if (_isConnected) {
+        await mongoose.disconnect();
+        _isConnected = false;
+        console.log('[DB] Disconnected from MongoDB');
+    }
 }

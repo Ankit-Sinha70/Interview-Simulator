@@ -1,4 +1,5 @@
 import { PromptVersionModel } from '../schemas/promptVersion.schema';
+import { isDbConnected } from '../config/db.config';
 import { getQuestionPrompt } from '../constants/prompts/question.prompt';
 import { getEvaluationPrompt } from '../constants/prompts/evaluation.prompt';
 import { getFollowUpPrompt } from '../constants/prompts/followup.prompt';
@@ -7,16 +8,20 @@ import { getReportPrompt } from '../constants/prompts/report.prompt';
 const CURRENT_VERSION = 'v1.0';
 
 /**
- * Seed prompt versions on first boot
+ * Seed prompt versions on first boot (only if DB connected)
  */
 export async function seedPromptVersions(): Promise<void> {
+    if (!isDbConnected()) {
+        console.log('[Prompts] Skipping seed — no DB connection (in-memory mode)');
+        return;
+    }
+
     const existing = await PromptVersionModel.findOne({ version: CURRENT_VERSION });
     if (existing) {
         console.log(`[Prompts] Version ${CURRENT_VERSION} already exists`);
         return;
     }
 
-    // Snapshot current prompt templates
     await PromptVersionModel.create({
         version: CURRENT_VERSION,
         questionPrompt: getQuestionPrompt({
@@ -55,6 +60,7 @@ export async function getCurrentPromptVersion(): Promise<string> {
  * Get a full prompt version document
  */
 export async function getPromptVersionDoc(version?: string) {
+    if (!isDbConnected()) return null;
     const v = version || CURRENT_VERSION;
     return PromptVersionModel.findOne({ version: v });
 }

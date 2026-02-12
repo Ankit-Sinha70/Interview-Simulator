@@ -11,6 +11,7 @@ import {
     getHireRecommendation,
     getPersonalizedRoadmap,
 } from '../utils/scoreCalculator';
+import { isDbConnected } from '../config/db.config';
 import { AnalyticsModel } from '../schemas/analytics.schema';
 
 /**
@@ -56,7 +57,6 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
     const calculatedHireBand = getHireBand(aiReport.averageScore);
     const calculatedHireRec = getHireRecommendation(aiReport.averageScore);
 
-    // Use calculated values as fallback/override for consistency
     const finalReport: FinalReport = {
         averageScore: aiReport.averageScore,
         strongestAreas: aiReport.strongestAreas || [],
@@ -69,7 +69,7 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
             getPersonalizedRoadmap(session.aggregatedScores?.weakestDimension || 'Technical Accuracy'),
     };
 
-    // Save to session in DB
+    // Save to session
     await sessionService.updateSession({
         sessionId,
         status: 'COMPLETED',
@@ -77,8 +77,10 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         completedAt: new Date().toISOString(),
     } as any);
 
-    // Save analytics record (fire and forget)
-    saveAnalytics(session, finalReport, calculatedHireBand).catch(() => { });
+    // Save analytics (only if DB is connected)
+    if (isDbConnected()) {
+        saveAnalytics(session, finalReport, calculatedHireBand).catch(() => { });
+    }
 
     return finalReport;
 }
@@ -102,8 +104,8 @@ async function saveAnalytics(
             weakestDimension: session.aggregatedScores?.weakestDimension || 'N/A',
             strongestDimension: session.aggregatedScores?.strongestDimension || 'N/A',
             questionsCount: session.questions.length,
-            averageTimePerQuestion: 0, // Can be computed from voice meta later
-            voiceConfidenceScore: null, // Future enhancement
+            averageTimePerQuestion: 0,
+            voiceConfidenceScore: null,
             hireBand,
             promptVersion: session.promptVersion,
         });
