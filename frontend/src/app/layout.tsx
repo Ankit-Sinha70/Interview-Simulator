@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"] }); // Initialize Inter font
 
 export const metadata: Metadata = {
   title: "AI Interview Simulator",
@@ -12,17 +15,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body>
-        <div className="relative z-[1] min-h-screen">
-          {children}
-        </div>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className={inter.className}>
+        {children}
       </body>
     </html>
   );
