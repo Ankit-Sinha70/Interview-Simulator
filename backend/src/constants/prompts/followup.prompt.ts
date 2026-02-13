@@ -1,57 +1,87 @@
-import { WeaknessTracker } from '../../models/interviewSession.model';
+import { Role, ExperienceLevel, Difficulty, FollowUpIntent } from '../../models/interviewSession.model';
 
-export type FollowUpPriority = 'incorrect_concept' | 'shallow_depth' | 'problem_solving_gap' | 'new_domain';
-
-export function getFollowUpPrompt(params: {
+export interface FollowUpContext {
+  role: Role | string;
+  experienceLevel: ExperienceLevel;
+  previousQuestion: string;
+  previousTopic: string;
+  previousDifficulty: Difficulty;
+  technicalScore: number;
+  depthScore: number;
+  clarityScore: number;
+  problemSolvingScore: number;
+  communicationScore: number;
   weaknesses: string[];
-  topic: string;
-  summary: string;
-  weaknessFrequency?: WeaknessTracker;
-  topicMastered?: boolean;
-  priority?: FollowUpPriority;
-}): string {
-  const priorityInstruction = getPriorityInstruction(params.priority);
-  const frequencyContext = params.weaknessFrequency
-    ? `\nWeakness frequency this session: Technical=${params.weaknessFrequency.technicalWeakCount}, Depth=${params.weaknessFrequency.depthWeakCount}, Clarity=${params.weaknessFrequency.clarityWeakCount}, ProblemSolving=${params.weaknessFrequency.problemSolvingWeakCount}, Communication=${params.weaknessFrequency.communicationWeakCount}`
-    : '';
-  const topicContext = params.topicMastered
-    ? '\nIMPORTANT: The candidate has mastered this topic (scored >8 twice). Move to a DIFFERENT topic/domain entirely.'
-    : '';
-
-  return `Generate a follow-up interview question based on:
-
-Weaknesses identified: ${params.weaknesses.join(', ')}
-Previous Topic: ${params.topic}
-Previous Answer Summary: ${params.summary}${frequencyContext}${topicContext}
-
-Follow-up Strategy: ${priorityInstruction}
-
-Rules:
-- Target the weakest area from the identified weaknesses.
-- If a weakness has been repeated multiple times (high frequency), escalate the focus.
-- Adjust difficulty based on the candidate's performance.
-- Avoid repeating the same question — ask from a different angle.
-- Make it feel like a real interviewer probing deeper.
-- Keep it professional and realistic.
-
-Return STRICT JSON only, no markdown formatting, no code blocks:
-{
-  "question": string,
-  "focusArea": string
-}`;
+  followUpIntent: FollowUpIntent;
+  targetDifficulty: Difficulty;
+  questionHistory: string[];
 }
 
-function getPriorityInstruction(priority?: FollowUpPriority): string {
-  switch (priority) {
-    case 'incorrect_concept':
-      return 'The candidate showed incorrect understanding. Ask a clarifying question to verify their foundational knowledge before moving on.';
-    case 'shallow_depth':
-      return 'The candidate gave a shallow answer. Probe deeper by asking about implementation details, tradeoffs, or edge cases.';
-    case 'problem_solving_gap':
-      return 'The candidate struggled with problem-solving. Present a scenario or design challenge related to their weakest area.';
-    case 'new_domain':
-      return 'The candidate has mastered this topic. Switch to a completely different technical domain to test breadth.';
-    default:
-      return 'Generate an appropriate follow-up targeting the weakest identified area.';
-  }
+export function getFollowUpPrompt(ctx: FollowUpContext): string {
+  return `You are a senior technical interviewer conducting a realistic interview.
+
+Generate a follow-up question based on the candidate’s previous performance.
+
+Context:
+Role: ${ctx.role}
+Experience Level: ${ctx.experienceLevel}
+Previous Question: "${ctx.previousQuestion}"
+Previous Topic: ${ctx.previousTopic}
+Previous Difficulty: ${ctx.previousDifficulty}
+
+Evaluation Summary:
+Technical Score: ${ctx.technicalScore}
+Depth Score: ${ctx.depthScore}
+Clarity Score: ${ctx.clarityScore}
+Problem Solving Score: ${ctx.problemSolvingScore}
+Communication Score: ${ctx.communicationScore}
+
+Identified Weaknesses:
+${ctx.weaknesses.join(', ')}
+
+Follow-up Intent:
+${ctx.followUpIntent}
+
+Target Difficulty:
+${ctx.targetDifficulty}
+
+Previous Questions Asked (DO NOT REPEAT):
+${ctx.questionHistory.map(q => `- ${q}`).join('\n')}
+
+Instructions:
+
+1. If Follow-up Intent is CLARIFY_TECHNICAL:
+   - Ask a focused question correcting the technical misunderstanding.
+   - Keep same topic.
+   - Do not change topic.
+
+2. If Follow-up Intent is PROBE_DEPTH:
+   - Ask a deeper conceptual question.
+   - Explore trade-offs, internal mechanics, or edge cases.
+
+3. If Follow-up Intent is SCENARIO_BASED:
+   - Present a real-world problem scenario.
+   - Require structured thinking.
+
+4. If Follow-up Intent is ESCALATE_DIFFICULTY:
+   - Increase complexity.
+   - Introduce system-level or architectural thinking.
+
+General Rules:
+- Do not repeat previous questions.
+- Do not generate a question semantically similar to any in Previous Questions Asked.
+- Keep the question concise but meaningful.
+- Maintain professional interview tone.
+- Ensure the difficulty matches ${ctx.targetDifficulty}.
+- Avoid overly generic questions.
+- Ensure it is appropriate for ${ctx.experienceLevel} level.
+
+Return STRICT JSON only:
+
+{
+  "question": string,
+  "topic": string,
+  "difficulty": "easy" | "medium" | "hard",
+  "intent": "${ctx.followUpIntent}"
+}`;
 }

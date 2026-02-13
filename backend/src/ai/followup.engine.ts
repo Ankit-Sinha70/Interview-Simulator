@@ -1,24 +1,31 @@
 import { callAI } from './provider.factory';
-import { getFollowUpPrompt } from '../constants/prompts/followup.prompt';
-import { FollowUpQuestion, WeaknessTracker } from '../models/interviewSession.model';
+import { getFollowUpPrompt, FollowUpContext } from '../constants/prompts/followup.prompt';
+import { FollowUpQuestion } from '../models/interviewSession.model';
 
 /**
- * Generate an adaptive follow-up question based on weaknesses and intelligence
+ * Generate an adaptive follow-up question based on full session context
  */
-export async function generateFollowUp(params: {
-    weaknesses: string[];
-    topic: string;
-    summary: string;
-    weaknessFrequency?: WeaknessTracker;
-    topicMastered?: boolean;
-    priority?: string;
-}): Promise<FollowUpQuestion> {
-    const prompt = getFollowUpPrompt(params as any);
-    const result = await callAI<FollowUpQuestion>(prompt);
+export async function generateFollowUp(context: FollowUpContext): Promise<FollowUpQuestion> {
+    const prompt = getFollowUpPrompt(context);
 
-    if (!result.question || !result.focusArea) {
-        throw new Error('AI returned incomplete follow-up data');
+    try {
+        const result = await callAI<any>(prompt);
+
+        // Validation & Defaulting
+        if (!result.question) {
+            throw new Error('AI returned empty question');
+        }
+
+        return {
+            question: result.question,
+            topic: result.topic || context.previousTopic,
+            difficulty: result.difficulty || context.targetDifficulty,
+            intent: result.intent || context.followUpIntent,
+            focusArea: result.topic || context.previousTopic, // Backward compat
+        };
+    } catch (error) {
+        console.error('Follow-up generation failed:', error);
+        // Fallback if AI fails completely (optional, or rethrow)
+        throw error;
     }
-
-    return result;
 }
