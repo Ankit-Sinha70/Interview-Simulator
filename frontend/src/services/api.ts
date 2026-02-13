@@ -96,16 +96,18 @@ async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
     const json: ApiResponse<T> = await res.json();
 
-    if (!json.success) {
-        throw new Error(json.error?.message || 'API request failed');
-    }
-
     return json.data;
 }
 
+
 export async function startInterview(data: StartInterviewRequest): Promise<StartInterviewResponse> {
+    const token = localStorage.getItem('token');
     return apiCall<StartInterviewResponse>('/interview/start', {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(data),
     });
 }
@@ -115,19 +117,62 @@ export async function submitAnswer(
     answer: string,
     voiceMeta?: VoiceMetadata,
 ): Promise<AnswerResponse> {
+    const token = localStorage.getItem('token');
     return apiCall<AnswerResponse>('/interview/answer', {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ sessionId, answer, voiceMeta }),
     });
 }
 
 export async function completeInterview(sessionId: string): Promise<FinalReport> {
+    const token = localStorage.getItem('token');
     return apiCall<FinalReport>('/interview/complete', {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ sessionId }),
     });
 }
 
 export async function getSession(sessionId: string): Promise<any> {
-    return apiCall<any>(`/interview/${sessionId}`);
+    const token = localStorage.getItem('token');
+    return apiCall<any>(`/interview/${sessionId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+}
+
+export async function verifySubscription(sessionId: string): Promise<any> {
+    const token = localStorage.getItem('token');
+    return apiCall<any>('/subscription/verify-session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ sessionId }),
+    });
+}
+
+export async function getUserAnalytics(userId: string): Promise<any> {
+    const token = localStorage.getItem('token');
+    return apiCall<any>(`/analytics/user/${userId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+}
+
+export async function syncSubscription(): Promise<any> {
+    const token = localStorage.getItem('token');
+    return apiCall<any>('/subscription/sync', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
+    });
 }

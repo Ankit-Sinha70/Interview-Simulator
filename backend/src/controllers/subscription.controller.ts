@@ -57,3 +57,26 @@ export async function webhook(req: Request, res: Response) {
         res.status(500).send('Handler failed');
     }
 }
+export async function verifySession(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { sessionId } = req.body;
+        if (!sessionId) {
+            res.status(400).json({ error: 'Session ID required' });
+            return;
+        }
+        const result = await subscriptionService.verifySession(sessionId);
+        res.json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function syncSubscription(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        const result = await subscriptionService.syncSubscriptionStatus(userId);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}

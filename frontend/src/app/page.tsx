@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import {
   FinalReport,
   AnswerResponse,
   VoiceMetadata,
+  verifySubscription,
 } from '@/services/api';
 
 type AppState = 'setup' | 'interview' | 'report';
@@ -34,8 +35,9 @@ interface InterviewHistoryEntry {
 }
 
 export default function Home() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [appState, setAppState] = useState<AppState>('setup');
   const [isLoading, setIsLoading] = useState(false);
@@ -54,21 +56,26 @@ export default function Home() {
   const [voiceMeta, setVoiceMeta] = useState<VoiceMetadata | undefined>();
   const [useVoice, setUseVoice] = useState(false);
 
+  // Refresh user data if returning from Stripe payment
+  // Refresh user data if returning from Stripe payment
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    if (sessionId && user?.planType === 'FREE') {
+      verifySubscription(sessionId)
+        .then(() => refreshUser())
+        .then(() => {
+          router.replace('/');
+        })
+        .catch(err => console.error("Verification failed", err));
+    }
+  }, [searchParams, user, refreshUser, router]);
+
   // Auth Protection
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
-
-  // Loading state for auth
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
 
   // ─── Start Interview ───
   const handleStart = useCallback(async (role: string, experienceLevel: 'Junior' | 'Mid' | 'Senior') => {
@@ -156,6 +163,15 @@ export default function Home() {
     setVoiceMeta(meta);
   }, []);
 
+  // Loading state for auth
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
   // ─── Layout Components ───
   const ErrorBanner = error ? (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-slide-in-down w-[90%] max-w-lg">
@@ -186,7 +202,16 @@ export default function Home() {
 
       {appState === 'report' && report && (
         <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          <ReportView report={report} onNewSession={handleNewSession} />
+          <ReportView report={report} onNewSession={handleNewSession} scores={{
+            averageTechnical: 0,
+            averageDepth: 0,
+            averageClarity: 0,
+            averageProblemSolving: 0,
+            averageCommunication: 0,
+            overallAverage: report.averageScore,
+            strongestDimension: report.strongestAreas[0] || 'N/A',
+            weakestDimension: report.weakestAreas[0] || 'N/A'
+          }} />
         </main>
       )}
 

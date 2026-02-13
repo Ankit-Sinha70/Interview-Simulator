@@ -61,3 +61,66 @@ export async function handleWebhook(event: Stripe.Event) {
         }
     }
 }
+
+
+export async function verifySession(sessionId: string) {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.payment_status === 'paid') {
+        const userId = session.metadata?.userId;
+        if (userId) {
+            await User.findByIdAndUpdate(userId, {
+                planType: 'PRO',
+                stripeCustomerId: session.customer as string,
+                stripeSubscriptionId: session.subscription as string,
+                subscriptionStatus: 'ACTIVE',
+            });
+            return { success: true, plan: 'PRO' };
+        }
+    }
+    return { success: false };
+}
+
+export async function syncSubscriptionStatus(userId: string) {
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    let customerId = user.stripeCustomerId;
+
+    // If no customer ID, try finding by email
+    if (!customerId) {
+        const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+        if (customers.data.length > 0) {
+            customerId = customers.data[0].id;
+            user.stripeCustomerId = customerId;
+            await user.save();
+        }
+    }
+
+    if (!customerId) {
+        return { success: false, message: 'No Stripe customer found' };
+    }
+
+    const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'active',
+        limit: 1,
+    });
+
+    if (subscriptions.data.length > 0) {
+        const sub = subscriptions.data[0];
+        user.planType = 'PRO';
+        user.stripeSubscriptionId = sub.id;
+        user.subscriptionStatus = 'ACTIVE';
+        await user.save();
+        return { success: true, plan: 'PRO', status: 'UPDATED' };
+    } else {
+        if (user.planType === 'PRO') {
+            user.planType = 'FREE';
+            user.subscriptionStatus = 'CANCELED';
+            await user.save();
+            return { success: true, plan: 'FREE', status: 'DOWNGRADED' };
+        }
+    }
+
+    return { success: true, plan: user.planType, status: 'NO_CHANGE' };
+}

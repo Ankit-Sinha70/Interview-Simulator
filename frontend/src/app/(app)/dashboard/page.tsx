@@ -6,6 +6,8 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import SessionHistory from '@/components/dashboard/SessionHistory';
+import { useAuth } from '@/context/AuthContext';
+import { getUserAnalytics } from '@/services/api';
 
 // Mock types matching backend response
 interface AnalyticsData {
@@ -18,22 +20,18 @@ interface AnalyticsData {
 }
 
 export default function DashboardPage() {
+    const { user } = useAuth();
     const [stats, setStats] = useState<AnalyticsData | null>(null);
-    const [sessions, setSessions] = useState<any[]>([]); // TODO: Fetch sessions separately or include in analytics?
-    // Backend's getUserAnalytics only returns stats, not list of sessions.
-    // We might need another endpoint for session history or update getUserAnalytics.
-    // For now, I'll mock the history list or fetch from a new endpoint if I created one.
-    // Wait, I strictly followed the plan which said "Fetch analytics".
-    // I will check if I can fetch sessions from `GET /api/session` (if it existed? I check `session.controller` later).
-    // I'll assume empty history for now if I can't fetch it, or mock it.
+    const [sessions, setSessions] = useState<any[]>([]); // TODO: Fetch sessions separately
 
+    // Check if user is logged in
     useEffect(() => {
-        // Fetch aggregated stats
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/analytics/user/test_user`)
-            .then(res => res.json())
-            .then(data => setStats(data))
-            .catch(err => console.error('Failed to fetch stats:', err));
-    }, []);
+        if (user) {
+            getUserAnalytics(user._id)
+                .then(data => setStats(data))
+                .catch(err => console.error('Failed to fetch stats:', err));
+        }
+    }, [user]);
 
     return (
         <div className="space-y-8">
