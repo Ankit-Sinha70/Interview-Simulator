@@ -1,54 +1,89 @@
-import { VoiceMetadata } from '../../models/interviewSession.model';
-import { getVoiceConfidenceSummary } from '../../services/voice.service';
+import { Role, ExperienceLevel, VoiceMetadata } from '../../models/interviewSession.model';
 
-export function getEvaluationPrompt(params: {
+export interface EvaluationContext {
   question: string;
   answer: string;
-  role: string;
-  level: string;
+  role: Role | string;
+  level: ExperienceLevel | string;
   voiceMeta?: VoiceMetadata;
-}): string {
-  const voiceContext = params.voiceMeta
-    ? `\n\nVoice Analysis (from speech input):\n${getVoiceConfidenceSummary(params.voiceMeta)}\nConsider this voice data when scoring communication quality. High filler words or excessive hesitation should impact the communication score.`
-    : '';
+}
 
-  return `You are a technical interview evaluator.
+export function getEvaluationPrompt(ctx: EvaluationContext): string {
+  return `You are a strict and experienced technical interviewer.
 
-Evaluate the candidate's answer based on:
+Your task is to evaluate the candidate’s answer objectively and professionally.
 
-Question: ${params.question}
-Candidate Answer: ${params.answer}
-Role: ${params.role}
-Experience Level: ${params.level}${voiceContext}
+Context:
+Role: ${ctx.role}
+Experience Level: ${ctx.level}
 
-Scoring criteria (each 1-10):
-- Technical accuracy: Does the answer demonstrate correct technical knowledge?
-- Depth of explanation: Does it go beyond surface-level?
-- Clarity: Is the explanation clear and well-structured?
-- Problem-solving approach: Does it show analytical thinking?
-- Communication quality: Is it professionally articulated?
+Question:
+${ctx.question}
 
-Rules:
-- Be objective and fair.
-- Do not inflate scores — a junior saying "I don't know" should get low scores.
-- Identify 2-3 specific strengths.
-- Identify 2-3 specific weaknesses.
-- Suggest 2-3 clear, actionable improvements.
-- The overallScore should be a weighted average based on role level:
-  - Junior: Technical 30%, Clarity 25%, ProblemSolving 20%, Depth 15%, Communication 10%
-  - Mid: Technical 25%, Depth 25%, ProblemSolving 25%, Clarity 15%, Communication 10%
-  - Senior: Depth 30%, Technical 25%, ProblemSolving 25%, Clarity 10%, Communication 10%
+Candidate Answer:
+${ctx.answer}
 
-Return STRICT JSON only, no markdown formatting, no code blocks:
+Evaluation Guidelines:
+
+1. Technical Accuracy:
+   - Check correctness of concepts.
+   - Identify any incorrect statements.
+   - Penalize factual errors significantly.
+
+2. Depth of Knowledge:
+   - Evaluate whether the candidate explained underlying mechanisms.
+   - Look for trade-offs, edge cases, or architectural thinking.
+   - Penalize shallow definitions.
+
+3. Problem-Solving Approach:
+   - Assess logical structure.
+   - Check if reasoning was step-by-step.
+   - Reward structured thinking.
+
+4. Clarity:
+   - Is the explanation organized?
+   - Is it easy to understand?
+   - Is it coherent?
+
+5. Communication Quality:
+   - Professional tone?
+   - Concise but complete?
+   - Clear articulation of ideas?
+
+Experience-Level Adjustment:
+- Junior: Expect foundational understanding.
+- Mid: Expect implementation details and reasoning.
+- Senior: Expect architectural thinking, trade-offs, scalability awareness.
+
+Scoring Rules:
+- Scores must range from 1 to 10.
+- Do NOT inflate scores.
+- 5 = acceptable baseline.
+- 7 = strong.
+- 9+ = exceptional and rare.
+- If major technical error exists, technicalScore must be <= 4.
+- If explanation is shallow for the experience level, depthScore must be <= 5.
+
+Anti-Hallucination:
+- If the answer does not provide enough information, do not assume correctness.
+- Score based only on provided content.
+
+Do not be overly polite.
+Be honest and constructive.
+
+Return STRICT JSON only in this format:
+
 {
   "technicalScore": number,
   "depthScore": number,
-  "clarityScore": number,
   "problemSolvingScore": number,
+  "clarityScore": number,
   "communicationScore": number,
   "overallScore": number,
+  "majorTechnicalErrors": string[],
   "strengths": string[],
   "weaknesses": string[],
-  "improvements": string[]
+  "improvements": string[],
+  "summary": string
 }`;
 }

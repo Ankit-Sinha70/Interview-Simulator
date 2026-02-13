@@ -44,6 +44,7 @@ export interface Evaluation {
     strengths: string[];
     weaknesses: string[];
     improvements: string[];
+    majorTechnicalErrors?: string[];
 }
 
 // ─── Question Entry ───

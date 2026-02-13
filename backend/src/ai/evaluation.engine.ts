@@ -28,6 +28,15 @@ export async function evaluateAnswer(params: {
         }
     }
 
+    // Ensure array fields are arrays
+    const arrayFields: (keyof Evaluation)[] = ['strengths', 'weaknesses', 'improvements', 'majorTechnicalErrors'];
+    for (const field of arrayFields) {
+        // If field exists but isn't an array, force it to []
+        if (result[field] !== undefined && !Array.isArray(result[field])) {
+            (result as any)[field] = [];
+        }
+    }
+
     // Clamp scores to 1-10 range
     const scoreFields: (keyof Evaluation)[] = [
         'technicalScore', 'depthScore', 'clarityScore',
