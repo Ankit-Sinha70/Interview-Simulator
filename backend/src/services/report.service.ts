@@ -40,33 +40,57 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         })
         .join('\n\n');
 
-    // Generate AI report
+    // ─── 1. Calculate Metrics First (Pre-AI) ───
+    const completedEvaluations = session.questions
+        .filter((q) => q.evaluation)
+        .map((q) => q.evaluation!);
+
+    // Aggregated Scores
+    const aggregatedScores = session.aggregatedScores || {
+        averageTechnical: 0, averageDepth: 0, averageClarity: 0,
+        averageProblemSolving: 0, averageCommunication: 0,
+        overallAverage: 0, strongestDimension: 'N/A', weakestDimension: 'N/A'
+    };
+
+    // Variance & Confidence
+    const overallScores = completedEvaluations.map(e => e.overallScore);
+    const variance = calculateVariance(overallScores);
+    const calculatedConfidence = getConfidenceFromVariance(variance, overallScores.length);
+
+    // Hire Band
+    const calculatedHireBand = getHireBand(aggregatedScores.overallAverage);
+
+    // Weakness Frequency
+    const weaknessFrequency = session.questions.reduce((acc, q) => {
+        if (q.generatedFromWeakness) {
+            acc[q.generatedFromWeakness] = (acc[q.generatedFromWeakness] || 0) + 1;
+        }
+        return acc;
+    }, {} as Record<string, number>);
+
+    // ─── 2. Generate AI Report with Full Context ───
     const aiReport = await generateReport({
         questionsAndEvaluations,
         role: session.role,
         level: session.experienceLevel,
+        aggregatedScores,
+        hireBand: calculatedHireBand,
+        confidenceLevel: calculatedConfidence,
+        weaknessFrequency,
     });
 
-    // ─── Enrich with calculated metrics ───
-    const overallScores = session.questions
-        .filter((q) => q.evaluation)
-        .map((q) => q.evaluation!.overallScore);
-
-    const variance = calculateVariance(overallScores);
-    const calculatedConfidence = getConfidenceFromVariance(variance, overallScores.length);
-    const calculatedHireBand = getHireBand(aiReport.averageScore);
-    const calculatedHireRec = getHireRecommendation(aiReport.averageScore);
-
+    // ─── 3. Construct Final Report ───
+    // We trust AI for summary/roadmap, but enforce our calculated metrics for consistency
     const finalReport: FinalReport = {
-        averageScore: aiReport.averageScore,
+        averageScore: aggregatedScores.overallAverage, // Enforce calculated
         strongestAreas: aiReport.strongestAreas || [],
         weakestAreas: aiReport.weakestAreas || [],
-        confidenceLevel: calculatedConfidence,
-        hireRecommendation: calculatedHireRec,
-        hireBand: calculatedHireBand,
+        confidenceLevel: calculatedConfidence, // Enforce calculated
+        hireRecommendation: calculatedHireBand === 'Strong Hire' || calculatedHireBand === 'Hire' ? 'Yes' : 'No', // Map from band
+        hireBand: calculatedHireBand, // Enforce calculated
         improvementRoadmap: aiReport.improvementRoadmap || [],
-        nextPreparationFocus: aiReport.nextPreparationFocus ||
-            getPersonalizedRoadmap(session.aggregatedScores?.weakestDimension || 'Technical Accuracy'),
+        nextPreparationFocus: aiReport.nextPreparationFocus || getPersonalizedRoadmap(aggregatedScores.weakestDimension),
+        executiveSummary: aiReport.executiveSummary // New field from Master Prompt
     };
 
     // Save to session

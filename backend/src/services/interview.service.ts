@@ -11,12 +11,15 @@ import {
     VoiceMetadata,
     AggregatedScores,
     WeaknessTracker,
+    VoiceEvaluation,
 } from '../models/interviewSession.model';
 import * as sessionService from './session.service';
 import * as scoringService from './scoring.service';
 import { generateQuestion } from '../ai/question.engine';
 import { evaluateAnswer } from '../ai/evaluation.engine';
 import { generateFollowUp } from '../ai/followup.engine';
+import { evaluateVoice } from '../ai/voice.engine';
+
 import {
     getNextDifficulty,
     determineFollowUpIntent,
@@ -103,15 +106,28 @@ export async function processAnswer(
     currentQuestion.answer = answerInfo;
 
     // Evaluate the answer using AI
-    const rawEvaluation: Evaluation = await evaluateAnswer({
-        question: currentQuestion.questionText,
-        answer: answer,
-        role: session.role,
-        level: session.experienceLevel,
-        voiceMeta,
-    });
+    // 2. Evaluate answer (Text + Voice)
+    const [rawEvaluation, voiceEval] = await Promise.all([
+        evaluateAnswer({
+            question: currentQuestion.questionText,
+            answer,
+            role: session.role,
+            level: session.experienceLevel,
+            voiceMeta,
+        }),
+        voiceMeta ? evaluateVoice({ transcript: answer, metadata: voiceMeta }) : Promise.resolve(undefined)
+    ]);
 
     const evaluation = scoringService.processEvaluation(rawEvaluation, session.experienceLevel);
+
+    // 3. Update session with answer and evaluation
+    const updatedAnswerInfo: AnswerInfo = {
+        text: answer,
+        voiceMeta,
+        voiceEvaluation: voiceEval,
+        answeredAt: new Date().toISOString(),
+    };
+    currentQuestion.answer = updatedAnswerInfo;
     currentQuestion.evaluation = evaluation;
 
     // ─── Track Weakness Frequency ───

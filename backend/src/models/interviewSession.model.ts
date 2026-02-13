@@ -24,11 +24,21 @@ export interface VoiceMetadata {
     wordsPerMinute: number;
 }
 
+export interface VoiceEvaluation {
+    confidenceScore: number;
+    fluencyScore: number;
+    structureScore: number;
+    professionalismScore: number;
+    spokenDeliveryOverall: number;
+    feedback: string[];
+}
+
 // ─── Answer Info ───
 
 export interface AnswerInfo {
     text: string;
     voiceMeta?: VoiceMetadata;
+    voiceEvaluation?: VoiceEvaluation;
     answeredAt: string;
 }
 
@@ -116,6 +126,7 @@ export interface FinalReport {
     hireBand: HireBand;
     improvementRoadmap: string[];
     nextPreparationFocus: string[];
+    executiveSummary?: string;
 }
 
 // ─── AI Response Types ───

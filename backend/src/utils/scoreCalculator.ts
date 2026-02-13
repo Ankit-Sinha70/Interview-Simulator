@@ -27,9 +27,9 @@ const WEIGHT_MAPS: Record<ExperienceLevel, WeightMap> = {
     },
     Senior: {
         depthScore: 0.30,
-        technicalScore: 0.25,
         problemSolvingScore: 0.25,
-        clarityScore: 0.10,
+        technicalScore: 0.20,
+        clarityScore: 0.15,
         communicationScore: 0.10,
     },
 };
