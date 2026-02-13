@@ -10,9 +10,9 @@ interface SessionSetupProps {
 }
 
 const ROLES = [
-    { id: 'Frontend Developer', label: 'Frontend', icon: '🎨', desc: 'React, CSS, DOM, UX' },
-    { id: 'Backend Developer', label: 'Backend', icon: '⚙️', desc: 'APIs, Databases, Architecture' },
-    { id: 'Fullstack Developer', label: 'Fullstack', icon: '🔗', desc: 'End-to-End Development' },
+    { id: 'Frontend Developer', label: 'Frontend', icon: '🎨', desc: 'React, CSS, DOM' },
+    { id: 'Backend Developer', label: 'Backend', icon: '⚙️', desc: 'APIs, DBs, Auth' },
+    { id: 'Fullstack Developer', label: 'Fullstack', icon: '🔗', desc: 'End-to-End Dev' },
 ];
 
 const LEVELS = [
@@ -30,111 +30,123 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
     const canStart = selectedRole.trim() && level;
 
     return (
-        <div className="max-w-[700px] mx-auto px-6 py-10">
-            {/* Header */}
-            <div className="animate-fadeInUp text-center mb-12">
-                <div className="text-5xl mb-4 animate-float">🎯</div>
-                <h1 className="text-4xl font-extrabold text-gradient-hero mb-3 tracking-tight">
-                    AI Interview Simulator
-                </h1>
-                <p className="text-muted-foreground text-base leading-relaxed max-w-[480px] mx-auto">
-                    Practice with an adaptive AI interviewer that adjusts questions based on your performance in real-time.
-                </p>
-            </div>
+        <div className="flex flex-col items-center justify-center min-h-[85vh] w-full px-4 sm:px-6">
+            <div className="w-full max-w-6xl space-y-8 animate-fade-in-up">
 
-            {/* Role Selection */}
-            <div className="animate-fadeInUp mb-9" style={{ animationDelay: '100ms' }}>
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[1.5px] mb-4">
-                    Select Role
-                </h2>
-                <div className="grid grid-cols-3 gap-3">
-                    {ROLES.map((r) => (
-                        <Card
-                            key={r.id}
-                            onClick={() => setRole(r.id)}
-                            className={`cursor-pointer transition-all duration-250 text-center hover:bg-accent/50 ${role === r.id
-                                    ? 'border-[var(--accent-violet)] bg-accent shadow-[0_0_20px_var(--accent-violet-glow)]'
-                                    : 'border-border bg-card'
-                                }`}
-                        >
-                            <CardContent className="py-5 px-4">
-                                <div className="text-3xl mb-2">{r.icon}</div>
-                                <div className="text-card-foreground font-semibold text-sm">{r.label}</div>
-                                <div className="text-muted-foreground text-[11px] mt-1">{r.desc}</div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                {/* Header */}
+                <div className="text-center space-y-4">
+                    <div className="inline-block p-3 rounded-2xl bg-primary/10 mb-2 animate-float">
+                        <span className="text-4xl">🎯</span>
+                    </div>
+                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
+                        <span className="text-gradient-hero">AI Interview Simulator</span>
+                    </h1>
+                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
+                        Master your tech interview skills with an adaptive AI that challenges you in real-time.
+                    </p>
                 </div>
 
-                {/* Custom Role */}
-                <Card
-                    onClick={() => setRole('Custom')}
-                    className={`mt-3 cursor-pointer transition-all duration-250 hover:bg-accent/50 ${role === 'Custom'
-                            ? 'border-[var(--accent-violet)] bg-accent'
-                            : 'border-border bg-card'
-                        }`}
-                >
-                    <CardContent className="py-3.5 px-4 text-center">
-                        <span className="text-muted-foreground text-[13px] font-medium">✏️ Custom Role</span>
-                    </CardContent>
-                </Card>
+                <div className="grid gap-8 p-6 sm:p-8 rounded-3xl bg-secondary/30 border border-border/50 backdrop-blur-sm shadow-xl">
 
-                {role === 'Custom' && (
-                    <input
-                        type="text"
-                        value={customRole}
-                        onChange={(e) => setCustomRole(e.target.value)}
-                        placeholder="e.g., DevOps Engineer, ML Engineer..."
-                        className="mt-3 w-full px-4 py-3.5 bg-secondary border-2 border-border rounded-lg text-foreground text-sm outline-none font-[inherit] transition-colors focus:border-[var(--accent-violet)]"
-                    />
-                )}
-            </div>
+                    {/* Role Selection */}
+                    <div className="space-y-4">
+                        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
+                            Select Role
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {ROLES.map((r) => (
+                                <Card
+                                    key={r.id}
+                                    onClick={() => setRole(r.id)}
+                                    className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${role === r.id
+                                        ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 ring-2 ring-[var(--accent-violet)]/30'
+                                        : 'border-transparent bg-background/50 hover:bg-background/80'
+                                        }`}
+                                >
+                                    <CardContent className="p-5 text-center sm:text-left flex sm:block flex-col items-center">
+                                        <div className="text-3xl mb-3">{r.icon}</div>
+                                        <div className="font-bold text-foreground">{r.label}</div>
+                                        <div className="text-xs text-muted-foreground mt-1">{r.desc}</div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
 
-            {/* Level Selection */}
-            <div className="animate-fadeInUp mb-10" style={{ animationDelay: '200ms' }}>
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[1.5px] mb-4">
-                    Experience Level
-                </h2>
-                <div className="grid grid-cols-3 gap-3">
-                    {LEVELS.map((l) => (
-                        <Card
-                            key={l.id}
-                            onClick={() => setLevel(l.id)}
-                            className={`cursor-pointer transition-all duration-250 text-center hover:bg-accent/50 ${level === l.id
-                                    ? 'border-[var(--accent-teal)] bg-accent shadow-[0_0_20px_var(--accent-teal-glow)]'
-                                    : 'border-border bg-card'
+                        {/* Custom Role Input */}
+                        <div className={`transition-all duration-300 overflow-hidden ${role === 'Custom' ? 'h-auto opacity-100' : 'h-12 opacity-70'}`}>
+                            {role !== 'Custom' ? (
+                                <button
+                                    onClick={() => setRole('Custom')}
+                                    className="w-full py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-dashed border-border rounded-xl hover:bg-muted/30"
+                                >
+                                    + Enter Custom Role
+                                </button>
+                            ) : (
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-semibold text-[var(--accent-violet)]">Custom Role</span>
+                                        <button onClick={() => setRole('')} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={customRole}
+                                        onChange={(e) => setCustomRole(e.target.value)}
+                                        placeholder="e.g. DevOps Engineer, iOS Developer..."
+                                        autoFocus
+                                        className="w-full px-4 py-3 rounded-xl bg-background border-2 border-[var(--accent-violet)] focus:ring-4 focus:ring-[var(--accent-violet)]/20 outline-none transition-all placeholder:text-muted-foreground/50"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Level Selection */}
+                    <div className="space-y-4">
+                        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
+                            Experience Level
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {LEVELS.map((l) => (
+                                <Card
+                                    key={l.id}
+                                    onClick={() => setLevel(l.id)}
+                                    className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${level === l.id
+                                        ? 'border-[var(--accent-teal)] bg-[var(--accent-teal)]/10 ring-2 ring-[var(--accent-teal)]/30'
+                                        : 'border-transparent bg-background/50 hover:bg-background/80'
+                                        }`}
+                                >
+                                    <CardContent className="p-5 text-center sm:text-left flex sm:block flex-col items-center">
+                                        <div className="text-3xl mb-3">{l.icon}</div>
+                                        <div className="font-bold text-foreground">{l.label}</div>
+                                        <div className="text-xs text-muted-foreground mt-1">{l.desc}</div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Start Button */}
+                    <div className="pt-4">
+                        <Button
+                            onClick={() => canStart && level && onStart(selectedRole, level)}
+                            disabled={!canStart || isLoading}
+                            size="lg"
+                            className={`w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all duration-300 ${canStart
+                                ? 'bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] text-white hover:shadow-[0_0_30px_rgba(108,92,231,0.4)] hover:scale-[1.01]'
+                                : 'bg-muted text-muted-foreground opacity-50 cursor-not-allowed'
                                 }`}
                         >
-                            <CardContent className="py-5 px-4">
-                                <div className="text-3xl mb-2">{l.icon}</div>
-                                <div className="text-card-foreground font-semibold text-sm">{l.label}</div>
-                                <div className="text-muted-foreground text-[11px] mt-1">{l.desc}</div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                            {isLoading ? (
+                                <span className="flex items-center gap-3">
+                                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Generating Interview...
+                                </span>
+                            ) : (
+                                '🚀 Start Interview Session'
+                            )}
+                        </Button>
+                    </div>
                 </div>
-            </div>
-
-            {/* Start Button */}
-            <div className="animate-fadeInUp" style={{ animationDelay: '300ms' }}>
-                <Button
-                    onClick={() => canStart && level && onStart(selectedRole, level)}
-                    disabled={!canStart || isLoading}
-                    size="lg"
-                    className={`w-full py-6 text-base font-bold tracking-wide transition-all duration-300 ${canStart
-                            ? 'bg-gradient-to-r from-[var(--accent-violet)] via-violet-400 to-[var(--accent-teal)] text-white hover:opacity-90 animate-pulse-glow'
-                            : 'bg-[var(--accent-violet)]/20 text-muted-foreground cursor-not-allowed'
-                        }`}
-                >
-                    {isLoading ? (
-                        <span className="flex items-center justify-center gap-2.5">
-                            <span className="w-[18px] h-[18px] border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
-                            Generating your first question...
-                        </span>
-                    ) : (
-                        '🚀 Start Interview'
-                    )}
-                </Button>
             </div>
         </div>
     );

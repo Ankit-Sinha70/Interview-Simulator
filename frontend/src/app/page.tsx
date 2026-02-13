@@ -129,124 +129,146 @@ export default function Home() {
     setVoiceMeta(meta);
   }, []);
 
-  // ─── Error Banner ───
+  // ─── Layout Components ───
   const ErrorBanner = error ? (
-    <div className="max-w-[750px] mx-auto mb-4 px-5 py-3.5 bg-red-500/10 border border-red-500/25 rounded-lg text-[var(--accent-coral)] text-sm flex items-center justify-between">
-      <span>⚠️ {error}</span>
-      <button onClick={() => setError(null)} className="bg-transparent border-none text-[var(--accent-coral)] cursor-pointer text-lg">×</button>
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-slide-in-down w-[90%] max-w-lg">
+      <div className="bg-destructive/10 border border-destructive/20 text-destructive-foreground px-4 py-3 rounded-xl shadow-lg flex items-center justify-between backdrop-blur-md">
+        <span className="flex items-center gap-2 text-sm font-medium">⚠️ {error}</span>
+        <button onClick={() => setError(null)} className="hover:bg-destructive/20 rounded-full p-1 transition-colors">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
     </div>
   ) : null;
 
-  // ═══ SETUP ═══
-  if (appState === 'setup') {
-    return (
-      <main>
-        {ErrorBanner}
-        <SessionSetup onStart={handleStart} isLoading={isLoading} />
-      </main>
-    );
-  }
-
-  // ═══ REPORT ═══
-  if (appState === 'report' && report) {
-    return (
-      <main>
-        {ErrorBanner}
-        <ReportView report={report} onNewSession={handleNewSession} />
-      </main>
-    );
-  }
-
-  // ═══ INTERVIEW ═══
   return (
-    <main className="max-w-[800px] mx-auto px-6 py-8">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/20">
       {ErrorBanner}
 
-      {/* Top Bar */}
-      <div className="animate-fadeIn flex items-center justify-between mb-8 pb-5 border-b border-border">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-gradient-hero">🎯 Interview in Progress</h1>
-          <Badge variant="secondary" className="text-xs font-semibold">
-            Question {questionNumber}
-          </Badge>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setUseVoice(!useVoice)}
-            className={`rounded-full text-xs font-semibold transition-all duration-250 ${useVoice
-                ? 'border-[var(--accent-teal)] text-[var(--accent-teal)] bg-teal-500/10'
-                : 'border-border text-muted-foreground'
-              }`}
-          >
-            🎤 {useVoice ? 'Voice ON' : 'Voice OFF'}
-          </Button>
-
-          {history.length >= 1 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleComplete}
-              disabled={isLoading}
-              className="rounded-full text-xs font-semibold border-[var(--accent-violet)] text-[var(--accent-violet)] bg-violet-500/10 hover:bg-violet-500/20"
-            >
-              {isLoading ? '⏳ Generating...' : '✅ Complete Interview'}
-            </Button>
-          )}
-        </div>
+      {/* Dynamic Background Mesh */}
+      <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden opacity-30">
+        <div className="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-[var(--accent-violet)]/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] bg-[var(--accent-teal)]/20 rounded-full blur-[100px]" />
       </div>
 
-      {/* Latest Evaluation */}
-      {latestEvaluation && (
-        <EvaluationCard evaluation={latestEvaluation} questionNumber={questionNumber - 1} />
+      {appState === 'setup' && (
+        <main className="flex-1 flex flex-col items-center justify-center">
+          <SessionSetup onStart={handleStart} isLoading={isLoading} />
+        </main>
       )}
 
-      {/* Current Question */}
-      {currentQuestion && (
-        <QuestionCard question={currentQuestion} questionNumber={questionNumber} />
+      {appState === 'report' && report && (
+        <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <ReportView report={report} onNewSession={handleNewSession} />
+        </main>
       )}
 
-      {/* Voice Input */}
-      {useVoice && <VoiceInput onTranscript={handleVoiceTranscript} />}
+      {appState === 'interview' && (
+        <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24">
 
-      {/* Answer Input */}
-      <AnswerInput
-        onSubmit={handleSubmitAnswer}
-        isLoading={isLoading}
-        voiceTranscript={voiceTranscript}
-        voiceMeta={voiceMeta}
-      />
+          {/* Top Navbar */}
+          <header className="sticky top-4 z-40 bg-background/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-sm px-4 py-3 mb-8 flex items-center justify-between animate-slide-in-down">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" title="Live" />
+              <h1 className="text-sm font-bold tracking-tight text-muted-foreground uppercase">Interview Session</h1>
+              <Badge variant="outline" className="text-xs border-[var(--accent-violet)] text-[var(--accent-violet)] bg-[var(--accent-violet)]/5">
+                Q{questionNumber}
+              </Badge>
+            </div>
 
-      {/* Question History */}
-      {history.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-[1.5px] mb-4">
-            Previous Questions
-          </h3>
-          {[...history].reverse().map((entry, i) => (
-            <Card key={i} className="bg-card border-border mb-2 opacity-70 hover:opacity-100 transition-opacity">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-muted-foreground text-[13px] font-semibold">
-                    Q{entry.questionNumber} — {entry.question.topic}
-                  </span>
-                  <span className={`text-[13px] font-bold ${entry.evaluation.overallScore >= 7 ? 'text-emerald-400'
-                      : entry.evaluation.overallScore >= 4 ? 'text-amber-400'
-                        : 'text-red-400'
-                    }`}>
-                    {entry.evaluation.overallScore}/10
-                  </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setUseVoice(!useVoice)}
+                className={`rounded-full text-xs font-semibold h-8 transition-colors ${useVoice
+                  ? 'text-[var(--accent-teal)] bg-[var(--accent-teal)]/10 hover:bg-[var(--accent-teal)]/20'
+                  : 'text-muted-foreground hover:bg-muted'
+                  }`}
+              >
+                {useVoice ? '🎤 Voice Active' : '🔇 Voice Off'}
+              </Button>
+
+              {history.length >= 1 && (
+                <Button
+                  size="sm"
+                  onClick={handleComplete}
+                  disabled={isLoading}
+                  className="rounded-full text-xs font-bold h-8 bg-destructive/10 text-destructive hover:bg-destructive/20 border-transparent transition-all"
+                >
+                  {isLoading ? '...' : 'Finish'}
+                </Button>
+              )}
+            </div>
+          </header>
+
+          <div className="space-y-6">
+            {/* Latest Evaluation (Feedback) */}
+            {latestEvaluation && (
+              <div className="animate-slide-in-down">
+                <EvaluationCard evaluation={latestEvaluation} questionNumber={questionNumber - 1} />
+              </div>
+            )}
+
+            {/* Current Question */}
+            {currentQuestion && (
+              <div className="animate-fade-in-up delay-100">
+                <QuestionCard question={currentQuestion} questionNumber={questionNumber} />
+              </div>
+            )}
+
+            {/* Inputs */}
+            <div className="space-y-4">
+              {useVoice && (
+                <div className="animate-zoom-in">
+                  <VoiceInput onTranscript={handleVoiceTranscript} />
                 </div>
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                  {entry.question.question.substring(0, 120)}...
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              )}
+
+              <AnswerInput
+                onSubmit={handleSubmitAnswer}
+                isLoading={isLoading}
+                voiceTranscript={voiceTranscript}
+                voiceMeta={voiceMeta}
+              />
+            </div>
+
+            {/* History Feed */}
+            {history.length > 0 && (
+              <div className="pt-8 border-t border-border/50">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6">
+                  Session History
+                </h3>
+                <div className="space-y-3 relative before:absolute before:left-[19px] before:top-2 before:bottom-0 before:w-[2px] before:bg-border/50">
+                  {[...history].reverse().map((entry, i) => (
+                    <div key={i} className="relative pl-10 opacity-70 hover:opacity-100 transition-opacity group">
+                      <span className="absolute left-[10px] top-4 w-5 h-5 rounded-full border-[3px] border-background bg-muted-foreground/30 group-hover:bg-[var(--accent-violet)] transition-colors z-10" />
+                      <Card className="bg-muted/30 border-transparent hover:bg-muted/50 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              Question {entry.questionNumber}
+                            </span>
+                            <Badge variant="secondary" className={`${entry.evaluation.overallScore >= 7 ? 'text-emerald-500 bg-emerald-500/10' :
+                              entry.evaluation.overallScore >= 4 ? 'text-amber-500 bg-amber-500/10' :
+                                'text-red-500 bg-red-500/10'
+                              }`}>
+                              Score: {entry.evaluation.overallScore}/10
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-foreground/80 line-clamp-2">
+                            {entry.question.question}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
       )}
-    </main>
+    </div>
   );
 }
