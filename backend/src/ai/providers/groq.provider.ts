@@ -1,29 +1,55 @@
+import Groq from 'groq-sdk';
 import { IAIProvider } from '../ai.types';
+import { aiConfig } from '../../config/ai.config';
 
 /**
- * Groq AI Provider (Stub)
- * Ready for future groq-sdk integration.
- *
- * To activate:
- *   1. npm install groq-sdk
- *   2. Set GROQ_API_KEY in .env
- *   3. Set AI_PROVIDER=groq in .env
- *   4. Implement callAI using Groq's ChatCompletion API
+ * Groq AI Provider
+ * Uses Llama 3 models via Groq's high-speed API.
  */
 export class GroqProvider implements IAIProvider {
     readonly name = 'groq';
+    private client: Groq;
+
+    constructor() {
+        if (!aiConfig.groq.apiKey) {
+            console.warn('[Groq] Warning: GROQ_API_KEY is missing. Provider will fail if called.');
+        }
+        this.client = new Groq({
+            apiKey: aiConfig.groq.apiKey || 'dummy_key', // prevent crash on startup, fail on call
+        });
+    }
 
     async callAI<T>(prompt: string): Promise<T> {
-        // TODO: Implement with groq-sdk
-        // const Groq = require('groq-sdk');
-        // const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-        // const completion = await client.chat.completions.create({
-        //     model: 'llama-3.3-70b-versatile',
-        //     messages: [{ role: 'user', content: prompt }],
-        //     response_format: { type: 'json_object' },
-        // });
-        // return JSON.parse(completion.choices[0].message.content) as T;
+        if (!aiConfig.groq.apiKey) {
+            throw new Error('GROQ_API_KEY is not configured.');
+        }
 
-        throw new Error('GroqProvider is not yet implemented. Install groq-sdk and complete the integration.');
+        try {
+            const completion = await this.client.chat.completions.create({
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are a helpful AI assistant that outputs strictly valid JSON.',
+                    },
+                    {
+                        role: 'user',
+                        content: prompt,
+                    },
+                ],
+                model: aiConfig.groq.model,
+                response_format: { type: 'json_object' },
+                temperature: 0.7,
+            });
+
+            const content = completion.choices[0]?.message?.content;
+            if (!content) {
+                throw new Error('Empty response from Groq');
+            }
+
+            return JSON.parse(content) as T;
+        } catch (error: any) {
+            console.error('[Groq] API Error:', error);
+            throw new Error(`Groq AI Request Failed: ${error.message}`);
+        }
     }
 }
