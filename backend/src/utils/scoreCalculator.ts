@@ -138,7 +138,7 @@ const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard'];
 export function getNextDifficulty(currentDifficulty: Difficulty, overallScore: number): Difficulty {
     const currentIndex = DIFFICULTY_ORDER.indexOf(currentDifficulty);
     if (overallScore > 8 && currentIndex < DIFFICULTY_ORDER.length - 1) return DIFFICULTY_ORDER[currentIndex + 1];
-    if (overallScore < 4 && currentIndex > 0) return DIFFICULTY_ORDER[currentIndex - 1];
+    if (overallScore <= 5 && currentIndex > 0) return DIFFICULTY_ORDER[currentIndex - 1];
     return currentDifficulty;
 }
 
