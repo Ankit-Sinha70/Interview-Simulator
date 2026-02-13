@@ -47,5 +47,18 @@ export async function evaluateAnswer(params: {
         (result as any)[field] = Math.max(1, Math.min(10, Math.round(val * 100) / 100));
     }
 
+    // ─── Layer 3: Backend Sanity Checks & Capping ───
+
+    // Rule: If majorTechnicalErrors exist, technicalScore MUST be <= 4.
+    if (result.majorTechnicalErrors && result.majorTechnicalErrors.length > 0) {
+        if (result.technicalScore > 4) {
+            console.log(`[Eval] Capping Technical Score (Was: ${result.technicalScore}, Cap: 4) due to Errors:`, result.majorTechnicalErrors);
+            result.technicalScore = 4;
+        }
+    }
+
+    // Rule: If weaknesses are empty but overall score < 6, force a check? 
+    // For now, capping is the most critical anti-inflation rule.
+
     return result;
 }

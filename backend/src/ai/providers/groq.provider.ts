@@ -46,10 +46,37 @@ export class GroqProvider implements IAIProvider {
                 throw new Error('Empty response from Groq');
             }
 
-            return JSON.parse(content) as T;
+            return this.cleanAndParseJSON<T>(content);
         } catch (error: any) {
             console.error('[Groq] API Error:', error);
             throw new Error(`Groq AI Request Failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Helper to clean markdown code blocks and excess text from JSON responses
+     */
+    private cleanAndParseJSON<T>(text: string): T {
+        let cleaned = text.trim();
+
+        // Remove markdown code blocks (```json ... ```)
+        if (cleaned.startsWith('```')) {
+            cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+        }
+
+        // Extract JSON specifically if there's extra text
+        const firstBrace = cleaned.indexOf('{');
+        const lastBrace = cleaned.lastIndexOf('}');
+
+        if (firstBrace !== -1 && lastBrace !== -1) {
+            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+        }
+
+        try {
+            return JSON.parse(cleaned) as T;
+        } catch (e) {
+            console.error('[Groq] JSON Parse failed. Content:', text);
+            throw new Error('Failed to parse AI response as JSON');
         }
     }
 }
