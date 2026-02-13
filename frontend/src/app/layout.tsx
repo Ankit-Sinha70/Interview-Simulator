@@ -1,8 +1,10 @@
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
-const inter = Inter({ subsets: ["latin"] }); // Initialize Inter font
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "AI Interview Simulator",
@@ -17,7 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
-        {children}
+        <AuthProvider>
+          <div className="relative z-[1] min-h-screen">
+            {children}
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
