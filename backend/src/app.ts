@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import interviewRoutes from './routes/interview.routes';
+import analyticsRoutes from './routes/analytics.routes';
+import authRoutes from './routes/auth.routes';
+import subscriptionRoutes from './routes/subscription.routes';
 import { errorMiddleware } from './middlewares/error.middleware';
 
 const app = express();
@@ -10,7 +13,15 @@ app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
 }));
-app.use(express.json({ limit: '10mb' }));
+
+// Use JSON parser for all routes except Stripe webhook
+app.use((req, res, next) => {
+    if (req.originalUrl === '/api/subscription/webhook') {
+        next();
+    } else {
+        express.json({ limit: '10mb' })(req, res, next);
+    }
+});
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -18,7 +29,10 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/interview', interviewRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 
 // Error handling
 app.use(errorMiddleware);

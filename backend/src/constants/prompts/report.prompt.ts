@@ -1,49 +1,60 @@
-export function getReportPrompt(params: {
+import { AggregatedScores, ExperienceLevel, HireBand, ConfidenceLevel } from '../../models/interviewSession.model';
+
+export interface ReportContext {
   questionsAndEvaluations: string;
   role: string;
-  level: string;
-}): string {
-  return `Generate a structured final interview report.
+  level: ExperienceLevel;
+  aggregatedScores: AggregatedScores;
+  hireBand: HireBand;
+  confidenceLevel: ConfidenceLevel;
+  weaknessFrequency: Record<string, number>;
+}
 
-Role: ${params.role}
-Experience Level: ${params.level}
+export function getReportPrompt(ctx: ReportContext): string {
+  return `You are a senior technical interviewer generating a final structured interview report.
 
-All questions, answers, and evaluation scores:
-${params.questionsAndEvaluations}
+Context:
+Role: ${ctx.role}
+Level: ${ctx.level}
+Calculated Hire Band: ${ctx.hireBand} (Based on average score)
+Confidence Level: ${ctx.confidenceLevel} (Based on score variance)
+
+Aggregated Scores:
+Technical: ${ctx.aggregatedScores.averageTechnical}
+Depth: ${ctx.aggregatedScores.averageDepth}
+Problem Solving: ${ctx.aggregatedScores.averageProblemSolving}
+Clarity: ${ctx.aggregatedScores.averageClarity}
+Communication: ${ctx.aggregatedScores.averageCommunication}
+Overall Average: ${ctx.aggregatedScores.overallAverage}
+
+Recurrent Weaknesses:
+${Object.entries(ctx.weaknessFrequency).map(([k, v]) => `- ${k}: ${v} times`).join('\n')}
+
+Interview Transcript & Evaluations:
+${ctx.questionsAndEvaluations}
+
+Tasks:
+
+1. Generate a professional Executive Summary (2-3 sentences) that justifies the calculated hire band.
+2. Identify top 3 key strengths.
+3. Identify top 3 areas for improvement.
+4. Generate a personalized 5-step improvement roadmap based on the specific weaknesses found.
 
 Rules:
-- Provide overall average score (1-10).
-- Identify the 2-3 strongest skill categories.
-- Identify the 2-3 weakest categories.
-- Provide an actionable 5-step improvement roadmap with specific, practical advice.
+- Be objective and constructive.
+- Do not inflate praise.
+- Align tone with the seniority level.
+- RECOMMENDATION MUST MATCH THE CALCULATED BAND (${ctx.hireBand}).
 
-- Estimate confidence level based on score consistency (variance):
-  - "High" if scores are consistent (variance < 1.0) and average >= 7
-  - "Medium" if average 5-7 or scores are inconsistent (variance 1.0-2.5)
-  - "Low" if average < 5 or scores are very inconsistent (variance > 2.5)
+Return STRICT JSON:
 
-- Provide a hire recommendation:
-  - "Yes" if average >= 7 and no critical weaknesses
-  - "Maybe" if average 5-7 or mixed performance
-  - "No" if average < 5 or fundamental gaps
-
-- Provide a hireBand (more granular):
-  - "Strong Hire" if average >= 8.5 and consistently high
-  - "Hire" if average 7-8.4
-  - "Borderline" if average 6-6.9
-  - "No Hire" if average < 6
-
-- Provide 3-5 specific areas the candidate should study next as nextPreparationFocus.
-
-Return STRICT JSON only, no markdown formatting, no code blocks:
 {
-  "averageScore": number,
+  "averageScore": ${ctx.aggregatedScores.overallAverage},
   "strongestAreas": string[],
   "weakestAreas": string[],
-  "confidenceLevel": "High" | "Medium" | "Low",
-  "hireRecommendation": "Yes" | "Maybe" | "No",
-  "hireBand": "Strong Hire" | "Hire" | "Borderline" | "No Hire",
+  "hireRecommendation": "${ctx.hireBand === 'Strong Hire' || ctx.hireBand === 'Hire' ? 'Yes' : ctx.hireBand === 'Borderline' ? 'Maybe' : 'No'}",
+  "confidenceLevel": "${ctx.confidenceLevel}",
   "improvementRoadmap": string[],
-  "nextPreparationFocus": string[]
+  "executiveSummary": string
 }`;
 }
