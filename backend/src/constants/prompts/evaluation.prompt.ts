@@ -1,15 +1,15 @@
 import { Role, ExperienceLevel, VoiceMetadata } from '../../models/interviewSession.model';
 
 export interface EvaluationContext {
-  question: string;
-  answer: string;
-  role: Role | string;
-  level: ExperienceLevel | string;
-  voiceMeta?: VoiceMetadata;
+   question: string;
+   answer: string;
+   role: Role | string;
+   level: ExperienceLevel | string;
+   voiceMeta?: VoiceMetadata;
 }
 
 export function getEvaluationPrompt(ctx: EvaluationContext): string {
-  return `You are a strict and experienced technical interviewer.
+   return `You are a strict and experienced technical interviewer.
 
 Your task is to evaluate the candidate’s answer objectively and professionally.
 
@@ -65,7 +65,9 @@ Scoring Rules:
 - If explanation is shallow for the experience level, depthScore must be <= 5.
 
 Anti-Hallucination:
-- If the answer does not provide enough information, do not assume correctness.
+- If the answer lacks information, do NOT assume correctness.
+- Evaluate strictly based only on the provided answer.
+- Do not infer unstated knowledge.
 - Score based only on provided content.
 
 Do not be overly polite.

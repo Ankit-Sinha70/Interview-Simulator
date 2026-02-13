@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import interviewRoutes from './routes/interview.routes';
+import analyticsRoutes from './routes/analytics.routes';
 import { errorMiddleware } from './middlewares/error.middleware';
 
 const app = express();
@@ -19,6 +20,7 @@ app.get('/api/health', (_req, res) => {
 
 // Routes
 app.use('/api/interview', interviewRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Error handling
 app.use(errorMiddleware);
