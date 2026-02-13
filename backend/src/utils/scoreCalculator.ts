@@ -142,21 +142,19 @@ export function getNextDifficulty(currentDifficulty: Difficulty, overallScore: n
     return currentDifficulty;
 }
 
-export function shouldProbeDeeper(evaluation: Evaluation): boolean {
-    const weakestScore = Math.min(
-        evaluation.technicalScore, evaluation.depthScore, evaluation.clarityScore,
-        evaluation.problemSolvingScore, evaluation.communicationScore,
-    );
-    return evaluation.depthScore === weakestScore && evaluation.depthScore < 6;
-}
+export function determineFollowUpIntent(
+    evaluation: Evaluation,
+    topicMastered: boolean
+): import('../models/interviewSession.model').FollowUpIntent {
+    if (topicMastered) return 'ESCALATE_DIFFICULTY'; // Or new domain, but 'ESCALATE' fits generic intent, prompts handle "new domain" separately if needed, but user spec said 'ESCALATE_DIFFICULTY'
 
-export function shouldAskClarifying(evaluation: Evaluation): boolean {
-    return evaluation.technicalScore < 5;
-}
+    // Use user-defined thresholds
+    if (evaluation.technicalScore < 5) return 'CLARIFY_TECHNICAL';
+    if (evaluation.depthScore < 6) return 'PROBE_DEPTH';
+    if (evaluation.problemSolvingScore < 6) return 'SCENARIO_BASED';
 
-export function shouldIncreaseDifficulty(recentScores: number[]): boolean {
-    if (recentScores.length < 2) return false;
-    return recentScores.reduce((a, b) => a + b, 0) / recentScores.length >= 7;
+    // If all scores are good, escalate
+    return 'ESCALATE_DIFFICULTY';
 }
 
 // ─── Variance & Confidence ───

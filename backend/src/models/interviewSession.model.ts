@@ -13,6 +13,7 @@ export type InterviewMode = 'text' | 'voice' | 'hybrid';
 export type QuestionType = 'initial' | 'followup';
 export type HireRecommendation = 'Yes' | 'Maybe' | 'No';
 export type HireBand = 'Strong Hire' | 'Hire' | 'Borderline' | 'No Hire';
+export type FollowUpIntent = 'CLARIFY_TECHNICAL' | 'PROBE_DEPTH' | 'SCENARIO_BASED' | 'ESCALATE_DIFFICULTY';
 
 // ─── Voice Metadata ───
 
@@ -126,5 +127,8 @@ export interface GeneratedQuestion {
 
 export interface FollowUpQuestion {
     question: string;
-    focusArea: string;
+    focusArea: string; // Keep for backward compatibility, mapped to 'topic'
+    topic: string;
+    difficulty: Difficulty;
+    intent: FollowUpIntent;
 }

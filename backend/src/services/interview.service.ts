@@ -19,8 +19,7 @@ import { evaluateAnswer } from '../ai/evaluation.engine';
 import { generateFollowUp } from '../ai/followup.engine';
 import {
     getNextDifficulty,
-    shouldProbeDeeper,
-    shouldAskClarifying,
+    determineFollowUpIntent,
     findWeakestDimension,
 } from '../utils/scoreCalculator';
 
@@ -148,80 +147,43 @@ export async function processAnswer(
     session.aggregatedScores = aggregated;
 
     // ─── Adaptive Follow-up Strategy ───
-    let nextQuestion: GeneratedQuestion;
-    let generatedFromWeakness: string | undefined;
 
-    // Check topic mastery: if > 8 twice on same topic → move to new domain
+    // Check topic mastery
     const topicMastered = hasTopicMastery(session.topicScores, topic);
 
-    // Find most frequently weak dimension
-    const mostFrequentWeakness = getMostFrequentWeakness(session.weaknessTracker);
+    // Determine Intent & Target Difficulty
+    const followUpIntent = determineFollowUpIntent(evaluation, topicMastered);
+    const targetDifficulty = getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore);
 
-    if (shouldAskClarifying(evaluation)) {
-        // Priority 1: Address incorrect concept
-        const followUp = await generateFollowUp({
-            weaknesses: evaluation.weaknesses,
-            topic,
-            summary: answer.substring(0, 500),
-            weaknessFrequency: session.weaknessTracker,
-            topicMastered: false,
-            priority: 'incorrect_concept',
-        });
-        generatedFromWeakness = 'technicalAccuracy';
-        nextQuestion = {
-            question: followUp.question,
-            topic: followUp.focusArea,
-            difficulty: getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore),
-        };
-    } else if (shouldProbeDeeper(evaluation)) {
-        // Priority 2: Address shallow explanation
-        const followUp = await generateFollowUp({
-            weaknesses: ['Needs deeper explanation', ...evaluation.weaknesses],
-            topic,
-            summary: answer.substring(0, 500),
-            weaknessFrequency: session.weaknessTracker,
-            topicMastered: false,
-            priority: 'shallow_depth',
-        });
-        generatedFromWeakness = 'depth';
-        nextQuestion = {
-            question: followUp.question,
-            topic: followUp.focusArea,
-            difficulty: getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore),
-        };
-    } else if (topicMastered) {
-        // Priority 4: Topic mastered — move to new domain
-        const followUp = await generateFollowUp({
-            weaknesses: evaluation.weaknesses,
-            topic,
-            summary: answer.substring(0, 500),
-            weaknessFrequency: session.weaknessTracker,
-            topicMastered: true,
-            priority: 'new_domain',
-        });
-        generatedFromWeakness = mostFrequentWeakness;
-        nextQuestion = {
-            question: followUp.question,
-            topic: followUp.focusArea,
-            difficulty: getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore),
-        };
-    } else {
-        // Priority 3: Address problem-solving gap or weakest area
-        const followUp = await generateFollowUp({
-            weaknesses: evaluation.weaknesses,
-            topic,
-            summary: answer.substring(0, 500),
-            weaknessFrequency: session.weaknessTracker,
-            topicMastered: false,
-            priority: 'problem_solving_gap',
-        });
-        generatedFromWeakness = weakestDim;
-        nextQuestion = {
-            question: followUp.question,
-            topic: followUp.focusArea,
-            difficulty: getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore),
-        };
-    }
+    // Build Question History for Anti-Repetition
+    const questionHistory = session.questions.map(q => q.questionText);
+
+    // Generate Question
+    const followUp = await generateFollowUp({
+        role: session.role,
+        experienceLevel: session.experienceLevel,
+        previousQuestion: currentQuestion.questionText,
+        previousTopic: topic,
+        previousDifficulty: currentQuestion.difficulty,
+        technicalScore: evaluation.technicalScore,
+        depthScore: evaluation.depthScore,
+        clarityScore: evaluation.clarityScore,
+        problemSolvingScore: evaluation.problemSolvingScore,
+        communicationScore: evaluation.communicationScore,
+        weaknesses: evaluation.weaknesses,
+        followUpIntent,
+        targetDifficulty,
+        questionHistory
+    });
+
+    const nextQuestion: GeneratedQuestion = {
+        question: followUp.question,
+        topic: followUp.topic,
+        difficulty: followUp.difficulty
+    };
+
+    // Track intent for analytics/debugging if needed
+    const generatedFromWeakness = followUp.intent; // reusing field for intent tracking
 
     // Add next question to session
     const nextEntry: QuestionEntry = {
