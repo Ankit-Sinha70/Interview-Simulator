@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,131 +10,18 @@ import AnswerInput from '@/components/AnswerInput';
 import VoiceInput from '@/components/VoiceInput';
 import EvaluationCard from '@/components/EvaluationCard';
 import ReportView from '@/components/ReportView';
-import {
-  startInterview,
-  submitAnswer,
-  completeInterview,
-  GeneratedQuestion,
-  Evaluation,
-  FinalReport,
-  AnswerResponse,
-  VoiceMetadata,
-} from '@/services/api';
-
-type AppState = 'setup' | 'interview' | 'report';
-
-interface InterviewHistoryEntry {
-  question: GeneratedQuestion;
-  evaluation: Evaluation;
-  questionNumber: number;
-}
+import { useInterviewSession } from '@/hooks/useInterviewSession';
 
 export default function Home() {
-  const [appState, setAppState] = useState<AppState>('setup');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [currentQuestion, setCurrentQuestion] = useState<GeneratedQuestion | null>(null);
-  const [questionNumber, setQuestionNumber] = useState(1);
-
-  const [history, setHistory] = useState<InterviewHistoryEntry[]>([]);
-  const [latestEvaluation, setLatestEvaluation] = useState<Evaluation | null>(null);
-  const [report, setReport] = useState<FinalReport | null>(null);
-
-  // Voice state
-  const [voiceTranscript, setVoiceTranscript] = useState<string | undefined>();
-  const [voiceMeta, setVoiceMeta] = useState<VoiceMetadata | undefined>();
-  const [useVoice, setUseVoice] = useState(false);
-
-  // ─── Start Interview ───
-  const handleStart = useCallback(async (role: string, experienceLevel: 'Junior' | 'Mid' | 'Senior') => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await startInterview({ role, experienceLevel, mode: 'text' });
-      setSessionId(result.sessionId);
-      setCurrentQuestion(result.question);
-      setQuestionNumber(1);
-      setAppState('interview');
-    } catch (err: any) {
-      setError(err.message || 'Failed to start interview');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // ─── Submit Answer ───
-  const handleSubmitAnswer = useCallback(async (answer: string, meta?: VoiceMetadata) => {
-    if (!sessionId) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result: AnswerResponse = await submitAnswer(sessionId, answer, meta);
-      if (currentQuestion) {
-        setHistory((prev) => [
-          ...prev,
-          {
-            question: currentQuestion,
-            evaluation: result.evaluation,
-            questionNumber: result.questionNumber,
-          },
-        ]);
-      }
-      setLatestEvaluation(result.evaluation);
-      setCurrentQuestion(result.nextQuestion);
-      setQuestionNumber(result.questionNumber + 1);
-      setVoiceTranscript(undefined);
-      setVoiceMeta(undefined);
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit answer');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [sessionId, currentQuestion]);
-
-  // ─── Complete Interview ───
-  const handleComplete = useCallback(async () => {
-    if (!sessionId) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const finalReport = await completeInterview(sessionId);
-      setReport(finalReport);
-      setAppState('report');
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate report');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [sessionId]);
-
-  // ─── New Session ───
-  const handleNewSession = useCallback(() => {
-    setAppState('setup');
-    setSessionId(null);
-    setCurrentQuestion(null);
-    setQuestionNumber(1);
-    setHistory([]);
-    setLatestEvaluation(null);
-    setReport(null);
-    setError(null);
-    setVoiceTranscript(undefined);
-    setVoiceMeta(undefined);
-  }, []);
-
-  // ─── Voice Transcript Handler ───
-  const handleVoiceTranscript = useCallback((transcript: string, meta: VoiceMetadata) => {
-    setVoiceTranscript(transcript);
-    setVoiceMeta(meta);
-  }, []);
+  const { state, actions } = useInterviewSession();
+  const { status, currentQuestion, questionNumber, history, latestEvaluation, finalReport, isLoading, error, voice } = state;
 
   // ─── Layout Components ───
   const ErrorBanner = error ? (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-slide-in-down w-[90%] max-w-lg">
       <div className="bg-destructive/10 border border-destructive/20 text-destructive-foreground px-4 py-3 rounded-xl shadow-lg flex items-center justify-between backdrop-blur-md">
         <span className="flex items-center gap-2 text-sm font-medium">⚠️ {error}</span>
-        <button onClick={() => setError(null)} className="hover:bg-destructive/20 rounded-full p-1 transition-colors">
+        <button onClick={actions.dismissError} className="hover:bg-destructive/20 rounded-full p-1 transition-colors">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
@@ -151,19 +38,19 @@ export default function Home() {
         <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] bg-[var(--accent-teal)]/20 rounded-full blur-[100px]" />
       </div>
 
-      {appState === 'setup' && (
+      {status === 'SELECT_ROLE' && (
         <main className="flex-1 flex flex-col items-center justify-center">
-          <SessionSetup onStart={handleStart} isLoading={isLoading} />
+          <SessionSetup onStart={actions.start} isLoading={isLoading} />
         </main>
       )}
 
-      {appState === 'report' && report && (
+      {status === 'COMPLETED' && finalReport && (
         <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          <ReportView report={report} onNewSession={handleNewSession} />
+          <ReportView report={finalReport} onNewSession={actions.reset} />
         </main>
       )}
 
-      {appState === 'interview' && (
+      {status === 'INTERVIEW_ACTIVE' && (
         <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24">
 
           {/* Top Navbar */}
@@ -177,22 +64,24 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Phase 2: Voice Integration
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setUseVoice(!useVoice)}
-                className={`rounded-full text-xs font-semibold h-8 transition-colors ${useVoice
+                onClick={actions.toggleVoice}
+                className={`rounded-full text-xs font-semibold h-8 transition-colors ${voice.isListening
                   ? 'text-[var(--accent-teal)] bg-[var(--accent-teal)]/10 hover:bg-[var(--accent-teal)]/20'
                   : 'text-muted-foreground hover:bg-muted'
                   }`}
               >
-                {useVoice ? '🎤 Voice Active' : '🔇 Voice Off'}
+                {voice.isListening ? '🎤 Voice Active' : '🔇 Voice Off'}
               </Button>
+              */}
 
               {history.length >= 1 && (
                 <Button
                   size="sm"
-                  onClick={handleComplete}
+                  onClick={actions.complete}
                   disabled={isLoading}
                   className="rounded-full text-xs font-bold h-8 bg-destructive/10 text-destructive hover:bg-destructive/20 border-transparent transition-all"
                 >
@@ -219,17 +108,19 @@ export default function Home() {
 
             {/* Inputs */}
             <div className="space-y-4">
-              {useVoice && (
+              {/* Phase 2: Voice Input
+              {voice.isListening && (
                 <div className="animate-zoom-in">
-                  <VoiceInput onTranscript={handleVoiceTranscript} />
+                   <VoiceInput onTranscript={actions.setVoiceTranscript} />
                 </div>
               )}
+              */}
 
               <AnswerInput
-                onSubmit={handleSubmitAnswer}
+                onSubmit={actions.submit}
                 isLoading={isLoading}
-                voiceTranscript={voiceTranscript}
-                voiceMeta={voiceMeta}
+                voiceTranscript={voice.transcript}
+                voiceMeta={voice.meta}
               />
             </div>
 
