@@ -36,14 +36,36 @@ const WEAKNESS_DIMENSION_MAP: Record<string, keyof WeaknessTracker> = {
     'Communication': 'communicationWeakCount',
 };
 
+import { User } from '../models/user.model';
+
+// ...
+
 /**
  * Start a new interview session
  */
 export async function startInterview(
+    userId: string,
     role: Role | string,
     experienceLevel: ExperienceLevel,
     mode: InterviewMode = 'text',
 ) {
+    // Check usage limits
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    // Reset monthly usage if needed
+    if (user.checkReset()) {
+        await user.save();
+    }
+
+    if (user.planType === 'FREE' && user.interviewsUsedThisMonth >= 2) {
+        throw new Error('Free plan limit reached. Upgrade to Pro for unlimited interviews.');
+    }
+
+    // Increment usage
+    user.interviewsUsedThisMonth += 1;
+    await user.save();
+
     const session = await sessionService.createSession(role, experienceLevel, mode);
     session.status = 'IN_PROGRESS';
 

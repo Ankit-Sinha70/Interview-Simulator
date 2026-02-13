@@ -8,7 +8,13 @@ import { generateFinalReport } from '../services/report.service';
 export async function startInterview(req: Request, res: Response, next: NextFunction) {
     try {
         const { role, experienceLevel, mode } = req.body;
-        const result = await interviewService.startInterview(role, experienceLevel, mode);
+        const userId = (req as any).user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+
+        const result = await interviewService.startInterview(userId, role, experienceLevel, mode);
 
         res.status(200).json({
             success: true,
