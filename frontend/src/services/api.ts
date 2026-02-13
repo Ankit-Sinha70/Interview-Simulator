@@ -76,10 +76,23 @@ interface ApiResponse<T> {
 }
 
 async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
+    const url = `${API_BASE}${endpoint}`;
+    const res = await fetch(url, {
         headers: { 'Content-Type': 'application/json' },
         ...options,
     });
+
+    if (!res.ok) {
+        let errorMessage = `API Request failed: ${res.status} ${res.statusText}`;
+        try {
+            const errorJson = await res.json();
+            errorMessage = errorJson.error?.message || errorMessage;
+        } catch (e) {
+            const text = await res.text();
+            console.error(`[API] Non-JSON error response from ${url}:`, text.slice(0, 500));
+        }
+        throw new Error(errorMessage);
+    }
 
     const json: ApiResponse<T> = await res.json();
 
@@ -113,4 +126,8 @@ export async function completeInterview(sessionId: string): Promise<FinalReport>
         method: 'POST',
         body: JSON.stringify({ sessionId }),
     });
+}
+
+export async function getSession(sessionId: string): Promise<any> {
+    return apiCall<any>(`/interview/${sessionId}`);
 }

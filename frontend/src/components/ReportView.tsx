@@ -5,14 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { FinalReport } from '@/services/api';
+import { FinalReport, AggregatedScores } from '@/services/api';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip } from 'recharts';
 
 interface ReportViewProps {
     report: FinalReport;
+    scores: AggregatedScores;
     onNewSession: () => void;
 }
 
-export default function ReportView({ report, onNewSession }: ReportViewProps) {
+export default function ReportView({ report, scores, onNewSession }: ReportViewProps) {
     const confidenceColors: Record<string, string> = {
         High: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
         Medium: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
@@ -34,6 +36,14 @@ export default function ReportView({ report, onNewSession }: ReportViewProps) {
         : report.averageScore >= 4
             ? 'from-amber-400 to-orange-400'
             : 'from-red-400 to-rose-500';
+
+    const radarData = [
+        { subject: 'Technical', A: scores?.averageTechnical || 0, fullMark: 10 },
+        { subject: 'Depth', A: scores?.averageDepth || 0, fullMark: 10 },
+        { subject: 'Problem Solving', A: scores?.averageProblemSolving || 0, fullMark: 10 },
+        { subject: 'Clarity', A: scores?.averageClarity || 0, fullMark: 10 },
+        { subject: 'Communication', A: scores?.averageCommunication || 0, fullMark: 10 },
+    ];
 
     return (
         <div className="max-w-[750px] mx-auto px-6 py-10">
@@ -62,14 +72,41 @@ export default function ReportView({ report, onNewSession }: ReportViewProps) {
                         </Badge>
                         {report.hireBand && (
                             <Badge className={`${report.hireBand === 'Strong Hire' ? 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' :
-                                    report.hireBand === 'Hire' ? 'text-sky-400 bg-sky-500/15 border-sky-500/30' :
-                                        report.hireBand === 'Borderline' ? 'text-amber-400 bg-amber-500/15 border-amber-500/30' :
-                                            'text-red-400 bg-red-500/15 border-red-500/30'
+                                report.hireBand === 'Hire' ? 'text-sky-400 bg-sky-500/15 border-sky-500/30' :
+                                    report.hireBand === 'Borderline' ? 'text-amber-400 bg-amber-500/15 border-amber-500/30' :
+                                        'text-red-400 bg-red-500/15 border-red-500/30'
                                 } text-[13px] font-bold px-5 py-1.5 border`}>
                                 {report.hireBand}
                             </Badge>
                         )}
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* Radar Chart */}
+            <Card className="animate-fadeInUp bg-card border-border shadow-lg mb-6" style={{ animationDelay: '150ms' }}>
+                <CardHeader>
+                    <CardTitle className="text-base font-bold text-center">🏆 Performance Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] w-full flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                            <PolarGrid stroke="#374151" />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                            <Radar
+                                name="Score"
+                                dataKey="A"
+                                stroke="#8b5cf6"
+                                strokeWidth={3}
+                                fill="#8b5cf6"
+                                fillOpacity={0.3}
+                            />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#fff' }}
+                                itemStyle={{ color: '#a78bfa' }}
+                            />
+                        </RadarChart>
+                    </ResponsiveContainer>
                 </CardContent>
             </Card>
 
@@ -81,7 +118,7 @@ export default function ReportView({ report, onNewSession }: ReportViewProps) {
                             🏆 Strongest Areas
                         </h3>
                         <div className="space-y-2">
-                            {report.strongestAreas.map((area, i) => (
+                            {report.strongestAreas?.map((area, i) => (
                                 <div key={i} className="bg-emerald-500/[0.08] rounded-lg px-3.5 py-2.5 text-muted-foreground text-[13px] font-medium flex items-center gap-2">
                                     <span className="text-emerald-400">✓</span> {area}
                                 </div>
@@ -96,7 +133,7 @@ export default function ReportView({ report, onNewSession }: ReportViewProps) {
                             📌 Areas to Improve
                         </h3>
                         <div className="space-y-2">
-                            {report.weakestAreas.map((area, i) => (
+                            {report.weakestAreas?.map((area, i) => (
                                 <div key={i} className="bg-red-500/[0.08] rounded-lg px-3.5 py-2.5 text-muted-foreground text-[13px] font-medium flex items-center gap-2">
                                     <span className="text-red-400">!</span> {area}
                                 </div>
@@ -112,7 +149,7 @@ export default function ReportView({ report, onNewSession }: ReportViewProps) {
                     <CardTitle className="text-base font-bold">🗺️ Improvement Roadmap</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-0">
-                    {report.improvementRoadmap.map((step, i) => (
+                    {report.improvementRoadmap?.map((step, i) => (
                         <div key={i}>
                             <div className="flex gap-4 py-4">
                                 <div className="w-8 h-8 rounded-full bg-[var(--accent-violet)] flex items-center justify-center text-white text-[13px] font-bold shrink-0">
