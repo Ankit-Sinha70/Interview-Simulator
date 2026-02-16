@@ -68,6 +68,31 @@ function SessionContent() {
                 onConfirm={confirmQuit}
             />
 
+            {/* UNMISSABLE ACTIVE GUARD INDICATOR */}
+            {isInterviewActive && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
+                    <div className="bg-red-600 text-white px-4 py-1.5 rounded-full text-[10px] font-bold shadow-xl border-2 border-white flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        EXIT PROTECTION ACTIVE
+                    </div>
+                </div>
+            )}
+
+            {/* EMERGENCY FIXED QUIT BUTTON - In case header is hidden */}
+            <div className="fixed top-4 right-4 z-[100]">
+                <Button
+                    size="sm"
+                    variant="destructive"
+                    className="rounded-full shadow-2xl h-10 px-6 font-bold border-2 border-white/20 hover:scale-105 active:scale-95 transition-all"
+                    onClick={() => {
+                        console.log("[Interview] Fixed Quit button clicked");
+                        quitInterview();
+                    }}
+                >
+                    Quit Interview
+                </Button>
+            </div>
+
             <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6 pb-24">
                 {/* Header */}
                 <header className="sticky top-4 z-40 bg-background/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between">
@@ -78,21 +103,10 @@ function SessionContent() {
                             Q{questionNumber}
                         </Badge>
                     </div>
-                    <div>
-                        <Button
-                            size="sm"
-                            variant="destructive"
-                            id="quit-interview-btn"
-                            className="rounded-full h-8 px-4 text-xs font-bold shadow-md z-50 flex items-center gap-2 hover:bg-red-700 transition-colors"
-                            onClick={() => {
-                                console.log("[Interview] Quit button clicked manually");
-                                quitInterview();
-                            }}
-                            disabled={isSubmitting}
-                        >
-                            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                            Quit Interview
-                        </Button>
+                    <div className="flex items-center gap-2">
+                        <div className="text-[10px] text-zinc-500 font-mono mr-2">
+                            {status}
+                        </div>
                     </div>
                 </header>
 
