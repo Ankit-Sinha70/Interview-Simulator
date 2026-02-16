@@ -6,8 +6,6 @@ import Script from "next/script";
 import { GazeLogic, GazeDirection } from "./GazeLogic";
 import { AttentionEngine, AttentionStats } from "./AttentionEngine";
 import { StatusIndicator } from "./StatusIndicator";
-
-// Import TYPES ONLY to avoid build issues with the UMD package
 import type { FaceMesh as FaceMeshType, Results } from "@mediapipe/face_mesh";
 
 interface EyeTrackerProps {
@@ -23,9 +21,12 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
     const [libLoaded, setLibLoaded] = useState(false);
     const [gazeDirection, setGazeDirection] = useState<GazeDirection>("CENTER");
     const [isLookAway, setIsLookAway] = useState(false);
-    const [permissionError, setPermissionError] = useState<string | null>(null);
+    const [permissionError, setPermissionError] = useState<string | null>(null);;
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [size, setSize] = useState({ width: 320, height: 240 });
 
-    // Lazy init engine
+    const containerRef = useRef<HTMLDivElement>(null);
+
     const attentionEngine = useRef<AttentionEngine | null>(null);
     if (!attentionEngine.current) {
         attentionEngine.current = new AttentionEngine();
@@ -48,21 +49,18 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
         ctx.save();
         ctx.clearRect(0, 0, videoWidth, videoHeight);
 
-        // Mirror context for overlays
         ctx.translate(videoWidth, 0);
         ctx.scale(-1, 1);
 
         if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
             const landmarks = results.multiFaceLandmarks[0];
 
-            // Calculate Gaze & Head Pose
             const direction = GazeLogic.calculateGaze(landmarks);
             const lookingAway = GazeLogic.isLookingAway(landmarks);
 
             setGazeDirection(direction);
             setIsLookAway(lookingAway);
 
-            // Update Attention Engine
             if (attentionEngine.current) {
                 const isFocused = direction === "CENTER" && !lookingAway;
                 attentionEngine.current.update(isFocused);
@@ -72,7 +70,6 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
                 }
             }
 
-            // Draw Debug Overlay
             if (showDebugOverlay) {
                 ctx.fillStyle = "#FF0000";
                 const p468 = landmarks[468];
@@ -90,7 +87,6 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
                 }
             }
         } else {
-            // No face detected -> Distracted/Away
             if (attentionEngine.current) {
                 attentionEngine.current.update(false);
             }
@@ -151,7 +147,6 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
                         webcamRef.current.video.readyState === 4
                     ) {
                         try {
-                            // @ts-ignore
                             await faceMesh?.send({ image: webcamRef.current.video });
                         } catch (err) {
                             // Suppress frame errors, they happen
@@ -174,50 +169,62 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
             cancelAnimationFrame(animationId);
             if (faceMesh) faceMesh.close();
         };
-    }, [libLoaded, onResults, isModelLoaded]); // Added dependencies
+    }, [libLoaded, onResults, isModelLoaded])
+    const isDragging = useRef(false);
+    const isResizing = useRef(false);
+    const dragStartRef = useRef({ x: 0, y: 0, lastX: 0, lastY: 0 });
+    const resizeStartRef = useRef({ x: 0, y: 0, lastW: 320, lastH: 240 });
 
-    // State for drag and resize
-    const [position, setPosition] = useState({ x: 0, y: 0 }); // Will be set on mount
-    const [size, setSize] = useState({ width: 320, height: 240 }); // Larger default size
-    const [isDragging, setIsDragging] = useState(false);
-    const [isResizing, setIsResizing] = useState(false);
+    const currentPos = useRef({ x: 0, y: 0 });
+    const currentSize = useRef({ width: 320, height: 240 });
 
-    // Refs for delta calculations
-    const dragStartRef = useRef({ x: 0, y: 0 });
-    const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
     const initialPositionSet = useRef(false);
 
-    // Initialize position on mount (client-side only to access window)
+    // Sync refs with state 
+    useEffect(() => {
+        currentPos.current = position;
+        currentSize.current = size;
+
+        if (containerRef.current) {
+            containerRef.current.style.left = `${position.x}px`;
+            containerRef.current.style.top = `${position.y}px`;
+            containerRef.current.style.width = `${size.width}px`;
+            containerRef.current.style.height = `${size.height}px`;
+        }
+    }, [position, size]);
+
     useEffect(() => {
         if (!initialPositionSet.current) {
             setPosition({
-                x: window.innerWidth - 340, // 20px padding from right
-                y: window.innerHeight - 260  // 20px padding from bottom
+                x: window.innerWidth - 340,
+                y: window.innerHeight - 260
             });
             initialPositionSet.current = true;
         }
     }, []);
 
-    // --- Drag Logic ---
-    const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-        // Prevent default only if it's not a touch event to allow scrolling elsewhere if needed, 
-        // but here we likely want to prevent scroll while dragging the camera.
-        // e.preventDefault(); 
+    const onDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+        isDragging.current = true;
 
-        setIsDragging(true);
         const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
         const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
 
         dragStartRef.current = {
-            x: clientX - position.x,
-            y: clientY - position.y
+            x: clientX - currentPos.current.x,
+            y: clientY - currentPos.current.y,
+            lastX: currentPos.current.x,
+            lastY: currentPos.current.y
         };
+
+        if (containerRef.current) {
+            containerRef.current.style.cursor = 'grabbing';
+            containerRef.current.style.transition = 'none';
+        }
     };
 
-    // --- Resize Logic ---
-    const handleResizeStart = (e: React.MouseEvent | React.TouchEvent) => {
-        e.stopPropagation(); // Prevent drag start
-        setIsResizing(true);
+    const onResizeStart = (e: React.MouseEvent | React.TouchEvent) => {
+        e.stopPropagation();
+        isResizing.current = true;
 
         const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
         const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
@@ -225,60 +232,82 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
         resizeStartRef.current = {
             x: clientX,
             y: clientY,
-            width: size.width,
-            height: size.height
+            lastW: currentSize.current.width,
+            lastH: currentSize.current.height
         };
+
+        if (containerRef.current) {
+            containerRef.current.style.transition = 'none';
+        }
     };
 
-    // --- Global Move/Up Handlers ---
     useEffect(() => {
         const handleMove = (e: MouseEvent | TouchEvent) => {
-            if (!isDragging && !isResizing) return;
+            if (!isDragging.current && !isResizing.current) return;
             e.preventDefault();
 
             const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
             const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
 
-            if (isDragging) {
-                // Calculate new position
+            if (isDragging.current && containerRef.current) {
                 let newX = clientX - dragStartRef.current.x;
                 let newY = clientY - dragStartRef.current.y;
 
-                // Boundary detection
                 const maxX = window.innerWidth - size.width;
                 const maxY = window.innerHeight - size.height;
 
                 newX = Math.min(Math.max(0, newX), maxX);
                 newY = Math.min(Math.max(0, newY), maxY);
 
-                setPosition({ x: newX, y: newY });
-            } else if (isResizing) {
+                containerRef.current.style.left = `${newX}px`;
+                containerRef.current.style.top = `${newY}px`;
+
+                dragStartRef.current.lastX = newX;
+                dragStartRef.current.lastY = newY;
+            } else if (isResizing.current && containerRef.current) {
                 const deltaX = clientX - resizeStartRef.current.x;
                 const deltaY = clientY - resizeStartRef.current.y;
 
-                // Min size constraints (e.g., 160x120)
-                const newWidth = Math.max(160, resizeStartRef.current.width + deltaX);
-                const newHeight = Math.max(120, resizeStartRef.current.height + deltaY);
+                const newWidth = Math.max(160, resizeStartRef.current.lastW + deltaX);
+                const newHeight = Math.max(120, resizeStartRef.current.lastH + deltaY);
 
-                // Max size constraints (viewport)
-                const safeWidth = Math.min(newWidth, window.innerWidth - position.x - 20);
-                const safeHeight = Math.min(newHeight, window.innerHeight - position.y - 20);
+                const currentLeft = parseFloat(containerRef.current.style.left || '0') || position.x;
+                const currentTop = parseFloat(containerRef.current.style.top || '0') || position.y;
 
-                setSize({ width: safeWidth, height: safeHeight });
+                const safeWidth = Math.min(newWidth, window.innerWidth - currentLeft - 20);
+                const safeHeight = Math.min(newHeight, window.innerHeight - currentTop - 20);
+
+                containerRef.current.style.width = `${safeWidth}px`;
+                containerRef.current.style.height = `${safeHeight}px`;
+
+                resizeStartRef.current.lastW = safeWidth;
+                resizeStartRef.current.lastH = safeHeight;
             }
         };
 
         const handleUp = () => {
-            setIsDragging(false);
-            setIsResizing(false);
+            if (isDragging.current) {
+                isDragging.current = false;
+                if (containerRef.current) {
+                    const x = parseFloat(containerRef.current.style.left);
+                    const y = parseFloat(containerRef.current.style.top);
+                    if (!isNaN(x) && !isNaN(y)) setPosition({ x, y });
+                }
+            }
+            if (isResizing.current) {
+                isResizing.current = false;
+                if (containerRef.current) {
+                    const width = parseFloat(containerRef.current.style.width);
+                    const height = parseFloat(containerRef.current.style.height);
+                    if (!isNaN(width) && !isNaN(height)) setSize({ width, height });
+                }
+            }
         };
 
-        if (isDragging || isResizing) {
-            window.addEventListener('mousemove', handleMove);
-            window.addEventListener('mouseup', handleUp);
-            window.addEventListener('touchmove', handleMove, { passive: false });
-            window.addEventListener('touchend', handleUp);
-        }
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp);
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('touchend', handleUp);
 
         return () => {
             window.removeEventListener('mousemove', handleMove);
@@ -286,26 +315,25 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
             window.removeEventListener('touchmove', handleMove);
             window.removeEventListener('touchend', handleUp);
         };
-    }, [isDragging, isResizing, size.width, size.height, position.x, position.y]);
+    }, [size.width, size.height, position.x, position.y]);
 
 
-    // Direct render for debugging
     return (
         <div
+            ref={containerRef}
             className="fixed z-[99999] shadow-2xl rounded-lg overflow-hidden border-2 border-primary bg-zinc-900 group"
             style={{
                 left: position.x,
                 top: position.y,
                 width: size.width,
                 height: size.height,
-                cursor: isDragging ? 'grabbing' : 'grab',
-                transition: isDragging || isResizing ? 'none' : 'box-shadow 0.2s ease', // Disable transition during drag for performance
-                touchAction: 'none' // Important for touch events
+                cursor: 'grab',
+                transition: 'box-shadow 0.2s ease',
+                touchAction: 'none'
             }}
-            onMouseDown={handleDragStart}
-            onTouchStart={handleDragStart}
+            onMouseDown={onDragStart}
+            onTouchStart={onDragStart}
         >
-            {/* Load MediaPipe Script */}
             <Script
                 src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"
                 strategy="afterInteractive"
@@ -335,7 +363,7 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
                                 ref={webcamRef}
                                 className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
                                 playsInline
-                                width={640} // Internal resolution stays high
+                                width={640}
                                 height={480}
                                 onUserMedia={() => {
                                     console.log("Webcam started successfully");
@@ -366,7 +394,6 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
                                 </div>
                             )}
 
-                            {/* Google Meet style overlay on hover */}
                             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 bg-zinc-900/60 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                                 <span className="text-[10px] text-white font-medium tracking-wide">
@@ -374,11 +401,10 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
                                 </span>
                             </div>
 
-                            {/* Resize Handle */}
                             <div
                                 className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize z-50 flex items-end justify-end p-1 hover:bg-white/10 rounded-tl-lg"
-                                onMouseDown={handleResizeStart}
-                                onTouchStart={handleResizeStart}
+                                onMouseDown={onResizeStart}
+                                onTouchStart={onResizeStart}
                             >
                                 <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-70">
                                     <path d="M8 8H0L8 0V8Z" fill="white" />
