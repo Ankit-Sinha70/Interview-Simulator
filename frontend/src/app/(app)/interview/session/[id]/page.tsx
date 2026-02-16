@@ -8,22 +8,31 @@ import AnswerInput from '@/components/AnswerInput';
 import EvaluationCard from '@/components/EvaluationCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { EyeTracker } from '@/components/eye-tracker/EyeTracker';
-import { AttentionStats } from '@/services/api';
+import { CameraProvider } from '@/components/interview/CameraMonitor/CameraProvider';
+import { CameraPreview } from '@/components/interview/CameraMonitor/CameraPreview';
+import { PrivacyModal } from '@/components/interview/CameraMonitor/PrivacyModal';
+import { useAttention } from '@/components/interview/CameraMonitor/AttentionContext';
 
 export default function SessionPage() {
+    return (
+        <CameraProvider>
+            <SessionContent />
+        </CameraProvider>
+    );
+}
+
+function SessionContent() {
     const params = useParams();
     const router = useRouter();
     const sessionId = params.id as string;
+    const { stats } = useAttention();
 
     // Use our new hook that loads from ID
     const { state, actions } = useActiveSession(sessionId);
-    const { status, currentQuestion, questionNumber, history, latestEvaluation, isSubmitting, error } = state;
-
-    const attentionStatsRef = React.useRef<AttentionStats | null>(null);
+    const { status, currentQuestion, questionNumber, latestEvaluation, isSubmitting, error } = state;
 
     const handleComplete = () => {
-        actions.complete(attentionStatsRef.current);
+        actions.complete(stats);
     };
 
     // Redirect if completed
@@ -43,7 +52,8 @@ export default function SessionPage() {
 
     return (
         <>
-            <EyeTracker statsRef={attentionStatsRef} />
+            <PrivacyModal onEnable={() => console.log("Monitoring enabled")} />
+            <CameraPreview />
 
             <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6 pb-24">
                 {/* Header */}
@@ -60,7 +70,7 @@ export default function SessionPage() {
                             size="sm"
                             variant="destructive"
                             className="rounded-full h-8 text-xs"
-                            onClick={actions.complete}
+                            onClick={handleComplete}
                             disabled={isSubmitting}
                         >
                             Finish Early

@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 interface StatusIndicatorProps {
-    status: "focused" | "distracted" | "loading";
+    status: "focused" | "distracted" | "loading" | "idle";
     children: React.ReactNode;
     className?: string;
 }
@@ -16,6 +16,8 @@ export function StatusIndicator({ status, children, className }: StatusIndicator
                 return "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]";
             case "loading":
                 return "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]";
+            case "idle":
+                return "border-zinc-700 shadow-none";
             default:
                 return "border-gray-500";
         }
@@ -31,10 +33,11 @@ export function StatusIndicator({ status, children, className }: StatusIndicator
 
             {/* Status Badge */}
             <div className={cn(
-                "absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold text-white uppercase tracking-wider backdrop-blur-sm",
+                "absolute top-2 right-12 px-2 py-1 rounded text-[10px] font-bold text-white uppercase tracking-wider backdrop-blur-sm z-[60]",
                 status === "focused" ? "bg-green-500/80" :
                     status === "distracted" ? "bg-red-500/80" :
-                        "bg-yellow-500/80"
+                        status === "loading" ? "bg-yellow-500/80" :
+                            "bg-zinc-700/80"
             )}>
                 {status}
             </div>

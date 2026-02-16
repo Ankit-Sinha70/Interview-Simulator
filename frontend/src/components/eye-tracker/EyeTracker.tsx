@@ -24,6 +24,7 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
     const [permissionError, setPermissionError] = useState<string | null>(null);;
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [size, setSize] = useState({ width: 320, height: 240 });
+    const [isMonitoring, setIsMonitoring] = useState(true);
 
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -142,6 +143,7 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
 
                 const processVideo = async () => {
                     if (
+                        isMonitoring &&
                         webcamRef.current &&
                         webcamRef.current.video &&
                         webcamRef.current.video.readyState === 4
@@ -151,6 +153,10 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
                         } catch (err) {
                             // Suppress frame errors, they happen
                         }
+                    } else if (!isMonitoring && canvasRef.current && webcamRef.current?.video) {
+                        // Clear canvas if monitoring is paused
+                        const ctx = canvasRef.current.getContext("2d");
+                        if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
                     }
                     animationId = requestAnimationFrame(processVideo);
                 };
@@ -343,8 +349,36 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
                 }}
             />
 
-            <StatusIndicator status={!isModelLoaded ? "loading" : isLookAway ? "distracted" : "focused"} className="w-full h-full">
+            <StatusIndicator status={!isMonitoring ? "idle" : !isModelLoaded ? "loading" : isLookAway ? "distracted" : "focused"} className="w-full h-full">
                 <div className="relative w-full h-full bg-zinc-900 overflow-hidden flex items-center justify-center">
+
+                    <div className="absolute top-2 right-2 z-50 flex items-center gap-1">
+                        {/* Privacy Info Icon */}
+                        <div className="relative group/info">
+                            <button className="w-5 h-5 rounded-full bg-zinc-800/80 hover:bg-zinc-700 backdrop-blur-sm flex items-center justify-center text-zinc-400 pointer-events-auto">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
+                            </button>
+                            <div className="absolute top-0 right-7 w-48 p-2 bg-zinc-900 border border-zinc-800 rounded shadow-xl opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-200 text-[10px] text-zinc-300 pointer-events-none text-left">
+                                <p className="font-bold text-white mb-1 uppercase tracking-wider">Privacy & Security</p>
+                                <p>✔ Camera processed locally</p>
+                                <p>✔ No video stored or uploaded</p>
+                                <p>✔ Results are advisory only</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="absolute top-2 left-2 z-50 flex items-center gap-2">
+                        {/* Monitoring Toggle */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsMonitoring(!isMonitoring); }}
+                            className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-tighter transition-all pointer-events-auto ${isMonitoring
+                                    ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50"
+                                    : "bg-green-500/20 text-green-500 hover:bg-green-500/30 border border-green-500/50"
+                                }`}
+                        >
+                            {isMonitoring ? "Pause Tracking" : "Resume Tracking"}
+                        </button>
+                    </div>
 
                     {permissionError ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center z-20 bg-zinc-900">
@@ -394,10 +428,15 @@ export function EyeTracker({ onSessionEnd, showDebugOverlay = false, statsRef }:
                                 </div>
                             )}
 
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 bg-zinc-900/60 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-[10px] text-white font-medium tracking-wide">
-                                    {gazeDirection}
+                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 group-hover:opacity-100 transition-opacity duration-300 opacity-0 pointer-events-none">
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/60 backdrop-blur-md rounded-full shadow-lg">
+                                    <div className={`w-2 h-2 rounded-full animate-pulse ${isMonitoring ? "bg-green-500" : "bg-zinc-500"}`} />
+                                    <span className="text-[10px] text-white font-medium tracking-wide">
+                                        {isMonitoring ? gazeDirection : "TRACKING PAUSED"}
+                                    </span>
+                                </div>
+                                <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest whitespace-nowrap">
+                                    Advisory Results Only
                                 </span>
                             </div>
 
