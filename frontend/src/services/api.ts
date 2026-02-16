@@ -128,7 +128,15 @@ export async function submitAnswer(
     });
 }
 
-export async function completeInterview(sessionId: string): Promise<FinalReport> {
+export interface AttentionStats {
+    focusScore: number;
+    totalLookAwayTime: number;
+    longestLookAway: number;
+    distractionEvents: number;
+    focusCategory: 'Excellent' | 'Good' | 'Moderate' | 'Low';
+}
+
+export async function completeInterview(sessionId: string, attentionStats?: AttentionStats): Promise<FinalReport> {
     const token = localStorage.getItem('token');
     return apiCall<FinalReport>('/interview/complete', {
         method: 'POST',
@@ -136,7 +144,7 @@ export async function completeInterview(sessionId: string): Promise<FinalReport>
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify({ sessionId, attentionStats }),
     });
 }
 

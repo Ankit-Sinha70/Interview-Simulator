@@ -43,6 +43,7 @@ export async function createSession(
         createdAt: now,
         updatedAt: now,
         completedAt: null,
+        attentionStats: null,
     };
 
     if (isDbConnected()) {
@@ -119,5 +120,6 @@ function docToSession(doc: any): InterviewSession {
         createdAt: obj.createdAt?.toISOString?.() || obj.createdAt,
         updatedAt: obj.updatedAt?.toISOString?.() || obj.updatedAt,
         completedAt: obj.completedAt?.toISOString?.() || obj.completedAt,
+        attentionStats: obj.attentionStats || null,
     };
 }

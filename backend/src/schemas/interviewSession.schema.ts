@@ -88,6 +88,13 @@ export interface IInterviewSessionDoc extends Document {
     createdAt: Date;
     updatedAt: Date;
     completedAt: Date | null;
+    attentionStats: {
+        focusScore: number;
+        totalLookAwayTime: number;
+        longestLookAway: number;
+        distractionEvents: number;
+        focusCategory: string;
+    } | null;
 }
 
 const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
@@ -106,6 +113,15 @@ const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
     finalReport: { type: FinalReportSchema, default: null },
     promptVersion: { type: String, default: 'v1.0' },
     completedAt: { type: Date, default: null },
+    attentionStats: {
+        type: {
+            focusScore: { type: Number, required: true },
+            totalLookAwayTime: { type: Number, required: true },
+            longestLookAway: { type: Number, required: true },
+            distractionEvents: { type: Number, required: true },
+            focusCategory: { type: String, required: true },
+        }, default: null
+    },
 }, {
     timestamps: true, // auto createdAt + updatedAt
 });

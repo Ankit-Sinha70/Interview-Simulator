@@ -3,6 +3,7 @@ import { generateReport } from '../ai/report.engine';
 import {
     FinalReport,
     HireBand,
+    AttentionStats,
 } from '../models/interviewSession.model';
 import {
     calculateVariance,
@@ -13,11 +14,8 @@ import {
 } from '../utils/scoreCalculator';
 import { isDbConnected } from '../config/db.config';
 import { AnalyticsModel } from '../schemas/analytics.schema';
-
-/**
- * Complete an interview and generate the final enriched report
- */
-export async function generateFinalReport(sessionId: string): Promise<FinalReport> {
+// ...
+export async function generateFinalReport(sessionId: string, attentionStats?: AttentionStats): Promise<FinalReport> {
     const session = await sessionService.getSession(sessionId);
     if (!session) throw new Error('Session not found');
 
@@ -99,6 +97,7 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         status: 'COMPLETED',
         finalReport,
         completedAt: new Date().toISOString(),
+        attentionStats: attentionStats || null,
     } as any);
 
     // Save analytics (only if DB is connected)

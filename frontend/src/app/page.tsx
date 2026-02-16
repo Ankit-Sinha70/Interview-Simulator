@@ -24,7 +24,9 @@ import {
   AnswerResponse,
   VoiceMetadata,
   verifySubscription,
+  AttentionStats,
 } from '@/services/api';
+import { EyeTracker } from '@/components/eye-tracker/EyeTracker';
 
 type AppState = 'setup' | 'interview' | 'report';
 
@@ -35,6 +37,7 @@ interface InterviewHistoryEntry {
 }
 
 export default function Home() {
+  const attentionStatsRef = React.useRef<AttentionStats | null>(null);
   const { user, isLoading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -270,6 +273,8 @@ export default function Home() {
               )}
             </div>
           </header>
+
+          <EyeTracker statsRef={attentionStatsRef} />
 
           <div className="space-y-6">
             {/* Latest Evaluation (Feedback) */}
