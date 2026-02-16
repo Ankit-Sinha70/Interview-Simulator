@@ -37,7 +37,7 @@ export default function LoginPage() {
 
     return (
         <div className="flex h-screen items-center justify-center">
-            <Card className="w-full max-w-md p-6">
+            <Card className="w-full max-w-xl p-6">
                 <CardHeader>
                     <CardTitle className="text-center">{isLogin ? 'Login' : 'Register'}</CardTitle>
                 </CardHeader>

@@ -47,7 +47,7 @@ export default function ReportView({ report, scores, onNewSession, attentionStat
     ];
 
     return (
-        <div className="max-w-[750px] mx-auto px-6 py-10">
+        <div className="max-w-[1196px] mx-auto">
             {/* Header */}
             <div className="animate-fadeInUp text-center mb-10">
                 <div className="text-6xl mb-4">📋</div>

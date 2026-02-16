@@ -12,6 +12,8 @@ import { CameraProvider } from '@/components/interview/CameraMonitor/CameraProvi
 import { CameraPreview } from '@/components/interview/CameraMonitor/CameraPreview';
 import { PrivacyModal } from '@/components/interview/CameraMonitor/PrivacyModal';
 import { useAttention } from '@/components/interview/CameraMonitor/AttentionContext';
+import { useInterviewGuard } from '@/hooks/useInterviewGuard';
+import { QuitConfirmationModal } from '@/components/interview/QuitConfirmationModal';
 
 export default function SessionPage() {
     return (
@@ -31,7 +33,13 @@ function SessionContent() {
     const { state, actions } = useActiveSession(sessionId);
     const { status, currentQuestion, questionNumber, latestEvaluation, isSubmitting, error } = state;
 
+    const isInterviewActive = status === 'READY';
+    console.log("[Interview] Status:", status, "Active:", isInterviewActive);
+
+    const { showQuitModal, setShowQuitModal, quitInterview, confirmQuit } = useInterviewGuard(isInterviewActive);
+
     const handleComplete = () => {
+        console.log("[Interview] Completing session...");
         actions.complete(stats);
     };
 
@@ -54,6 +62,11 @@ function SessionContent() {
         <>
             <PrivacyModal onEnable={() => console.log("Monitoring enabled")} />
             <CameraPreview />
+            <QuitConfirmationModal
+                isOpen={showQuitModal}
+                onClose={() => setShowQuitModal(false)}
+                onConfirm={confirmQuit}
+            />
 
             <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6 pb-24">
                 {/* Header */}
@@ -69,14 +82,38 @@ function SessionContent() {
                         <Button
                             size="sm"
                             variant="destructive"
-                            className="rounded-full h-8 text-xs"
-                            onClick={handleComplete}
+                            id="quit-interview-btn"
+                            className="rounded-full h-8 px-4 text-xs font-bold shadow-md z-50 flex items-center gap-2 hover:bg-red-700 transition-colors"
+                            onClick={() => {
+                                console.log("[Interview] Quit button clicked manually");
+                                quitInterview();
+                            }}
                             disabled={isSubmitting}
                         >
-                            Finish Early
+                            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                            Quit Interview
                         </Button>
                     </div>
                 </header>
+
+                {/* DEBUG STATUS BANNER */}
+                {process.env.NODE_ENV === 'development' && (
+                    <div className="fixed bottom-4 left-4 right-4 flex justify-between items-center bg-black/90 backdrop-blur-sm text-[10px] p-3 rounded-lg border border-zinc-800 z-[99999] text-zinc-400 font-mono shadow-2xl animate-in slide-in-from-bottom-5 duration-500">
+                        <div className="flex gap-4">
+                            <span>Status: <b className="text-primary">{status}</b></span>
+                            <span>Guard Active: <b className={isInterviewActive ? "text-green-500" : "text-red-500"}>{String(isInterviewActive)}</b></span>
+                            <span>Session ID: {sessionId.slice(0, 8)}...</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 rounded text-white border border-zinc-700"
+                            >
+                                Test Reload
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Latest Evaluation */}
                 {latestEvaluation && (

@@ -204,7 +204,7 @@ export default function Home() {
       )}
 
       {appState === 'report' && report && (
-        <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 pb-12">
           <ReportView report={report} onNewSession={handleNewSession} scores={{
             averageTechnical: 0,
             averageDepth: 0,
@@ -219,7 +219,7 @@ export default function Home() {
       )}
 
       {appState === 'interview' && (
-        <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
 
 
 
