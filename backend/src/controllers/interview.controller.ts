@@ -47,8 +47,8 @@ export async function submitAnswer(req: Request, res: Response, next: NextFuncti
  */
 export async function completeInterview(req: Request, res: Response, next: NextFunction) {
     try {
-        const { sessionId } = req.body;
-        const report = await generateFinalReport(sessionId);
+        const { sessionId, attentionStats } = req.body;
+        const report = await generateFinalReport(sessionId, attentionStats);
 
         res.status(200).json({
             success: true,

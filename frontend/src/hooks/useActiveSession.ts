@@ -125,10 +125,10 @@ export function useActiveSession(sessionId: string) {
         }
     };
 
-    const complete = async () => {
+    const complete = async (attentionStats?: any) => {
         setState(s => ({ ...s, isSubmitting: true }));
         try {
-            const report = await completeInterview(sessionId);
+            const report = await completeInterview(sessionId, attentionStats);
             setState(s => ({
                 ...s,
                 status: 'COMPLETED',

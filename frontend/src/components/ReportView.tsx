@@ -5,16 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { FinalReport, AggregatedScores } from '@/services/api';
+import { FinalReport, AggregatedScores, AttentionStats } from '@/services/api';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip } from 'recharts';
 
 interface ReportViewProps {
     report: FinalReport;
     scores: AggregatedScores;
     onNewSession: () => void;
+    attentionStats?: AttentionStats;
 }
 
-export default function ReportView({ report, scores, onNewSession }: ReportViewProps) {
+export default function ReportView({ report, scores, onNewSession, attentionStats }: ReportViewProps) {
     const confidenceColors: Record<string, string> = {
         High: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
         Medium: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
@@ -109,6 +110,42 @@ export default function ReportView({ report, scores, onNewSession }: ReportViewP
                     </ResponsiveContainer>
                 </CardContent>
             </Card>
+
+            {/* Attention Analysis */}
+            {attentionStats && (
+                <Card className="animate-fadeInUp bg-card border-blue-500/15 shadow-lg mb-6" style={{ animationDelay: '250ms' }}>
+                    <CardHeader>
+                        <CardTitle className="text-base font-bold text-center">👀 Attention Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div className="p-3 bg-blue-500/5 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-400">{attentionStats.focusScore}%</div>
+                                <div className="text-xs text-muted-foreground uppercase">Focus Score</div>
+                            </div>
+                            <div className="p-3 bg-blue-500/5 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-400">{attentionStats.totalLookAwayTime}s</div>
+                                <div className="text-xs text-muted-foreground uppercase">looked away</div>
+                            </div>
+                            <div className="p-3 bg-blue-500/5 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-400">{attentionStats.distractionEvents}</div>
+                                <div className="text-xs text-muted-foreground uppercase">Distractions</div>
+                            </div>
+                            <div className="p-3 bg-blue-500/5 rounded-lg">
+                                <Badge className={
+                                    attentionStats.focusCategory === 'Excellent' ? 'bg-green-500/20 text-green-400' :
+                                        attentionStats.focusCategory === 'Good' ? 'bg-blue-500/20 text-blue-400' :
+                                            attentionStats.focusCategory === 'Moderate' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                'bg-red-500/20 text-red-400'
+                                }>
+                                    {attentionStats.focusCategory}
+                                </Badge>
+                                <div className="text-xs text-muted-foreground mt-1 uppercase">Rating</div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Strongest & Weakest Areas */}
             <div className="animate-fadeInUp grid grid-cols-2 gap-4 mb-6" style={{ animationDelay: '200ms' }}>

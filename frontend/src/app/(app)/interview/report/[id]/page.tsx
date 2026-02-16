@@ -34,6 +34,7 @@ export default function ReportPage() {
             <ReportView
                 report={report}
                 scores={session?.aggregatedScores}
+                attentionStats={session?.attentionStats}
                 onNewSession={() => window.location.href = '/interview/start'}
             />
         </div>

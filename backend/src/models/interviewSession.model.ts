@@ -113,6 +113,15 @@ export interface InterviewSession {
     createdAt: string;
     updatedAt: string;
     completedAt: string | null;
+    attentionStats: AttentionStats | null;
+}
+
+export interface AttentionStats {
+    focusScore: number;
+    totalLookAwayTime: number;
+    longestLookAway: number;
+    distractionEvents: number;
+    focusCategory: 'Excellent' | 'Good' | 'Moderate' | 'Low';
 }
 
 // ─── Final Report ───

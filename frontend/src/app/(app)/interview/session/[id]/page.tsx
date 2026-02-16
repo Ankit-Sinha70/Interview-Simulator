@@ -8,6 +8,8 @@ import AnswerInput from '@/components/AnswerInput';
 import EvaluationCard from '@/components/EvaluationCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EyeTracker } from '@/components/eye-tracker/EyeTracker';
+import { AttentionStats } from '@/services/api';
 
 export default function SessionPage() {
     const params = useParams();
@@ -17,6 +19,12 @@ export default function SessionPage() {
     // Use our new hook that loads from ID
     const { state, actions } = useActiveSession(sessionId);
     const { status, currentQuestion, questionNumber, history, latestEvaluation, isSubmitting, error } = state;
+
+    const attentionStatsRef = React.useRef<AttentionStats | null>(null);
+
+    const handleComplete = () => {
+        actions.complete(attentionStatsRef.current);
+    };
 
     // Redirect if completed
     useEffect(() => {
@@ -34,51 +42,55 @@ export default function SessionPage() {
     }
 
     return (
-        <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6 pb-24">
-            {/* Header */}
-            <header className="sticky top-4 z-40 bg-background/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                    <h1 className="text-sm font-bold tracking-tight text-muted-foreground uppercase">Live Session</h1>
-                    <Badge variant="outline" className="text-xs border-primary text-primary bg-primary/5">
-                        Q{questionNumber}
-                    </Badge>
-                </div>
-                <div>
-                    <Button
-                        size="sm"
-                        variant="destructive"
-                        className="rounded-full h-8 text-xs"
-                        onClick={actions.complete}
-                        disabled={isSubmitting}
-                    >
-                        Finish Early
-                    </Button>
-                </div>
-            </header>
+        <>
+            <EyeTracker statsRef={attentionStatsRef} />
 
-            {/* Latest Evaluation */}
-            {latestEvaluation && (
-                <div className="animate-slide-in-down">
-                    <EvaluationCard evaluation={latestEvaluation} questionNumber={questionNumber - 1} />
-                </div>
-            )}
+            <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6 pb-24">
+                {/* Header */}
+                <header className="sticky top-4 z-40 bg-background/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+                        <h1 className="text-sm font-bold tracking-tight text-muted-foreground uppercase">Live Session</h1>
+                        <Badge variant="outline" className="text-xs border-primary text-primary bg-primary/5">
+                            Q{questionNumber}
+                        </Badge>
+                    </div>
+                    <div>
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            className="rounded-full h-8 text-xs"
+                            onClick={actions.complete}
+                            disabled={isSubmitting}
+                        >
+                            Finish Early
+                        </Button>
+                    </div>
+                </header>
 
-            {/* Current Question */}
-            {currentQuestion && (
-                <div className="animate-fade-in-up delay-100">
-                    <QuestionCard question={currentQuestion} questionNumber={questionNumber} />
-                </div>
-            )}
+                {/* Latest Evaluation */}
+                {latestEvaluation && (
+                    <div className="animate-slide-in-down">
+                        <EvaluationCard evaluation={latestEvaluation} questionNumber={questionNumber - 1} />
+                    </div>
+                )}
 
-            {/* Input */}
-            <div className="space-y-4">
-                <AnswerInput
-                    onSubmit={actions.submit}
-                    isLoading={isSubmitting}
-                // Voice props can be hooked up later if we expose voice state from hook
-                />
+                {/* Current Question */}
+                {currentQuestion && (
+                    <div className="animate-fade-in-up delay-100">
+                        <QuestionCard question={currentQuestion} questionNumber={questionNumber} />
+                    </div>
+                )}
+
+                {/* Input */}
+                <div className="space-y-4">
+                    <AnswerInput
+                        onSubmit={actions.submit}
+                        isLoading={isSubmitting}
+                    // Voice props can be hooked up later if we expose voice state from hook
+                    />
+                </div>
             </div>
-        </div>
+        </>
     );
 }
