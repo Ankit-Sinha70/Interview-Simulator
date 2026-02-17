@@ -8,6 +8,7 @@ const router = Router();
 router.post('/start', authenticateToken, validateStartInterview, interviewController.startInterview);
 router.post('/answer', authenticateToken, validateSubmitAnswer, interviewController.submitAnswer);
 router.post('/complete', authenticateToken, validateCompleteInterview, interviewController.completeInterview);
+router.post('/:sessionId/warning-shown', authenticateToken, interviewController.markWarningShown);
 router.get('/:sessionId', authenticateToken, interviewController.getSession);
 
 export default router;

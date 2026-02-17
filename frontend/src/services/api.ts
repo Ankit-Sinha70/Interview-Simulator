@@ -24,6 +24,8 @@ export interface GeneratedQuestion {
 export interface StartInterviewResponse {
     sessionId: string;
     question: GeneratedQuestion;
+    endsAt: string;
+    maxQuestions: number;
 }
 
 export interface Evaluation {
@@ -54,6 +56,9 @@ export interface AnswerResponse {
     nextQuestion: GeneratedQuestion;
     scoringSummary: AggregatedScores;
     questionNumber: number;
+    sessionEnded: boolean;
+    reason?: string;
+    finalReport?: FinalReport;
 }
 
 export interface FinalReport {
@@ -152,6 +157,16 @@ export async function getSession(sessionId: string): Promise<any> {
     const token = localStorage.getItem('token');
     return apiCall<any>(`/interview/${sessionId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
+    });
+}
+
+export async function markWarningTriggered(sessionId: string): Promise<void> {
+    const token = localStorage.getItem('token');
+    await apiCall<void>(`/interview/${sessionId}/warning-shown`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
     });
 }
 

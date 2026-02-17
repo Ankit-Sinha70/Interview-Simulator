@@ -2,12 +2,21 @@ import { AnalyticsModel } from '../schemas/analytics.schema';
 
 export interface UserAnalyticsSummary {
     totalSessions: number;
-    averageScore: number;
+    overallAverage: number;
     highestScore: number;
     weakestDimension: string;
     strongestDimension: string;
-    recentTrend: number[]; // Last 5 scores
-    improvementRate: number | null; // % improvement from first to last (if > 1 session)
+    averageTechnical: number;
+    averageDepth: number;
+    averageClarity: number;
+    averageProblemSolving: number;
+    averageCommunication: number;
+    sessions: {
+        overallScore: number;
+        date: Date;
+        role: string;
+    }[];
+    improvementRate: number | null;
 }
 
 /**
@@ -19,11 +28,16 @@ export async function getUserAnalytics(userId: string): Promise<UserAnalyticsSum
     if (sessions.length === 0) {
         return {
             totalSessions: 0,
-            averageScore: 0,
+            overallAverage: 0,
             highestScore: 0,
             weakestDimension: 'N/A',
             strongestDimension: 'N/A',
-            recentTrend: [],
+            averageTechnical: 0,
+            averageDepth: 0,
+            averageClarity: 0,
+            averageProblemSolving: 0,
+            averageCommunication: 0,
+            sessions: [],
             improvementRate: null,
         };
     }
@@ -47,13 +61,29 @@ export async function getUserAnalytics(userId: string): Promise<UserAnalyticsSum
     const weaknesses = sessions.map(s => s.weakestDimension);
     const strengths = sessions.map(s => s.strongestDimension);
 
+    // Aggregated Skill Averages
+    const avgTech = sessions.reduce((acc, s) => acc + (s.averageTechnical || 0), 0) / sessions.length;
+    const avgDepth = sessions.reduce((acc, s) => acc + (s.averageDepth || 0), 0) / sessions.length;
+    const avgClarity = sessions.reduce((acc, s) => acc + (s.averageClarity || 0), 0) / sessions.length;
+    const avgPS = sessions.reduce((acc, s) => acc + (s.averageProblemSolving || 0), 0) / sessions.length;
+    const avgComm = sessions.reduce((acc, s) => acc + (s.averageCommunication || 0), 0) / sessions.length;
+
     return {
         totalSessions: sessions.length,
-        averageScore: Math.round(avgScore * 100) / 100,
+        overallAverage: round(avgScore),
         highestScore: round(maxScore),
         weakestDimension: getMode(weaknesses),
         strongestDimension: getMode(strengths),
-        recentTrend: scores.slice(-5), // Last 5
+        averageTechnical: round(avgTech),
+        averageDepth: round(avgDepth),
+        averageClarity: round(avgClarity),
+        averageProblemSolving: round(avgPS),
+        averageCommunication: round(avgComm),
+        sessions: sessions.map(s => ({
+            overallScore: s.averageScore,
+            date: s.createdAt,
+            role: s.role
+        })),
         improvementRate,
     };
 }

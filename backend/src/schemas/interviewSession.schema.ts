@@ -80,6 +80,10 @@ export interface IInterviewSessionDoc extends Document {
     questions: any[];
     totalQuestions: number;
     currentQuestionIndex: number;
+    maxQuestions: number;
+    maxDurationMinutes: number;
+    endsAt: Date | null;
+    hasShownFiveMinWarning: boolean;
     aggregatedScores: any | null;
     weaknessTracker: any;
     topicScores: Map<string, number[]>;
@@ -103,10 +107,14 @@ const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
     role: { type: String, required: true },
     experienceLevel: { type: String, enum: ['Junior', 'Mid', 'Senior'], required: true },
     mode: { type: String, enum: ['text', 'voice', 'hybrid'], default: 'text' },
-    status: { type: String, enum: ['CREATED', 'IN_PROGRESS', 'COMPLETED'], default: 'CREATED', index: true },
+    status: { type: String, enum: ['CREATED', 'IN_PROGRESS', 'COMPLETED', 'ABANDONED', 'TIME_EXPIRED', 'MAX_QUESTIONS_REACHED'], default: 'CREATED', index: true },
     questions: { type: [QuestionEntrySchema] as any, default: [] },
     totalQuestions: { type: Number, default: 0 },
     currentQuestionIndex: { type: Number, default: 0 },
+    maxQuestions: { type: Number, default: 10 },
+    maxDurationMinutes: { type: Number, default: 60 },
+    endsAt: { type: Date, default: null },
+    hasShownFiveMinWarning: { type: Boolean, default: false },
     aggregatedScores: { type: AggregatedScoresSchema, default: null },
     weaknessTracker: { type: WeaknessTrackerSchema, default: () => ({}) },
     topicScores: { type: Map, of: [Number], default: () => new Map() },

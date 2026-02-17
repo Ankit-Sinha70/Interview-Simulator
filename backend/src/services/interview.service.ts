@@ -36,6 +36,9 @@ const WEAKNESS_DIMENSION_MAP: Record<string, keyof WeaknessTracker> = {
     'Communication': 'communicationWeakCount',
 };
 
+const MAX_QUESTIONS = 10;
+const SESSION_DURATION_MINUTES = 50;
+
 import { User } from '../models/user.model';
 
 // ...
@@ -69,6 +72,13 @@ export async function startInterview(
     const session = await sessionService.createSession(role, experienceLevel, mode, userId);
     session.status = 'IN_PROGRESS';
 
+    // Set deadline (50 minutes from now)
+    const endsAt = new Date();
+    endsAt.setMinutes(endsAt.getMinutes() + SESSION_DURATION_MINUTES);
+    session.endsAt = endsAt.toISOString();
+    session.maxQuestions = MAX_QUESTIONS;
+    session.maxDurationMinutes = SESSION_DURATION_MINUTES;
+
     // Generate first question
     const firstQuestion: GeneratedQuestion = await generateQuestion({
         role: session.role,
@@ -95,6 +105,8 @@ export async function startInterview(
     return {
         sessionId: session.sessionId,
         question: firstQuestion,
+        endsAt: session.endsAt,
+        maxQuestions: MAX_QUESTIONS,
     };
 }
 
@@ -114,21 +126,56 @@ export async function processAnswer(
     const currentQuestionIndex = session.questions.findIndex((q) => q.answer === null);
     if (currentQuestionIndex === -1) throw new Error('No pending question found');
 
+    // ─── STEP 1: Check Time Expired ───
+    const now = new Date();
+    const isTimeExpired = session.endsAt && now > new Date(session.endsAt);
+
+    if (isTimeExpired) {
+        console.log(`[Interview] Session ending: TIME_EXPIRED`);
+        session.status = 'TIME_EXPIRED';
+        session.completedAt = now.toISOString();
+
+        // Still evaluate the very last answer if possible
+        const answerInfo: AnswerInfo = {
+            text: answer,
+            answeredAt: now.toISOString(),
+        };
+        if (voiceMeta) answerInfo.voiceMeta = voiceMeta;
+        session.questions[currentQuestionIndex].answer = answerInfo;
+
+        const rawEval = await evaluateAnswer({
+            question: session.questions[currentQuestionIndex].questionText,
+            answer,
+            role: session.role,
+            level: session.experienceLevel,
+            voiceMeta
+        });
+        const evalResult = scoringService.processEvaluation(rawEval, session.experienceLevel);
+        session.questions[currentQuestionIndex].evaluation = evalResult;
+
+        // Final aggregated scores update
+        const evaluations = session.questions
+            .filter((q) => q.evaluation !== null)
+            .map((q) => q.evaluation!);
+        session.aggregatedScores = scoringService.getScoringSummary(evaluations);
+
+        await sessionService.updateSession(session);
+
+        // Import report service dynamically to avoid circular dependencies if any
+        const { generateFinalReport } = await import('./report.service');
+        await generateFinalReport(session.sessionId);
+
+        return {
+            evaluation: evalResult,
+            sessionEnded: true,
+            reason: 'TIME_EXPIRED',
+            questionNumber: currentQuestionIndex + 1
+        } as any;
+    }
+
     const currentQuestion = session.questions[currentQuestionIndex];
 
-    // Save the answer with voice metadata
-    const answerInfo: AnswerInfo = {
-        text: answer,
-        answeredAt: new Date().toISOString(),
-    };
-    if (voiceMeta) {
-        answerInfo.voiceMeta = voiceMeta;
-        if (session.mode === 'text') session.mode = 'hybrid';
-    }
-    currentQuestion.answer = answerInfo;
-
-    // Evaluate the answer using AI
-    // 2. Evaluate answer (Text + Voice)
+    // ─── STEP 2: Evaluate Answer ───
     const [rawEvaluation, voiceEval] = await Promise.all([
         evaluateAnswer({
             question: currentQuestion.questionText,
@@ -142,61 +189,67 @@ export async function processAnswer(
 
     const evaluation = scoringService.processEvaluation(rawEvaluation, session.experienceLevel);
 
-    // 3. Update session with answer and evaluation
+    // Save the answer and evaluation
     const updatedAnswerInfo: AnswerInfo = {
         text: answer,
         voiceMeta,
         voiceEvaluation: voiceEval,
-        answeredAt: new Date().toISOString(),
+        answeredAt: now.toISOString(),
     };
     currentQuestion.answer = updatedAnswerInfo;
     currentQuestion.evaluation = evaluation;
 
-    // ─── Track Weakness Frequency ───
+    // ─── Analytics & Tracking ───
     const weakestDim = findWeakestDimension(evaluation);
     const trackerKey = WEAKNESS_DIMENSION_MAP[weakestDim];
     if (trackerKey && session.weaknessTracker) {
         session.weaknessTracker[trackerKey]++;
     }
 
-    // ─── Track Topic Scores for Mastery Detection ───
     if (!session.topicScores) session.topicScores = {};
     const topic = currentQuestion.topic;
     if (!session.topicScores[topic]) session.topicScores[topic] = [];
     session.topicScores[topic].push(evaluation.overallScore);
 
-    // ─── Aggregated Scores ───
-    const completedEvaluations = session.questions
+    const evaluations = session.questions
         .filter((q) => q.evaluation !== null)
         .map((q) => q.evaluation!);
+    const scoringSummary = scoringService.getScoringSummary(evaluations);
+    session.aggregatedScores = scoringSummary;
 
-    const scoringSummary = scoringService.getScoringSummary(completedEvaluations);
+    // ─── STEP 3: Check Question Limit ───
+    const questionsAnswered = session.questions.filter(q => q.answer !== null).length;
+    const isMaxQuestionsReached = questionsAnswered >= MAX_QUESTIONS;
 
-    const aggregated: AggregatedScores = {
-        averageTechnical: scoringSummary.averageTechnical,
-        averageDepth: scoringSummary.averageDepth,
-        averageClarity: scoringSummary.averageClarity,
-        averageProblemSolving: scoringSummary.averageProblemSolving,
-        averageCommunication: scoringSummary.averageCommunication,
-        overallAverage: scoringSummary.overallAverage,
-        strongestDimension: scoringSummary.strongestDimension,
-        weakestDimension: scoringSummary.weakestDimension,
-    };
-    session.aggregatedScores = aggregated;
+    console.log(`[Interview] Question Limit Check: ${questionsAnswered} / ${MAX_QUESTIONS} (Session Max: ${session.maxQuestions})`);
 
-    // ─── Adaptive Follow-up Strategy ───
+    if (isMaxQuestionsReached) {
+        console.log(`[Interview] Session ending: MAX_QUESTIONS_REACHED (${questionsAnswered}/${session.maxQuestions})`);
+        session.status = 'COMPLETED';
+        session.completedAt = now.toISOString();
 
-    // Check topic mastery
+        await sessionService.updateSession(session);
+
+        const { generateFinalReport } = await import('./report.service');
+        const finalReport = await generateFinalReport(session.sessionId);
+
+        return {
+            evaluation,
+            sessionEnded: true,
+            reason: 'MAX_QUESTIONS_REACHED',
+            questionNumber: questionsAnswered,
+            scoringSummary: session.aggregatedScores,
+            finalReport
+        } as any;
+    }
+
+    // ─── STEP 4: Generate Next Question (If Not Reached 10) ───
+    // mastery check
     const topicMastered = hasTopicMastery(session.topicScores, topic);
-
-    // Determine Intent & Target Difficulty
     const followUpIntent = determineFollowUpIntent(evaluation, topicMastered);
     const targetDifficulty = getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore);
-
-    // Build Question History for Anti-Repetition
     const questionHistory = session.questions.map(q => q.questionText);
 
-    // Generate Question
     const followUp = await generateFollowUp({
         role: session.role,
         experienceLevel: session.experienceLevel,
@@ -214,23 +267,13 @@ export async function processAnswer(
         questionHistory
     });
 
-    const nextQuestion: GeneratedQuestion = {
-        question: followUp.question,
-        topic: followUp.topic,
-        difficulty: followUp.difficulty
-    };
-
-    // Track intent for analytics/debugging if needed
-    const generatedFromWeakness = followUp.intent; // reusing field for intent tracking
-
-    // Add next question to session
     const nextEntry: QuestionEntry = {
         questionId: uuidv4(),
-        questionText: nextQuestion.question,
-        topic: nextQuestion.topic,
-        difficulty: nextQuestion.difficulty,
+        questionText: followUp.question,
+        topic: followUp.topic,
+        difficulty: followUp.difficulty,
         type: 'followup',
-        generatedFromWeakness,
+        generatedFromWeakness: followUp.intent,
         answer: null,
         evaluation: null,
     };
@@ -243,19 +286,32 @@ export async function processAnswer(
 
     return {
         evaluation,
-        nextQuestion,
-        scoringSummary: aggregated,
-        questionNumber: currentQuestionIndex + 1,
+        nextQuestion: {
+            question: followUp.question,
+            topic: followUp.topic,
+            difficulty: followUp.difficulty
+        },
+        scoringSummary: session.aggregatedScores,
+        questionNumber: questionsAnswered,
+        sessionEnded: false
     };
 }
 
-/**
- * Get session info
- */
 export async function getSessionInfo(sessionId: string) {
     const session = await sessionService.getSession(sessionId);
     if (!session) throw new Error('Session not found');
     return session;
+}
+
+/**
+ * Mark 5-minute warning as shown
+ */
+export async function markWarningAsShown(sessionId: string) {
+    const session = await sessionService.getSession(sessionId);
+    if (!session) throw new Error('Session not found');
+
+    session.hasShownFiveMinWarning = true;
+    await sessionService.updateSession(session);
 }
 
 // ─── Helper Functions ───

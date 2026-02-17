@@ -29,6 +29,10 @@ export async function createSession(
         questions: [],
         totalQuestions: 0,
         currentQuestionIndex: 0,
+        maxQuestions: 10,
+        maxDurationMinutes: 50,
+        endsAt: null,
+        hasShownFiveMinWarning: false,
         aggregatedScores: null,
         weaknessTracker: {
             technicalWeakCount: 0,
@@ -104,6 +108,10 @@ function docToSession(doc: any): InterviewSession {
         questions: obj.questions || [],
         totalQuestions: obj.totalQuestions || 0,
         currentQuestionIndex: obj.currentQuestionIndex || 0,
+        maxQuestions: obj.maxQuestions || 10,
+        maxDurationMinutes: obj.maxDurationMinutes || 50,
+        endsAt: obj.endsAt?.toISOString?.() || obj.endsAt,
+        hasShownFiveMinWarning: obj.hasShownFiveMinWarning || false,
         aggregatedScores: obj.aggregatedScores || null,
         weaknessTracker: obj.weaknessTracker || {
             technicalWeakCount: 0,

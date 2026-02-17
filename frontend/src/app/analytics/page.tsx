@@ -13,10 +13,7 @@ export default function AnalyticsPage() {
 
     useEffect(() => {
         if (user?._id) {
-            getUserAnalytics(user._id)
-                .then(setAnalytics)
-                .catch(console.error)
-                .finally(() => setLoading(false));
+            getUserAnalytics(user._id).then(setAnalytics).catch(console.error).finally(() => setLoading(false));
         }
     }, [user]);
 
@@ -106,33 +103,16 @@ export default function AnalyticsPage() {
                     </div>
                 </Card>
 
-                <Card className="p-4 border-border/50 bg-card/50 backdrop-blur-sm">
-                    <div className="px-4 py-2 border-b border-border/50 mb-4 flex justify-between items-center">
-                        <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">Recent Progress</h3>
-                        {analytics.improvementRate !== null && (
-                            <span className={analytics.improvementRate >= 0 ? "text-emerald-500 text-xs font-bold" : "text-amber-500 text-xs font-bold"}>
-                                {analytics.improvementRate >= 0 ? '+' : ''}{analytics.improvementRate}% Growth
-                            </span>
-                        )}
-                    </div>
-                    <div className="h-[300px]">
+                <Card className="p-4 text-white">
+                    <CardHeader><CardTitle>Recent Progress</CardTitle></CardHeader>
+                    <CardContent className="h-[300px] text-white">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={recentScores}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                <XAxis dataKey="name" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis domain={[0, 10]} stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#000', borderRadius: '8px', border: '1px solid #333' }}
-                                    itemStyle={{ color: 'var(--primary)' }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="score"
-                                    stroke="var(--primary)"
-                                    strokeWidth={3}
-                                    dot={{ r: 4, fill: 'var(--primary)', strokeWidth: 2 }}
-                                    activeDot={{ r: 6, strokeWidth: 0 }}
-                                />
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+                                <XAxis dataKey="name" stroke="white" fontSize={12} />
+                                <YAxis domain={[0, 10]} stroke="white" fontSize={12} />
+                                <Tooltip contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }} />
+                                <Line type="monotone" dataKey="score" stroke="var(--accent-teal)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
