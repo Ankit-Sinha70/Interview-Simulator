@@ -69,7 +69,7 @@ export async function startInterview(
     user.interviewsUsedThisMonth += 1;
     await user.save();
 
-    const session = await sessionService.createSession(role, experienceLevel, mode);
+    const session = await sessionService.createSession(role, experienceLevel, mode, userId);
     session.status = 'IN_PROGRESS';
 
     // Set deadline (50 minutes from now)
