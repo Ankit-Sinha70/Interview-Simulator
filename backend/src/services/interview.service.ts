@@ -69,6 +69,11 @@ export async function startInterview(
     const session = await sessionService.createSession(role, experienceLevel, mode);
     session.status = 'IN_PROGRESS';
 
+    // Set deadline (60 minutes from now)
+    const endsAt = new Date();
+    endsAt.setMinutes(endsAt.getMinutes() + session.maxDurationMinutes);
+    session.endsAt = endsAt.toISOString();
+
     // Generate first question
     const firstQuestion: GeneratedQuestion = await generateQuestion({
         role: session.role,
@@ -95,6 +100,8 @@ export async function startInterview(
     return {
         sessionId: session.sessionId,
         question: firstQuestion,
+        endsAt: session.endsAt,
+        maxQuestions: session.maxQuestions,
     };
 }
 
@@ -113,6 +120,44 @@ export async function processAnswer(
     // Find the current unanswered question
     const currentQuestionIndex = session.questions.findIndex((q) => q.answer === null);
     if (currentQuestionIndex === -1) throw new Error('No pending question found');
+
+    // ─── Limit Checks (Source of Truth) ───
+    const now = new Date();
+    const isTimeExpired = session.endsAt && now > new Date(session.endsAt);
+    const isMaxQuestionsReached = session.questions.length >= session.maxQuestions;
+
+    if (isTimeExpired || isMaxQuestionsReached) {
+        console.log(`[Interview] Session ending. TimeExpired: ${isTimeExpired}, MaxQuestions: ${isMaxQuestionsReached}`);
+        session.status = isTimeExpired ? 'TIME_EXPIRED' : 'MAX_QUESTIONS_REACHED';
+
+        // Final evaluation for current answer still needs to happen
+        const answerInfo: AnswerInfo = {
+            text: answer,
+            answeredAt: now.toISOString(),
+        };
+        if (voiceMeta) answerInfo.voiceMeta = voiceMeta;
+        session.questions[currentQuestionIndex].answer = answerInfo;
+
+        // Perform final evaluation for this last answer
+        const rawEval = await evaluateAnswer({
+            question: session.questions[currentQuestionIndex].questionText,
+            answer,
+            role: session.role,
+            level: session.experienceLevel,
+            voiceMeta
+        });
+        const evalResult = scoringService.processEvaluation(rawEval, session.experienceLevel);
+        session.questions[currentQuestionIndex].evaluation = evalResult;
+
+        await sessionService.updateSession(session);
+
+        return {
+            evaluation: evalResult,
+            sessionEnded: true,
+            reason: session.status,
+            questionNumber: currentQuestionIndex + 1
+        } as any;
+    }
 
     const currentQuestion = session.questions[currentQuestionIndex];
 
@@ -246,16 +291,25 @@ export async function processAnswer(
         nextQuestion,
         scoringSummary: aggregated,
         questionNumber: currentQuestionIndex + 1,
+        sessionEnded: false
     };
 }
 
-/**
- * Get session info
- */
 export async function getSessionInfo(sessionId: string) {
     const session = await sessionService.getSession(sessionId);
     if (!session) throw new Error('Session not found');
     return session;
+}
+
+/**
+ * Mark 5-minute warning as shown
+ */
+export async function markWarningAsShown(sessionId: string) {
+    const session = await sessionService.getSession(sessionId);
+    if (!session) throw new Error('Session not found');
+
+    session.hasShownFiveMinWarning = true;
+    await sessionService.updateSession(session);
 }
 
 // ─── Helper Functions ───

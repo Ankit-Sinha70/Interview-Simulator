@@ -8,10 +8,9 @@ import {
     GeneratedQuestion,
     Evaluation,
     FinalReport,
-    VoiceMetadata
+    VoiceMetadata,
 } from '@/services/api';
 
-// Reuse types from original hook or api
 export interface InterviewHistoryEntry {
     question: GeneratedQuestion;
     evaluation: Evaluation;
@@ -27,6 +26,12 @@ interface ActiveSessionState {
     finalReport: FinalReport | null;
     error: string | null;
     isSubmitting: boolean;
+    // New Fields
+    endsAt: string | null;
+    hasShownFiveMinWarning: boolean;
+    maxQuestions: number;
+    sessionEnded: boolean;
+    endReason: string | null;
 }
 
 export function useActiveSession(sessionId: string) {
@@ -39,6 +44,11 @@ export function useActiveSession(sessionId: string) {
         finalReport: null,
         error: null,
         isSubmitting: false,
+        endsAt: null,
+        hasShownFiveMinWarning: false,
+        maxQuestions: 15,
+        sessionEnded: false,
+        endReason: null,
     });
 
     // ─── Load Session ───
@@ -48,10 +58,6 @@ export function useActiveSession(sessionId: string) {
         const load = async () => {
             try {
                 const session = await getSession(sessionId);
-
-                // Transform session data to state
-                // This depends on what backend returns. 
-                // We likely need to reconstruct history from session.questions
 
                 const history: InterviewHistoryEntry[] = session.questions
                     .filter((q: any) => q.answer && q.evaluation)
@@ -65,23 +71,13 @@ export function useActiveSession(sessionId: string) {
                         questionNumber: index + 1
                     }));
 
-                // Find current question (unanswered)
                 const currentQ = session.questions.find((q: any) => !q.answer);
 
-                // Check if completed
-                if (session.status === 'COMPLETED') {
-                    setState(s => ({
-                        ...s,
-                        status: 'COMPLETED',
-                        history,
-                        finalReport: session.finalReport
-                    }));
-                    return;
-                }
+                const isCompleted = ['COMPLETED', 'TIME_EXPIRED', 'MAX_QUESTIONS_REACHED'].includes(session.status);
 
                 setState(s => ({
                     ...s,
-                    status: 'READY',
+                    status: isCompleted ? 'COMPLETED' : 'READY',
                     history,
                     currentQuestion: currentQ ? {
                         question: currentQ.questionText,
@@ -89,7 +85,13 @@ export function useActiveSession(sessionId: string) {
                         difficulty: currentQ.difficulty
                     } : null,
                     questionNumber: currentQ ? (history.length + 1) : history.length,
-                    latestEvaluation: history.length > 0 ? history[history.length - 1].evaluation : null
+                    latestEvaluation: history.length > 0 ? history[history.length - 1].evaluation : null,
+                    finalReport: session.finalReport,
+                    endsAt: session.endsAt || null,
+                    hasShownFiveMinWarning: session.hasShownFiveMinWarning || false,
+                    maxQuestions: session.maxQuestions || 15,
+                    sessionEnded: isCompleted,
+                    endReason: isCompleted ? session.status : null,
                 }));
 
             } catch (err: any) {
@@ -100,17 +102,55 @@ export function useActiveSession(sessionId: string) {
     }, [sessionId]);
 
     // ─── Actions ───
+    const complete = useCallback(async (attentionStats?: any) => {
+        setState(s => ({ ...s, isSubmitting: true }));
+        try {
+            const report = await completeInterview(sessionId, attentionStats);
+            setState(s => ({
+                ...s,
+                status: 'COMPLETED',
+                isSubmitting: false,
+                finalReport: report,
+                sessionEnded: true,
+            }));
+        } catch (err: any) {
+            setState(s => ({ ...s, isSubmitting: false, error: err.message }));
+        }
+    }, [sessionId]);
+
     const submit = async (answer: string, voiceMeta?: VoiceMetadata) => {
         setState(s => ({ ...s, isSubmitting: true }));
         try {
             const result = await submitAnswer(sessionId, answer, voiceMeta);
+
+            if (result.sessionEnded) {
+                // If backend says it's over, still show the evaluation then auto-complete
+                setState(s => ({
+                    ...s,
+                    latestEvaluation: result.evaluation,
+                    sessionEnded: true,
+                    endReason: result.reason || 'TERMINATED',
+                    history: [
+                        ...s.history,
+                        {
+                            question: s.currentQuestion!,
+                            evaluation: result.evaluation,
+                            questionNumber: s.questionNumber
+                        }
+                    ]
+                }));
+
+                // Trigger full completion for final report
+                await complete();
+                return;
+            }
 
             setState(s => ({
                 ...s,
                 isSubmitting: false,
                 latestEvaluation: result.evaluation,
                 currentQuestion: result.nextQuestion,
-                questionNumber: result.questionNumber, // Check if this matches backend
+                questionNumber: result.questionNumber,
                 history: [
                     ...s.history,
                     {
@@ -119,21 +159,6 @@ export function useActiveSession(sessionId: string) {
                         questionNumber: s.questionNumber
                     }
                 ]
-            }));
-        } catch (err: any) {
-            setState(s => ({ ...s, isSubmitting: false, error: err.message }));
-        }
-    };
-
-    const complete = async (attentionStats?: any) => {
-        setState(s => ({ ...s, isSubmitting: true }));
-        try {
-            const report = await completeInterview(sessionId, attentionStats);
-            setState(s => ({
-                ...s,
-                status: 'COMPLETED',
-                isSubmitting: false,
-                finalReport: report
             }));
         } catch (err: any) {
             setState(s => ({ ...s, isSubmitting: false, error: err.message }));

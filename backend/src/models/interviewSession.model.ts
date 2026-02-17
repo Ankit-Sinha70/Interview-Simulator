@@ -6,7 +6,7 @@
 
 export type Role = 'Frontend Developer' | 'Backend Developer' | 'Fullstack Developer' | 'Custom';
 export type ExperienceLevel = 'Junior' | 'Mid' | 'Senior';
-export type SessionStatus = 'CREATED' | 'IN_PROGRESS' | 'COMPLETED';
+export type SessionStatus = 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED' | 'TIME_EXPIRED' | 'MAX_QUESTIONS_REACHED';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type ConfidenceLevel = 'High' | 'Medium' | 'Low';
 export type InterviewMode = 'text' | 'voice' | 'hybrid';
@@ -105,6 +105,10 @@ export interface InterviewSession {
     questions: QuestionEntry[];
     totalQuestions: number;
     currentQuestionIndex: number;
+    maxQuestions: number;
+    maxDurationMinutes: number;
+    endsAt: string | null;
+    hasShownFiveMinWarning: boolean;
     aggregatedScores: AggregatedScores | null;
     weaknessTracker: WeaknessTracker;
     topicScores: Record<string, number[]>;

@@ -75,3 +75,20 @@ export async function getSession(req: Request, res: Response, next: NextFunction
         next(error);
     }
 }
+
+/**
+ * POST /api/interview/:sessionId/warning-shown
+ */
+export async function markWarningShown(req: Request, res: Response, next: NextFunction) {
+    try {
+        const sessionId = req.params.sessionId as string;
+        await interviewService.markWarningAsShown(sessionId);
+
+        res.status(200).json({
+            success: true,
+            data: { message: 'Warning marked as shown' },
+        });
+    } catch (error) {
+        next(error);
+    }
+}
