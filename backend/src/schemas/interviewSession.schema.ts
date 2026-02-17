@@ -111,7 +111,7 @@ const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
     questions: { type: [QuestionEntrySchema] as any, default: [] },
     totalQuestions: { type: Number, default: 0 },
     currentQuestionIndex: { type: Number, default: 0 },
-    maxQuestions: { type: Number, default: 15 },
+    maxQuestions: { type: Number, default: 10 },
     maxDurationMinutes: { type: Number, default: 60 },
     endsAt: { type: Date, default: null },
     hasShownFiveMinWarning: { type: Boolean, default: false },

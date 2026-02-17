@@ -7,6 +7,11 @@ export interface IAnalyticsDoc extends Document {
     experienceLevel: string;
     mode: string;
     averageScore: number;
+    averageTechnical: number;
+    averageDepth: number;
+    averageClarity: number;
+    averageProblemSolving: number;
+    averageCommunication: number;
     weakestDimension: string;
     strongestDimension: string;
     questionsCount: number;
@@ -24,6 +29,11 @@ const AnalyticsSchema = new Schema<IAnalyticsDoc>({
     experienceLevel: { type: String, enum: ['Junior', 'Mid', 'Senior'], required: true },
     mode: { type: String, enum: ['text', 'voice', 'hybrid'], required: true },
     averageScore: { type: Number, required: true },
+    averageTechnical: { type: Number, default: 0 },
+    averageDepth: { type: Number, default: 0 },
+    averageClarity: { type: Number, default: 0 },
+    averageProblemSolving: { type: Number, default: 0 },
+    averageCommunication: { type: Number, default: 0 },
     weakestDimension: { type: String, required: true },
     strongestDimension: { type: String, required: true },
     questionsCount: { type: Number, required: true },

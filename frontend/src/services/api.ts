@@ -58,6 +58,7 @@ export interface AnswerResponse {
     questionNumber: number;
     sessionEnded: boolean;
     reason?: string;
+    finalReport?: FinalReport;
 }
 
 export interface FinalReport {

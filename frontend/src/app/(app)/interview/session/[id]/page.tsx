@@ -6,6 +6,7 @@ import { useActiveSession } from '@/hooks/useActiveSession';
 import QuestionCard from '@/components/QuestionCard';
 import AnswerInput from '@/components/AnswerInput';
 import EvaluationCard from '@/components/EvaluationCard';
+import ScoreBoard from '@/components/ScoreBoard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CameraProvider } from '@/components/interview/CameraMonitor/CameraProvider';
@@ -142,16 +143,14 @@ function SessionContent() {
     const { showQuitModal, setShowQuitModal, quitInterview, confirmQuit } = useInterviewGuard(isInterviewActive);
 
     const handleComplete = useCallback(() => {
+        // Now handled entirely by backend/SessionEnded modal
         console.log("[Interview] Auto-completing session (Time up)...");
-        actions.complete(stats);
-    }, [actions, stats]);
+    }, []);
 
-    // Redirect if completed
-    useEffect(() => {
-        if (status === 'COMPLETED') {
-            router.push(`/interview/report/${sessionId}`);
-        }
-    }, [status, sessionId, router]);
+    // Manual redirection now for scoreboard
+    const handleViewReport = useCallback(() => {
+        router.push(`/interview/report/${sessionId}`);
+    }, [router, sessionId]);
 
     if (status === 'LOADING') {
         return <div className="flex h-[50vh] items-center justify-center">Loading session...</div>;
@@ -217,7 +216,7 @@ function SessionContent() {
                                 <Brain className="w-4 h-4 text-primary" />
                                 <span className="text-sm font-bold">Progress</span>
                                 <Badge variant="secondary" className="font-mono text-[10px] bg-zinc-900 border-zinc-800">
-                                    {questionNumber} / {maxQuestions}
+                                    {questionNumber} / 10
                                 </Badge>
                             </div>
 
@@ -269,10 +268,10 @@ function SessionContent() {
                     </div>
                 )}
 
-                {/* Latest Evaluation */}
-                {latestEvaluation && (
+                {/* Latest Evaluation (Hidden during session per user request) */}
+                {latestEvaluation && sessionEnded && (
                     <div className="animate-slide-in-down">
-                        <EvaluationCard evaluation={latestEvaluation} questionNumber={questionNumber - 1} />
+                        <EvaluationCard evaluation={latestEvaluation} questionNumber={questionNumber} />
                     </div>
                 )}
 
@@ -283,28 +282,14 @@ function SessionContent() {
                     </div>
                 )}
 
-                {/* Termination Modal Overlay */}
-                {sessionEnded && status !== 'COMPLETED' && (
-                    <div className="fixed inset-0 z-[101] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                        <Card className="max-w-md w-full p-8 border-2 border-primary shadow-2xl text-center space-y-6">
-                            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                                <Clock className="w-10 h-10 text-primary animate-pulse" />
-                            </div>
-                            <div className="space-y-2">
-                                <h2 className="text-2xl font-black tracking-tight">Session Ended</h2>
-                                <p className="text-muted-foreground uppercase text-xs font-bold tracking-widest bg-muted py-1 px-3 rounded-full inline-block">
-                                    Reason: {state.endReason?.replace(/_/g, ' ') || 'Time Expired'}
-                                </p>
-                            </div>
-                            <p className="text-sm">
-                                Your data is being processed and your final report is being generated. You will be redirected shortly.
-                            </p>
-                            <div className="pt-4">
-                                <div className="w-full bg-muted h-1 rounded-full overflow-hidden">
-                                    <div className="bg-primary h-full animate-progress-indeterminate" />
-                                </div>
-                            </div>
-                        </Card>
+                {/* End of Session ScoreBoard */}
+                {sessionEnded && (
+                    <div className="animate-in fade-in slide-in-from-bottom-10 duration-700">
+                        <ScoreBoard
+                            history={state.history}
+                            aggregated={state.aggregatedScores}
+                            onViewReport={handleViewReport}
+                        />
                     </div>
                 )}
 

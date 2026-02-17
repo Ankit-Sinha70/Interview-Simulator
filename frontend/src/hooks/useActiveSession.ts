@@ -32,6 +32,7 @@ interface ActiveSessionState {
     maxQuestions: number;
     sessionEnded: boolean;
     endReason: string | null;
+    aggregatedScores: any | null;
 }
 
 export function useActiveSession(sessionId: string) {
@@ -46,9 +47,10 @@ export function useActiveSession(sessionId: string) {
         isSubmitting: false,
         endsAt: null,
         hasShownFiveMinWarning: false,
-        maxQuestions: 15,
+        maxQuestions: 10,
         sessionEnded: false,
         endReason: null,
+        aggregatedScores: null,
     });
 
     // ─── Load Session ───
@@ -89,9 +91,10 @@ export function useActiveSession(sessionId: string) {
                     finalReport: session.finalReport,
                     endsAt: session.endsAt || null,
                     hasShownFiveMinWarning: session.hasShownFiveMinWarning || false,
-                    maxQuestions: session.maxQuestions || 15,
+                    maxQuestions: session.maxQuestions || 10,
                     sessionEnded: isCompleted,
                     endReason: isCompleted ? session.status : null,
+                    aggregatedScores: session.aggregatedScores || null,
                 }));
 
             } catch (err: any) {
@@ -124,11 +127,12 @@ export function useActiveSession(sessionId: string) {
             const result = await submitAnswer(sessionId, answer, voiceMeta);
 
             if (result.sessionEnded) {
-                // If backend says it's over, still show the evaluation then auto-complete
                 setState(s => ({
                     ...s,
+                    isSubmitting: false,
                     latestEvaluation: result.evaluation,
                     sessionEnded: true,
+                    status: 'COMPLETED',
                     endReason: result.reason || 'TERMINATED',
                     history: [
                         ...s.history,
@@ -137,11 +141,10 @@ export function useActiveSession(sessionId: string) {
                             evaluation: result.evaluation,
                             questionNumber: s.questionNumber
                         }
-                    ]
+                    ],
+                    finalReport: result.finalReport || s.finalReport,
+                    aggregatedScores: result.scoringSummary || s.aggregatedScores
                 }));
-
-                // Trigger full completion for final report
-                await complete();
                 return;
             }
 
@@ -150,7 +153,7 @@ export function useActiveSession(sessionId: string) {
                 isSubmitting: false,
                 latestEvaluation: result.evaluation,
                 currentQuestion: result.nextQuestion,
-                questionNumber: result.questionNumber,
+                questionNumber: result.questionNumber + 1, // Backend returns "answered" count, so next is +1
                 history: [
                     ...s.history,
                     {
@@ -158,7 +161,8 @@ export function useActiveSession(sessionId: string) {
                         evaluation: result.evaluation,
                         questionNumber: s.questionNumber
                     }
-                ]
+                ],
+                aggregatedScores: result.scoringSummary || s.aggregatedScores
             }));
         } catch (err: any) {
             setState(s => ({ ...s, isSubmitting: false, error: err.message }));

@@ -12,9 +12,7 @@ export default function AnalyticsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user?._id) { // Ensure user ID is available locally mapped
-            // In AuthContext user might have _id or userId depending on how it's saved.
-            // Let's check AuthContext interface: interface User { _id: string; ... }
+        if (user?._id) {
             getUserAnalytics(user._id).then(setAnalytics).catch(console.error).finally(() => setLoading(false));
         }
     }, [user]);
@@ -61,13 +59,13 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-                <Card className="p-4">
+                <Card className="p-4 text-white">
                     <CardHeader><CardTitle>Skills Radar</CardTitle></CardHeader>
-                    <CardContent className="h-[300px]">
+                    <CardContent className="h-[300px] text-white">
                         <ResponsiveContainer width="100%" height="100%">
                             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={skillsData}>
                                 <PolarGrid stroke="var(--border)" />
-                                <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--foreground)', fontSize: 12 }} />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: 'white', fontSize: 12 }} />
                                 <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} />
                                 <Radar name="User" dataKey="A" stroke="var(--accent-violet)" fill="var(--accent-violet)" fillOpacity={0.5} />
                                 <Tooltip contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }} />
@@ -76,14 +74,14 @@ export default function AnalyticsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="p-4">
+                <Card className="p-4 text-white">
                     <CardHeader><CardTitle>Recent Progress</CardTitle></CardHeader>
-                    <CardContent className="h-[300px]">
+                    <CardContent className="h-[300px] text-white">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={recentScores}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
-                                <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} />
-                                <YAxis domain={[0, 10]} stroke="var(--muted-foreground)" fontSize={12} />
+                                <XAxis dataKey="name" stroke="white" fontSize={12} />
+                                <YAxis domain={[0, 10]} stroke="white" fontSize={12} />
                                 <Tooltip contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }} />
                                 <Line type="monotone" dataKey="score" stroke="var(--accent-teal)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                             </LineChart>
