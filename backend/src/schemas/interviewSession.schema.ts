@@ -36,6 +36,9 @@ const QuestionEntrySchema = new Schema({
     generatedFromWeakness: { type: String, default: null },
     answer: { type: AnswerInfoSchema, default: null },
     evaluation: { type: EvaluationSchema, default: null },
+    startedAt: { type: Date, default: null },
+    answeredAt: { type: Date, default: null },
+    timeTakenSeconds: { type: Number, default: 0 },
 }, { _id: false });
 
 const AggregatedScoresSchema = new Schema({
@@ -57,6 +60,15 @@ const WeaknessTrackerSchema = new Schema({
     communicationWeakCount: { type: Number, default: 0 },
 }, { _id: false });
 
+const TimeAnalysisSchema = new Schema({
+    averageTimePerQuestion: { type: Number, required: true },
+    fastestAnswerTime: { type: Number, required: true },
+    slowestAnswerTime: { type: Number, required: true },
+    timeEfficiencyScore: { type: Number, required: true },
+    charts: { type: [{ questionIndex: Number, timeSeconds: Number, score: Number }], default: [] },
+    insights: { type: [String], default: [] },
+}, { _id: false });
+
 const FinalReportSchema = new Schema({
     averageScore: { type: Number, required: true },
     strongestAreas: { type: [String], default: [] },
@@ -66,6 +78,7 @@ const FinalReportSchema = new Schema({
     hireBand: { type: String, enum: ['Strong Hire', 'Hire', 'Borderline', 'No Hire'], default: null },
     improvementRoadmap: { type: [String], default: [] },
     nextPreparationFocus: { type: [String], default: [] },
+    timeAnalysis: { type: TimeAnalysisSchema, default: null },
 }, { _id: false });
 
 // ─── Main Session Schema ───

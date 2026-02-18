@@ -59,12 +59,15 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
     const calculatedHireBand = getHireBand(aggregatedScores.overallAverage);
 
     // Weakness Frequency
-    const weaknessFrequency = session.questions.reduce((acc, q) => {
+    const weaknessFrequency = session.questions.reduce((acc: any, q: any) => {
         if (q.generatedFromWeakness) {
             acc[q.generatedFromWeakness] = (acc[q.generatedFromWeakness] || 0) + 1;
         }
         return acc;
     }, {} as Record<string, number>);
+
+    // ─── Time Analysis ───
+    const timeAnalysis = calculateTimeMetrics(session.questions);
 
     // ─── 2. Generate AI Report with Full Context ───
     const aiReport = await generateReport({
@@ -88,7 +91,8 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         hireBand: calculatedHireBand, // Enforce calculated
         improvementRoadmap: aiReport.improvementRoadmap || [],
         nextPreparationFocus: aiReport.nextPreparationFocus || getPersonalizedRoadmap(aggregatedScores.weakestDimension),
-        executiveSummary: aiReport.executiveSummary // New field from Master Prompt
+        executiveSummary: aiReport.executiveSummary, // New field from Master Prompt
+        timeAnalysis,
     };
 
     // Save to session
@@ -132,7 +136,7 @@ async function saveAnalytics(
             weakestDimension: session.aggregatedScores?.weakestDimension || 'N/A',
             strongestDimension: session.aggregatedScores?.strongestDimension || 'N/A',
             questionsCount: session.questions.length,
-            averageTimePerQuestion: 0,
+            averageTimePerQuestion: report.timeAnalysis?.averageTimePerQuestion || 0,
             voiceConfidenceScore: null,
             hireBand,
             promptVersion: session.promptVersion,
@@ -140,4 +144,69 @@ async function saveAnalytics(
     } catch (err) {
         console.error('[Analytics] Failed to save:', (err as Error).message);
     }
+}
+
+/**
+ * Calculate time-based metrics and insights
+ */
+function calculateTimeMetrics(questions: any[]) {
+    const answeredQuestions = questions.filter(q => q.timeTakenSeconds > 0);
+
+    if (answeredQuestions.length === 0) {
+        return {
+            averageTimePerQuestion: 0,
+            fastestAnswerTime: 0,
+            slowestAnswerTime: 0,
+            timeEfficiencyScore: 0,
+            charts: [],
+            insights: ['Not enough data to analyze time efficiency.']
+        };
+    }
+
+    const times = answeredQuestions.map(q => q.timeTakenSeconds);
+    const totalTime = times.reduce((a: number, b: number) => a + b, 0);
+    const avgTime = Math.round(totalTime / times.length);
+    const minTime = Math.min(...times);
+    const maxTime = Math.max(...times);
+
+    // Efficiency Score (Ideal: 30-90s)
+    let efficiencyPoints = 0;
+    const charts: { questionIndex: number; timeSeconds: number; score: number }[] = [];
+
+    answeredQuestions.forEach((q, i) => {
+        const t = q.timeTakenSeconds;
+        if (t >= 30 && t <= 90) efficiencyPoints += 10; // Optimal
+        else if (t < 20) efficiencyPoints += 2; // Rushed
+        else if (t > 180) efficiencyPoints += 4; // Struggling
+        else efficiencyPoints += 6; // Acceptable
+
+        charts.push({
+            questionIndex: i + 1,
+            timeSeconds: t,
+            score: q.evaluation?.overallScore || 0
+        });
+    });
+
+    const efficiencyScore = Math.round((efficiencyPoints / (answeredQuestions.length * 10)) * 100) / 10;
+
+    // Generate Insights
+    const insights: string[] = [];
+    if (avgTime < 25) insights.push('You tend to answer very quickly. Ensure you are providing enough depth.');
+    if (avgTime > 120) insights.push('Your answers are quite long on average. Try to be more concise.');
+    if (efficiencyScore > 8) insights.push('Your pacing is excellent. Most answers fall within the ideal 30-90s window.');
+
+    // Check for "Rushed but Low Score"
+    const rushedAndLow = answeredQuestions.filter(q => q.timeTakenSeconds < 20 && q.evaluation?.overallScore < 5);
+    if (rushedAndLow.length > 0) {
+        insights.push(`You rushed through ${rushedAndLow.length} questions which negatively impacted your score.`);
+    }
+
+    return {
+        averageTimePerQuestion: avgTime,
+        fastestAnswerTime: minTime,
+        slowestAnswerTime: maxTime,
+        timeEfficiencyScore: efficiencyScore,
+        charts,
+        insights
+    };
 }

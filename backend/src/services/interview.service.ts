@@ -94,6 +94,7 @@ export async function startInterview(
         type: 'initial',
         answer: null,
         evaluation: null,
+        startedAt: new Date().toISOString(),
     };
 
     session.questions.push(questionEntry);
@@ -189,6 +190,10 @@ export async function processAnswer(
 
     const evaluation = scoringService.processEvaluation(rawEvaluation, session.experienceLevel);
 
+    // Calculate time taken
+    const startedAt = new Date(currentQuestion.startedAt);
+    const timeTakenSeconds = Math.round((now.getTime() - startedAt.getTime()) / 1000);
+
     // Save the answer and evaluation
     const updatedAnswerInfo: AnswerInfo = {
         text: answer,
@@ -198,6 +203,8 @@ export async function processAnswer(
     };
     currentQuestion.answer = updatedAnswerInfo;
     currentQuestion.evaluation = evaluation;
+    currentQuestion.timeTakenSeconds = timeTakenSeconds;
+    currentQuestion.answeredAt = now.toISOString();
 
     // ─── Analytics & Tracking ───
     const weakestDim = findWeakestDimension(evaluation);
@@ -276,6 +283,7 @@ export async function processAnswer(
         generatedFromWeakness: followUp.intent,
         answer: null,
         evaluation: null,
+        startedAt: new Date().toISOString(),
     };
 
     session.questions.push(nextEntry);

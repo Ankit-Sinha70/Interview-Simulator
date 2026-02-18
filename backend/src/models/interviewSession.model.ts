@@ -68,6 +68,9 @@ export interface QuestionEntry {
     generatedFromWeakness?: string;
     answer: AnswerInfo | null;
     evaluation: Evaluation | null;
+    startedAt: string;
+    answeredAt?: string;
+    timeTakenSeconds?: number;
 }
 
 // ─── Aggregated Scores ───
@@ -140,6 +143,16 @@ export interface FinalReport {
     improvementRoadmap: string[];
     nextPreparationFocus: string[];
     executiveSummary?: string;
+    timeAnalysis?: TimeAnalysis;
+}
+
+export interface TimeAnalysis {
+    averageTimePerQuestion: number;
+    fastestAnswerTime: number;
+    slowestAnswerTime: number;
+    timeEfficiencyScore: number;
+    charts: { questionIndex: number; timeSeconds: number; score: number }[];
+    insights: string[];
 }
 
 // ─── AI Response Types ───

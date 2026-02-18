@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { FinalReport, AggregatedScores, AttentionStats } from '@/services/api';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip } from 'recharts';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface ReportViewProps {
     report: FinalReport;
@@ -62,7 +62,7 @@ export default function ReportView({ report, scores, onNewSession, attentionStat
                         Overall Score
                     </div>
                     <div className={`text-7xl font-black bg-gradient-to-r ${scoreGradient} bg-clip-text text-transparent leading-none mb-4`}>
-                        {report.averageScore}/10
+                        {report.averageScore.toFixed(1)}/10
                     </div>
                     <div className="flex items-center justify-center gap-3 flex-wrap">
                         <Badge className={`${confidenceColors[report.confidenceLevel]} text-[13px] font-bold px-5 py-1.5 border`}>
@@ -143,6 +143,78 @@ export default function ReportView({ report, scores, onNewSession, attentionStat
                                 <div className="text-xs text-muted-foreground mt-1 uppercase">Rating</div>
                             </div>
                         </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Time Analysis */}
+            {report.timeAnalysis && (
+                <Card className="animate-fadeInUp bg-card border-[var(--accent-violet)]/15 shadow-lg mb-6" style={{ animationDelay: '300ms' }}>
+                    <CardHeader>
+                        <CardTitle className="text-base font-bold text-center">⏱️ Time Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {/* Metrics Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.averageTimePerQuestion}s</div>
+                                <div className="text-xs text-muted-foreground uppercase">Avg Time</div>
+                            </div>
+                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.fastestAnswerTime}s</div>
+                                <div className="text-xs text-muted-foreground uppercase">Fastest</div>
+                            </div>
+                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.slowestAnswerTime}s</div>
+                                <div className="text-xs text-muted-foreground uppercase">Slowest</div>
+                            </div>
+                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.timeEfficiencyScore}/10</div>
+                                <div className="text-xs text-muted-foreground uppercase">Efficiency Score</div>
+                            </div>
+                        </div>
+
+                        {/* Time vs Question Chart */}
+                        <div className="h-[250px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={report.timeAnalysis.charts || []} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.5} />
+                                    <XAxis dataKey="questionIndex" tickFormatter={(val) => `Q${val}`} stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Seconds', angle: -90, position: 'insideLeft', fill: '#6B7280', fontSize: 10 }} />
+                                    <Tooltip
+                                        cursor={{ fill: 'rgba(139, 92, 246, 0.1)' }}
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                const data = payload[0].payload;
+                                                return (
+                                                    <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
+                                                        <p className="font-bold text-slate-200 mb-1">Question {data.questionIndex}</p>
+                                                        <p className="text-violet-400 text-sm">Time: <span className="font-bold">{data.timeSeconds}s</span></p>
+                                                        <p className="text-emerald-400 text-sm">Score: <span className="font-bold">{data.score}/10</span></p>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                    />
+                                    <Bar dataKey="timeSeconds" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Insights */}
+                        {report.timeAnalysis.insights && report.timeAnalysis.insights.length > 0 && (
+                            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                                <h4 className="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">💡 Efficiency Insights</h4>
+                                <ul className="space-y-2">
+                                    {report.timeAnalysis.insights.map((insight, i) => (
+                                        <li key={i} className="flex gap-2 text-sm text-slate-400">
+                                            <span className="text-violet-400">•</span> {insight}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             )}

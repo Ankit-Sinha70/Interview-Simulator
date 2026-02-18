@@ -61,6 +61,15 @@ export interface AnswerResponse {
     finalReport?: FinalReport;
 }
 
+export interface TimeAnalysis {
+    averageTimePerQuestion: number;
+    fastestAnswerTime: number;
+    slowestAnswerTime: number;
+    timeEfficiencyScore: number;
+    charts: { questionIndex: number; timeSeconds: number; score: number }[];
+    insights: string[];
+}
+
 export interface FinalReport {
     averageScore: number;
     strongestAreas: string[];
@@ -70,6 +79,7 @@ export interface FinalReport {
     hireBand: 'Strong Hire' | 'Hire' | 'Borderline' | 'No Hire';
     improvementRoadmap: string[];
     nextPreparationFocus: string[];
+    timeAnalysis?: TimeAnalysis;
 }
 
 // ─── API Client ───
