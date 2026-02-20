@@ -142,6 +142,18 @@ function SessionContent() {
 
     const { showQuitModal, setShowQuitModal, quitInterview, confirmQuit } = useInterviewGuard(isInterviewActive);
 
+    // ─── Auto-navigate to report when session ends (camera unmounts automatically) ───
+    useEffect(() => {
+        if (sessionEnded && status === 'COMPLETED') {
+            console.log('[Interview] Session ended, redirecting to report...');
+            // Small delay to let the user see final evaluation briefly
+            const timer = setTimeout(() => {
+                router.push(`/interview/report/${sessionId}`);
+            }, 1500);
+            return () => clearTimeout(timer);
+        }
+    }, [sessionEnded, status, router, sessionId]);
+
     const handleComplete = useCallback(() => {
         // Now handled entirely by backend/SessionEnded modal
         console.log("[Interview] Auto-completing session (Time up)...");

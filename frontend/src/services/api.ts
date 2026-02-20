@@ -199,6 +199,13 @@ export async function getUserAnalytics(userId: string): Promise<any> {
     });
 }
 
+export async function getAnalyticsSummary(userId: string): Promise<any> {
+    const token = localStorage.getItem('token');
+    return apiCall<any>(`/analytics/summary/${userId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+}
+
 export async function syncSubscription(): Promise<any> {
     const token = localStorage.getItem('token');
     return apiCall<any>('/subscription/sync', {

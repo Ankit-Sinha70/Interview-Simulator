@@ -121,6 +121,14 @@ async function saveAnalytics(
     hireBand: HireBand,
 ): Promise<void> {
     try {
+        // Calculate total session duration
+        let totalDurationSeconds = 0;
+        if (session.createdAt && session.completedAt) {
+            const start = new Date(session.createdAt).getTime();
+            const end = new Date(session.completedAt).getTime();
+            totalDurationSeconds = Math.round((end - start) / 1000);
+        }
+
         await AnalyticsModel.create({
             sessionId: session.sessionId,
             userId: session.userId || null,
@@ -137,6 +145,13 @@ async function saveAnalytics(
             strongestDimension: session.aggregatedScores?.strongestDimension || 'N/A',
             questionsCount: session.questions.length,
             averageTimePerQuestion: report.timeAnalysis?.averageTimePerQuestion || 0,
+            fastestAnswerTime: report.timeAnalysis?.fastestAnswerTime || 0,
+            slowestAnswerTime: report.timeAnalysis?.slowestAnswerTime || 0,
+            timeEfficiencyScore: report.timeAnalysis?.timeEfficiencyScore || 0,
+            totalDurationSeconds,
+            focusScore: session.attentionStats?.focusScore || 0,
+            distractionEvents: session.attentionStats?.distractionEvents || 0,
+            focusCategory: session.attentionStats?.focusCategory || null,
             voiceConfidenceScore: null,
             hireBand,
             promptVersion: session.promptVersion,
