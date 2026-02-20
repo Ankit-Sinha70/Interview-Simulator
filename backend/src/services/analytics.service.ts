@@ -1,4 +1,5 @@
 import { AnalyticsModel } from '../schemas/analytics.schema';
+import { InterviewSessionModel } from '../schemas/interviewSession.schema';
 
 // ─── Response Types ───
 
@@ -72,16 +73,115 @@ export interface AnalyticsSummary {
         status: string;
         sessionId: string;
     }[];
+
+    // Session Integrity
+    sessionIntegrity: {
+        completedSessions: number;
+        abandonedSessions: number;
+        abandonRate: number;
+        healthStatus: 'Healthy' | 'Moderate' | 'Needs Attention';
+        avgScoreBeforeAbandon: number;
+        avgFocusBeforeAbandon: number;
+        avgQuestionsBeforeAbandon: number;
+        mostAbandonedAtQuestion: number | null;
+        insights: string[];
+        completionStreak: number;
+    };
 }
 
 /**
  * Get comprehensive analytics summary for a user
  */
 export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSummary> {
-    const sessions = await AnalyticsModel.find({ userId }).sort({ createdAt: 1 });
+    const sessions = await AnalyticsModel.find({ userId, questionsCount: { $gte: 10 } }).sort({ createdAt: 1 });
+
+    // ── Session Integrity: Query InterviewSessionModel for abandon data ──
+    const allUserSessions = await InterviewSessionModel.find(
+        { userId, status: { $in: ['COMPLETED', 'ABANDONED', 'TIME_EXPIRED', 'MAX_QUESTIONS_REACHED'] } },
+        { status: 1, questions: 1, aggregatedScores: 1, attentionStats: 1, createdAt: 1, role: 1 }
+    ).sort({ createdAt: -1 }).lean();
+
+    const completedCount = allUserSessions.filter(s => s.status === 'COMPLETED' || s.status === 'MAX_QUESTIONS_REACHED').length;
+    const abandonedSessions = allUserSessions.filter(s => s.status === 'ABANDONED');
+    const abandonedCount = abandonedSessions.length;
+    const totalCount = completedCount + abandonedCount;
+    const abandonRate = totalCount > 0 ? round((abandonedCount / totalCount) * 100) : 0;
+
+    let healthStatus: 'Healthy' | 'Moderate' | 'Needs Attention' = 'Healthy';
+    if (abandonRate > 40) healthStatus = 'Needs Attention';
+    else if (abandonRate > 20) healthStatus = 'Moderate';
+
+    // Abandon correlation metrics
+    const abandonQCounts = abandonedSessions.map(s => s.questions?.filter((q: any) => q.answer !== null).length || 0);
+    const avgQuestionsBeforeAbandon = abandonQCounts.length > 0 ? round(avg(abandonQCounts)) : 0;
+
+    // Most frequent abandon question number
+    let mostAbandonedAtQuestion: number | null = null;
+    if (abandonQCounts.length > 0) {
+        const qCountMap: Record<number, number> = {};
+        for (const c of abandonQCounts) {
+            qCountMap[c] = (qCountMap[c] || 0) + 1;
+        }
+        mostAbandonedAtQuestion = Number(Object.entries(qCountMap).sort((a, b) => b[1] - a[1])[0][0]);
+    }
+
+    const abandonScores = abandonedSessions
+        .map(s => s.aggregatedScores?.overallAverage)
+        .filter((s): s is number => typeof s === 'number' && s > 0);
+    const avgScoreBeforeAbandon = abandonScores.length > 0 ? round(avg(abandonScores)) : 0;
+
+    const abandonFocus = abandonedSessions
+        .map(s => s.attentionStats?.focusScore)
+        .filter((f): f is number => typeof f === 'number' && f > 0);
+    const avgFocusBeforeAbandon = abandonFocus.length > 0 ? round(avg(abandonFocus)) : 0;
+
+    // Completion streak (consecutive completed from most recent)
+    let completionStreak = 0;
+    for (const s of allUserSessions) {
+        if (s.status === 'COMPLETED' || s.status === 'MAX_QUESTIONS_REACHED') {
+            completionStreak++;
+        } else {
+            break;
+        }
+    }
+
+    // Generate behavioral insights
+    const insights: string[] = [];
+    if (abandonedCount === 0) {
+        insights.push('Great discipline! You have completed every interview you started.');
+    } else {
+        if (mostAbandonedAtQuestion !== null) {
+            insights.push(`You tend to abandon interviews around Question ${mostAbandonedAtQuestion}.`);
+        }
+        if (avgFocusBeforeAbandon > 0 && avgFocusBeforeAbandon < 65) {
+            insights.push(`Abandoned sessions had lower focus scores (avg ${avgFocusBeforeAbandon}%). Improving focus may help you complete more interviews.`);
+        }
+        if (avgScoreBeforeAbandon > 0 && avgScoreBeforeAbandon < 5) {
+            insights.push(`Abandoned sessions had lower scores (avg ${avgScoreBeforeAbandon}/10). Consider reviewing weaker topics before starting.`);
+        }
+        if (abandonRate > 30) {
+            insights.push('Completing interviews gives more accurate performance insights. Try to finish each session for better analytics.');
+        }
+    }
+    if (completionStreak >= 3) {
+        insights.push(`🏅 ${completionStreak} interviews completed in a row! Keep up the streak.`);
+    }
+
+    const sessionIntegrity = {
+        completedSessions: completedCount,
+        abandonedSessions: abandonedCount,
+        abandonRate,
+        healthStatus,
+        avgScoreBeforeAbandon,
+        avgFocusBeforeAbandon,
+        avgQuestionsBeforeAbandon,
+        mostAbandonedAtQuestion,
+        insights,
+        completionStreak,
+    };
 
     if (sessions.length === 0) {
-        return getEmptySummary();
+        return { ...getEmptySummary(), sessionIntegrity };
     }
 
     const n = sessions.length;
@@ -179,11 +279,18 @@ export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSumm
     const cv = overallAvg > 0 ? stdDev / overallAvg : 1;
     const consistencyNorm = Math.max(0, Math.min(100, (1 - cv) * 100));
 
+    // ── Readiness Penalty for high abandon rate ──
+    let abandonPenalty = 0;
+    if (abandonRate > 30) {
+        abandonPenalty = Math.min(10, (abandonRate - 30) * 0.3);
+    }
+    const adjustedConsistency = Math.max(0, consistencyNorm - abandonPenalty);
+
     const readinessScore = round(
         knowledgeNorm * 0.4 +
         timeEffNorm * 0.2 +
         focusNorm * 0.2 +
-        consistencyNorm * 0.2
+        adjustedConsistency * 0.2
     );
 
     // ── Performance Trend ──
@@ -212,7 +319,7 @@ export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSumm
         knowledgeAverage: round(overallAvg),
         timeEfficiency: round(efficiencyScore),
         focusAverage: round(avgFocusScore),
-        consistencyScore: round(consistencyNorm / 10), // back to 0-10 for display
+        consistencyScore: round(adjustedConsistency / 10), // back to 0-10 for display
         totalSessions: n,
         highestScore: round(highestScore),
         overallAverage: round(overallAvg),
@@ -247,6 +354,7 @@ export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSumm
             suggestedFocus,
         },
         interviews,
+        sessionIntegrity,
     };
 }
 
@@ -317,6 +425,18 @@ function getEmptySummary(): AnalyticsSummary {
         focusStats: { avgFocusScore: 0, avgDistractions: 0, focusGrade: 'Green', focusTrend: [] },
         weaknessInsights: { recurringWeakDimension: 'N/A', recurringWeakCount: 0, lowScoreQuestionCount: 0, suggestedFocus: 'Complete more interviews to get insights.' },
         interviews: [],
+        sessionIntegrity: {
+            completedSessions: 0,
+            abandonedSessions: 0,
+            abandonRate: 0,
+            healthStatus: 'Healthy' as const,
+            avgScoreBeforeAbandon: 0,
+            avgFocusBeforeAbandon: 0,
+            avgQuestionsBeforeAbandon: 0,
+            mostAbandonedAtQuestion: null,
+            insights: [],
+            completionStreak: 0,
+        },
     };
 }
 

@@ -10,6 +10,7 @@ import TimeStats from '@/components/analytics/TimeStats';
 import FocusStats from '@/components/analytics/FocusStats';
 import WeaknessInsights from '@/components/analytics/WeaknessInsights';
 import InterviewHistoryTable from '@/components/analytics/InterviewHistoryTable';
+import SessionIntegrity from '@/components/analytics/SessionIntegrity';
 
 // ─── Skeleton Components ───
 
@@ -134,7 +135,12 @@ export default function AnalyticsPage() {
                 totalSessions={data.totalSessions}
             />
 
-            {/* 7. Interview History */}
+            {/* 7. Session Integrity */}
+            {data.sessionIntegrity && (
+                <SessionIntegrity sessionIntegrity={data.sessionIntegrity} />
+            )}
+
+            {/* 8. Interview History */}
             <InterviewHistoryTable interviews={data.interviews} />
         </div>
     );

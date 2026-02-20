@@ -92,3 +92,42 @@ export async function markWarningShown(req: Request, res: Response, next: NextFu
         next(error);
     }
 }
+
+/**
+ * GET /api/interview/active
+ */
+export async function getActiveSession(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+
+        const result = await interviewService.getActiveSession(userId);
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * POST /api/interview/abandon
+ */
+export async function abandonSession(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+
+        const { sessionId } = req.body;
+        if (!sessionId) {
+            return res.status(400).json({ success: false, error: 'sessionId is required' });
+        }
+
+        const result = await interviewService.abandonSession(sessionId, userId);
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
