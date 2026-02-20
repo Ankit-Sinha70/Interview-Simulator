@@ -87,6 +87,20 @@ export async function abandonSession(sessionId: string, userId: string) {
     return { message: 'Session abandoned' };
 }
 
+/**
+ * Auto-abandon stale sessions (IN_PROGRESS > 2 hours)
+ */
+export async function autoAbandonStaleSessions() {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const result = await InterviewSessionModel.updateMany(
+        { status: 'IN_PROGRESS', createdAt: { $lt: twoHoursAgo } },
+        { $set: { status: 'ABANDONED', completedAt: new Date() } }
+    );
+    if (result.modifiedCount > 0) {
+        console.log(`[AutoAbandon] Marked ${result.modifiedCount} stale sessions as ABANDONED`);
+    }
+}
+
 // ...
 
 /**
