@@ -142,15 +142,30 @@ export async function getSubscriptionDetails(userId: string) {
     };
 
     // PRO: fetch live billing data from Stripe
-    if (user.stripeSubscriptionId) {
+    if (user.stripeSubscriptionId && user.stripeSubscriptionId !== 'null' && user.stripeSubscriptionId !== 'undefined') {
         try {
             const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId) as unknown as Stripe.Subscription;
 
-            const periodStart = new Date((sub as any).current_period_start * 1000);
-            const periodEnd = new Date((sub as any).current_period_end * 1000);
-            const now = new Date();
-            const daysRemaining = Math.max(0, Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-            const totalDays = Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
+            const pStart = (sub as any).current_period_start;
+            const pEnd = (sub as any).current_period_end;
+
+            let periodStartStr: string | null = null;
+            let periodEndStr: string | null = null;
+            let daysRemaining: number | null = null;
+            let totalDays: number | null = null;
+
+            if (pStart && pEnd) {
+                const sDate = new Date(pStart * 1000);
+                const eDate = new Date(pEnd * 1000);
+                periodStartStr = sDate.toISOString();
+                periodEndStr = eDate.toISOString();
+
+                const now = new Date();
+                daysRemaining = Math.max(0, Math.ceil((eDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+                totalDays = Math.ceil((eDate.getTime() - sDate.getTime()) / (1000 * 60 * 60 * 24));
+            } else {
+                console.warn(`[Subscription] stripeSubscriptionId ${user.stripeSubscriptionId} returned object without billing periods.`, sub);
+            }
 
             const stripeStatus = ((sub as any).status as string).toUpperCase() as 'ACTIVE' | 'CANCELED' | 'PAST_DUE';
             if (['ACTIVE', 'CANCELED', 'PAST_DUE'].includes(stripeStatus) && user.subscriptionStatus !== stripeStatus) {
@@ -161,11 +176,12 @@ export async function getSubscriptionDetails(userId: string) {
             return {
                 ...base,
                 status: stripeStatus,
-                currentPeriodStart: periodStart.toISOString(),
-                currentPeriodEnd: periodEnd.toISOString(),
+                currentPeriodStart: periodStartStr,
+                currentPeriodEnd: periodEndStr,
                 daysRemaining,
                 totalDays,
-                cancelAtPeriodEnd: (sub as any).cancel_at_period_end as boolean,
+                cancelAtPeriodEnd: (sub as any).cancel_at_period_end as boolean || false,
+                hasStripeId: true, // Internal flag to help frontend know it's a real sub even if dates are missing somehow
             };
         } catch (err) {
             console.error('[Subscription] Stripe fetch failed:', err);

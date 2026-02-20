@@ -1,9 +1,8 @@
 'use client';
 
-import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ExternalLink } from 'lucide-react';
+import UpgradeModal from '@/components/UpgradeModal';
+import { Lock, ArrowRight } from 'lucide-react';
 
 interface InterviewRecord {
     date: string;
@@ -18,6 +17,7 @@ interface InterviewRecord {
 
 interface InterviewHistoryTableProps {
     interviews: InterviewRecord[];
+    limitedHistory?: boolean;
 }
 
 function getScoreColor(score: number): string {
@@ -42,14 +42,14 @@ function getStatusBadge(status: string) {
     );
 }
 
-export default function InterviewHistoryTable({ interviews }: InterviewHistoryTableProps) {
+export default function InterviewHistoryTable({ interviews, limitedHistory }: InterviewHistoryTableProps) {
     return (
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
+        <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-border/50">
                 <h3 className="font-bold text-sm uppercase tracking-wider text-slate-200">Interview History</h3>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{interviews.length} completed sessions</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{limitedHistory ? 'Showing last 2 sessions' : `${interviews.length} completed sessions`}</p>
             </div>
-            <CardContent className="p-0">
+            <CardContent className="p-0 flex-1 flex flex-col">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
@@ -102,9 +102,31 @@ export default function InterviewHistoryTable({ interviews }: InterviewHistoryTa
                     </table>
                 </div>
 
-                {interviews.length === 0 && (
+                {interviews.length === 0 && !limitedHistory && (
                     <div className="p-8 text-center text-muted-foreground text-sm">
                         No interview history yet. Complete your first interview to see results here.
+                    </div>
+                )}
+
+                {limitedHistory && (
+                    <div className="relative mt-auto">
+                        <div className="absolute inset-x-0 -top-12 h-12 bg-gradient-to-t from-background/90 to-transparent pointer-events-none" />
+                        <div className="bg-gradient-to-b from-background/90 to-background p-6 border-t border-border/50 text-center flex flex-col items-center justify-center space-y-3">
+                            <div className="w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center border border-violet-500/20">
+                                <Lock className="w-5 h-5 text-violet-400" />
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-sm font-bold text-white">Full History Locked</h4>
+                                <p className="text-xs text-muted-foreground max-w-[280px]">
+                                    You're viewing your last 2 sessions. Upgrade to Pro to unlock your complete interview history and advanced trend analytics.
+                                </p>
+                            </div>
+                            <UpgradeModal trigger={
+                                <button className="mt-2 flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all shadow-lg shadow-violet-500/20">
+                                    Upgrade to Pro <ArrowRight className="w-3.5 h-3.5" />
+                                </button>
+                            } />
+                        </div>
                     </div>
                 )}
             </CardContent>

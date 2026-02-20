@@ -261,7 +261,7 @@ export default function SubscriptionCard() {
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-3 pt-2 border-t border-border/50">
                     {isPro ? (
-                        sub.currentPeriodStart ? (
+                        sub.hasStripeId || sub.currentPeriodStart ? (
                             <>
                                 {!sub.cancelAtPeriodEnd && (
                                     <button

@@ -199,9 +199,17 @@ export async function getUserAnalytics(userId: string): Promise<any> {
     });
 }
 
-export async function getAnalyticsSummary(userId: string): Promise<any> {
+export interface AnalyticsSummaryResponse {
+    readinessScore: number;
+    totalInterviews: number;
+    // ... we don't need a perfectly deep type, just what the component uses
+    limitedHistory?: boolean;
+    [key: string]: any; // Allow other properties
+}
+
+export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSummaryResponse> {
     const token = localStorage.getItem('token');
-    return apiCall<any>(`/analytics/summary/${userId}`, {
+    return apiCall<AnalyticsSummaryResponse>(`/analytics/summary/${userId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
 }
@@ -258,6 +266,7 @@ export interface SubscriptionDetails {
     daysRemaining: number | null;
     totalDays: number | null;
     cancelAtPeriodEnd: boolean;
+    hasStripeId?: boolean;
     usage: {
         interviewsUsed: number;
         interviewsLimit: number | 'UNLIMITED';
