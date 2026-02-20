@@ -1,5 +1,6 @@
 import { AnalyticsModel } from '../schemas/analytics.schema';
 import { InterviewSessionModel } from '../schemas/interviewSession.schema';
+import { User } from '../models/user.model';
 
 // ─── Response Types ───
 
@@ -87,19 +88,36 @@ export interface AnalyticsSummary {
         insights: string[];
         completionStreak: number;
     };
+
+    // Downgrade Impact
+    limitedHistory?: boolean;
 }
 
 /**
  * Get comprehensive analytics summary for a user
  */
 export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSummary> {
-    const sessions = await AnalyticsModel.find({ userId, questionsCount: { $gte: 10 } }).sort({ createdAt: 1 });
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    let allSessions = await AnalyticsModel.find({ userId, questionsCount: { $gte: 10 } }).sort({ createdAt: 1 });
+
+    // Downgrade Impact: Gate history for FREE tier
+    const isFree = user.planType === 'FREE';
+    const isLimited = isFree && allSessions.length > 2;
+
+    // If limited, only use the 2 most recent sessions for all metrics/trends/history
+    const sessions = isLimited ? allSessions.slice(-2) : allSessions;
 
     // ── Session Integrity: Query InterviewSessionModel for abandon data ──
-    const allUserSessions = await InterviewSessionModel.find(
+    const allUserSessionsData = await InterviewSessionModel.find(
         { userId, status: { $in: ['COMPLETED', 'ABANDONED', 'TIME_EXPIRED', 'MAX_QUESTIONS_REACHED'] } },
         { status: 1, questions: 1, aggregatedScores: 1, attentionStats: 1, createdAt: 1, role: 1 }
     ).sort({ createdAt: -1 }).lean();
+
+    // If limited, also restrict the abandon stats to only look at recent history roughly matching the 2 sessions
+    // We'll just slice to the last 5 attempts to keep the donut chart relevant to recent activity
+    const allUserSessions = isLimited ? allUserSessionsData.slice(0, 5) : allUserSessionsData;
 
     const completedCount = allUserSessions.filter(s => s.status === 'COMPLETED' || s.status === 'MAX_QUESTIONS_REACHED').length;
     const abandonedSessions = allUserSessions.filter(s => s.status === 'ABANDONED');
@@ -181,7 +199,7 @@ export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSumm
     };
 
     if (sessions.length === 0) {
-        return { ...getEmptySummary(), sessionIntegrity };
+        return { ...getEmptySummary(), sessionIntegrity, limitedHistory: isLimited };
     }
 
     const n = sessions.length;

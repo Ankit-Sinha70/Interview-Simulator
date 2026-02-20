@@ -140,8 +140,11 @@ export default function AnalyticsPage() {
                 <SessionIntegrity sessionIntegrity={data.sessionIntegrity} />
             )}
 
-            {/* 8. Interview History */}
-            <InterviewHistoryTable interviews={data.interviews} />
+            {/* 8. Full History */}
+            <InterviewHistoryTable
+                interviews={data.interviews}
+                limitedHistory={data.limitedHistory}
+            />
         </div>
     );
 }

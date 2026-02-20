@@ -15,5 +15,8 @@ router.post('/webhook', express.raw({ type: 'application/json' }), subscriptionC
 router.post('/verify-session', authenticateToken as any, subscriptionController.verifySession as any);
 router.post('/sync', authenticateToken as any, subscriptionController.syncSubscription as any);
 
+// Subscription transparency
+router.get('/me', authenticateToken as any, subscriptionController.getMySubscription as any);
+router.post('/create-portal-session', authenticateToken as any, subscriptionController.createPortalSession as any);
 
 export default router;
