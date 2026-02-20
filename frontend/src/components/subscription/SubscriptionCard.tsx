@@ -115,7 +115,7 @@ export default function SubscriptionCard() {
                     <div>
                         <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Current Plan</p>
                         <h3 className={`text-xl font-black ${isPro ? 'text-violet-300' : 'text-zinc-300'}`}>
-                            {isPro ? '✦ Pro' : 'Free'}
+                            {isPro ? (sub.billingCycle === 'ANNUAL' ? '✦ Pro (Annual)' : '✦ Pro') : 'Free'}
                         </h3>
                     </div>
                 </div>
@@ -131,7 +131,7 @@ export default function SubscriptionCard() {
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/8 border border-amber-500/20">
                         <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
                         <p className="text-sm text-amber-300">
-                            Your subscription will <strong>cancel on {formatDate(sub.currentPeriodEnd)}</strong>. You'll retain access until then.
+                            Your {sub.billingCycle === 'ANNUAL' ? 'Annual ' : ''}subscription will <strong>cancel on {formatDate(sub.currentPeriodEnd)}</strong>. You'll retain access until then.
                         </p>
                     </div>
                 )}

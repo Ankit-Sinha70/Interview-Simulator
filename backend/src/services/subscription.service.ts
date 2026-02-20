@@ -5,17 +5,24 @@ import { User } from '../models/user.model';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 const PRICE_ID_PRO = process.env.STRIPE_PRICE_ID_PRO || 'price_dummy_123';
+const PRICE_ID_PRO_ANNUAL = process.env.STRIPE_PRICE_ID_PRO_ANNUAL;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
-export async function createCheckoutSession(userId: string) {
+export async function createCheckoutSession(userId: string, billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY') {
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
+
+    let priceId = PRICE_ID_PRO;
+    if (billingCycle === 'ANNUAL') {
+        if (!PRICE_ID_PRO_ANNUAL) throw new Error('Annual pricing is not configured on this server.');
+        priceId = PRICE_ID_PRO_ANNUAL;
+    }
 
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
             {
-                price: PRICE_ID_PRO,
+                price: priceId,
                 quantity: 1,
             },
         ],
@@ -68,11 +75,24 @@ export async function verifySession(sessionId: string) {
     if (session.payment_status === 'paid') {
         const userId = session.metadata?.userId;
         if (userId) {
+            let billingCycle: 'MONTHLY' | 'ANNUAL' | null = null;
+            if (session.subscription) {
+                try {
+                    const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+                    const interval = sub.items?.data?.[0]?.plan?.interval;
+                    if (interval === 'year') billingCycle = 'ANNUAL';
+                    else if (interval === 'month') billingCycle = 'MONTHLY';
+                } catch (e) {
+                    console.error('[Subscription] Could not fetch interval during verifySession:', e);
+                }
+            }
+
             await User.findByIdAndUpdate(userId, {
                 planType: 'PRO',
                 stripeCustomerId: session.customer as string,
                 stripeSubscriptionId: session.subscription as string,
                 subscriptionStatus: 'ACTIVE',
+                billingCycle,
             });
             return { success: true, plan: 'PRO' };
         }
@@ -135,6 +155,7 @@ export async function getSubscriptionDetails(userId: string) {
     const base = {
         planType: user.planType,
         status: user.subscriptionStatus,
+        billingCycle: user.billingCycle,
         usage: {
             interviewsUsed: user.interviewsUsedThisMonth,
             interviewsLimit: user.planType === 'PRO' ? 'UNLIMITED' : 2,
@@ -146,8 +167,8 @@ export async function getSubscriptionDetails(userId: string) {
         try {
             const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId) as unknown as Stripe.Subscription;
 
-            const pStart = (sub as any).current_period_start;
-            const pEnd = (sub as any).current_period_end;
+            const pStart = (sub as any).current_period_start || sub.items?.data?.[0]?.current_period_start || (sub as any).start_date;
+            const pEnd = (sub as any).current_period_end || sub.items?.data?.[0]?.current_period_end || (pStart ? pStart + 30 * 24 * 60 * 60 : null);
 
             let periodStartStr: string | null = null;
             let periodEndStr: string | null = null;
@@ -181,7 +202,7 @@ export async function getSubscriptionDetails(userId: string) {
                 daysRemaining,
                 totalDays,
                 cancelAtPeriodEnd: (sub as any).cancel_at_period_end as boolean || false,
-                hasStripeId: true, // Internal flag to help frontend know it's a real sub even if dates are missing somehow
+                hasStripeId: true,
             };
         } catch (err) {
             console.error('[Subscription] Stripe fetch failed:', err);

@@ -13,7 +13,10 @@ export async function createCheckoutSession(req: Request, res: Response, next: N
             return;
         }
 
-        const url = await subscriptionService.createCheckoutSession(userId);
+        const { billingCycle } = req.body;
+        const validCycle = billingCycle === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
+
+        const url = await subscriptionService.createCheckoutSession(userId, validCycle);
         res.json({ url });
     } catch (error) {
         next(error);

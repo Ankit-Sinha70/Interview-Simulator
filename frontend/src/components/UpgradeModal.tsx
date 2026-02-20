@@ -33,6 +33,7 @@ export default function UpgradeModal({ trigger }: UpgradeModalProps) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
+                body: JSON.stringify({ billingCycle: 'MONTHLY' }),
             });
             const data = await res.json();
             if (data.url) {

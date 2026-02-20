@@ -67,7 +67,7 @@ export default function Home() {
       verifySubscription(sessionId)
         .then(() => refreshUser())
         .then(() => {
-          router.replace('/');
+          router.replace('/analytics?upgraded=true');
         })
         .catch(err => console.error("Verification failed", err));
     }

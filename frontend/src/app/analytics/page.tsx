@@ -50,11 +50,27 @@ function AnalyticsSkeleton() {
 
 // ─── Main Page ───
 
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Sparkles, X } from 'lucide-react';
+
+// ... (other imports stay the same)
+
 export default function AnalyticsPage() {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const router = useRouter();
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showCelebration, setShowCelebration] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('upgraded') === 'true') {
+            setShowCelebration(true);
+            // Clean up the URL so it doesn't show next time they naturally navigate here
+            router.replace('/analytics', { scroll: false });
+        }
+    }, [searchParams, router]);
 
     useEffect(() => {
         if (user?._id) {
@@ -94,7 +110,30 @@ export default function AnalyticsPage() {
     }
 
     return (
-        <div className="container mx-auto p-6 space-y-6 animate-fade-in">
+        <div className="container mx-auto p-6 space-y-6 animate-fade-in relative">
+            {/* Celebration Toast */}
+            {showCelebration && (
+                <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 border border-violet-400/30 shadow-2xl flex items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4 fade-in duration-500">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                            <Sparkles className="w-6 h-6 text-white animate-pulse" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-extrabold text-white">🎉 Pro Activated!</h2>
+                            <p className="text-white/80 text-sm mt-0.5">
+                                Your full analytics history, performance trends, and focus metrics are now unlocked.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setShowCelebration(false)}
+                        className="p-2 bg-black/10 hover:bg-black/20 rounded-full text-white/80 hover:text-white transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col gap-1">
                 <h1 className="text-3xl font-bold tracking-tight text-white">Analytics Hub</h1>

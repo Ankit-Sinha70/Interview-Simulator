@@ -260,13 +260,14 @@ export async function abandonSession(sessionId: string): Promise<any> {
 
 export interface SubscriptionDetails {
     planType: 'FREE' | 'PRO';
-    status: string;
+    status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE';
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
     daysRemaining: number | null;
     totalDays: number | null;
     cancelAtPeriodEnd: boolean;
     hasStripeId?: boolean;
+    billingCycle?: 'MONTHLY' | 'ANNUAL' | null;
     usage: {
         interviewsUsed: number;
         interviewsLimit: number | 'UNLIMITED';
