@@ -146,8 +146,8 @@ export async function getSubscriptionDetails(userId: string) {
         try {
             const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId) as unknown as Stripe.Subscription;
 
-            const pStart = (sub as any).current_period_start;
-            const pEnd = (sub as any).current_period_end;
+            const pStart = (sub as any).current_period_start || sub.items?.data?.[0]?.current_period_start || (sub as any).start_date;
+            const pEnd = (sub as any).current_period_end || sub.items?.data?.[0]?.current_period_end || (pStart ? pStart + 30 * 24 * 60 * 60 : null);
 
             let periodStartStr: string | null = null;
             let periodEndStr: string | null = null;
