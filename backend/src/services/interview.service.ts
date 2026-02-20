@@ -40,6 +40,52 @@ const MAX_QUESTIONS = 10;
 const SESSION_DURATION_MINUTES = 50;
 
 import { User } from '../models/user.model';
+import { InterviewSessionModel } from '../schemas/interviewSession.schema';
+
+/**
+ * Get active (IN_PROGRESS) session for a user
+ */
+export async function getActiveSession(userId: string) {
+    const doc = await InterviewSessionModel.findOne({
+        userId,
+        status: 'IN_PROGRESS',
+    }).sort({ createdAt: -1 });
+
+    if (!doc) {
+        return { hasActiveSession: false };
+    }
+
+    const questionsAnswered = doc.questions.filter((q: any) => q.answer !== null).length;
+    const currentQ = doc.questions.find((q: any) => !q.answer);
+
+    return {
+        hasActiveSession: true,
+        sessionId: doc.sessionId,
+        questionCount: questionsAnswered,
+        maxQuestions: doc.maxQuestions || 10,
+        endsAt: doc.endsAt?.toISOString?.() || doc.endsAt,
+        role: doc.role,
+        currentQuestion: currentQ ? {
+            question: currentQ.questionText,
+            topic: currentQ.topic,
+            difficulty: currentQ.difficulty,
+        } : null,
+    };
+}
+
+/**
+ * Abandon an active session
+ */
+export async function abandonSession(sessionId: string, userId: string) {
+    const doc = await InterviewSessionModel.findOne({ sessionId, userId, status: 'IN_PROGRESS' });
+    if (!doc) throw new Error('No active session found to abandon');
+
+    doc.status = 'ABANDONED';
+    doc.completedAt = new Date();
+    await doc.save();
+
+    return { message: 'Session abandoned' };
+}
 
 // ...
 

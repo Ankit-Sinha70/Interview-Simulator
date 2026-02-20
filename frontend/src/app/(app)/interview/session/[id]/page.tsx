@@ -154,6 +154,19 @@ function SessionContent() {
         }
     }, [sessionEnded, status, router, sessionId]);
 
+    // ─── Prevent accidental refresh/close during active interview ───
+    useEffect(() => {
+        if (!isInterviewActive) return;
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isInterviewActive]);
+
     const handleComplete = useCallback(() => {
         // Now handled entirely by backend/SessionEnded modal
         console.log("[Interview] Auto-completing session (Time up)...");

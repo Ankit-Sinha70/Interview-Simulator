@@ -78,7 +78,7 @@ export interface AnalyticsSummary {
  * Get comprehensive analytics summary for a user
  */
 export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSummary> {
-    const sessions = await AnalyticsModel.find({ userId }).sort({ createdAt: 1 });
+    const sessions = await AnalyticsModel.find({ userId, questionsCount: { $gte: 10 } }).sort({ createdAt: 1 });
 
     if (sessions.length === 0) {
         return getEmptySummary();

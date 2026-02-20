@@ -216,3 +216,34 @@ export async function syncSubscription(): Promise<any> {
         }
     });
 }
+
+// ─── Active Session Detection ───
+
+export interface ActiveSessionResponse {
+    hasActiveSession: boolean;
+    sessionId?: string;
+    questionCount?: number;
+    maxQuestions?: number;
+    endsAt?: string;
+    role?: string;
+    currentQuestion?: GeneratedQuestion | null;
+}
+
+export async function getActiveSession(): Promise<ActiveSessionResponse> {
+    const token = localStorage.getItem('token');
+    return apiCall<ActiveSessionResponse>('/interview/active', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+}
+
+export async function abandonSession(sessionId: string): Promise<any> {
+    const token = localStorage.getItem('token');
+    return apiCall<any>('/interview/abandon', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ sessionId }),
+    });
+}
