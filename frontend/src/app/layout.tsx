@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { Toaster } from "@/components/ui/sonner";
 
 
 
@@ -29,8 +30,10 @@ export default function RootLayout({
               {children}
             </div>
           </ClientLayout>
+          <Toaster richColors position="top-center" />
         </AuthProvider>
       </body>
     </html>
   );
 }
+

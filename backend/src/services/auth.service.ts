@@ -1,7 +1,9 @@
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { User, IUser } from '../models/user.model';
+import { sendPasswordResetEmail } from '../utils/email';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_123';
 const SALT_ROUNDS = 10;
@@ -58,3 +60,77 @@ export async function verifyToken(token: string): Promise<any> {
 export async function getUserById(userId: string): Promise<IUser | null> {
     return User.findById(userId).select('-passwordHash');
 }
+
+// ─── Forgot Password ───
+
+export async function forgotPassword(email: string): Promise<void> {
+    const user = await User.findOne({ email });
+
+    // SECURITY: Always return silently — never reveal if email exists
+    if (!user) {
+        console.log(`[Auth] Forgot password requested for unknown email: ${email}`);
+        return;
+    }
+
+    // Generate cryptographically secure token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Hash token before storing (never store raw)
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    // Store hashed token + 30 minute expiry
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    await user.save();
+
+    // Send email with RAW token (not the hash)
+    try {
+        await sendPasswordResetEmail(user.email, resetToken);
+    } catch (err) {
+        console.error('[Auth] Failed to send reset email:', err);
+        // Clear the token so the user can retry
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+        throw new Error('Failed to send reset email. Please try again later.');
+    }
+}
+
+// ─── Validate Reset Token ───
+
+export async function validateResetToken(token: string): Promise<boolean> {
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: new Date() },
+    });
+
+    return !!user;
+}
+
+// ─── Reset Password ───
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+        throw new Error('Invalid or expired reset token');
+    }
+
+    // Hash new password
+    user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // Invalidate token immediately (one-time use)
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+    console.log(`[Auth] Password reset successfully for user ${user._id}`);
+}
+

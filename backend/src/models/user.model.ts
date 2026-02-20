@@ -15,6 +15,9 @@ export interface IUser extends Document {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
 
+    resetPasswordToken?: string;
+    resetPasswordExpires?: Date;
+
     interviewsUsedThisMonth: number;
     monthlyResetDate: Date;
 
@@ -37,6 +40,9 @@ const UserSchema: Schema = new Schema({
     billingCycle: { type: String, enum: ['MONTHLY', 'ANNUAL', null], default: null },
     stripeCustomerId: { type: String },
     stripeSubscriptionId: { type: String },
+
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
 
     interviewsUsedThisMonth: { type: Number, default: 0 },
     monthlyResetDate: { type: Date, default: () => new Date() },

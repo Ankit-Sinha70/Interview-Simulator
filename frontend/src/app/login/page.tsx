@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +48,13 @@ export default function LoginPage() {
                         {!isLogin && <Input placeholder="Name" value={name} onChange={e => setName(e.target.value)} required />}
                         <Input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
                         <Input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
+                        {isLogin && (
+                            <div className="text-right">
+                                <Link href="/forgot-password" className="text-sm text-violet-400 hover:text-violet-300 transition-colors">
+                                    Forgot Password?
+                                </Link>
+                            </div>
+                        )}
                         <Button type="submit" className="w-full">{isLogin ? 'Sign In' : 'Sign Up'}</Button>
                     </form>
                     <div className="text-center mt-4">
