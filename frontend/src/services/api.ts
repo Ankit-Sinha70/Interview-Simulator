@@ -247,3 +247,37 @@ export async function abandonSession(sessionId: string): Promise<any> {
         body: JSON.stringify({ sessionId }),
     });
 }
+
+// ─── Subscription Transparency ───
+
+export interface SubscriptionDetails {
+    planType: 'FREE' | 'PRO';
+    status: string;
+    currentPeriodStart: string | null;
+    currentPeriodEnd: string | null;
+    daysRemaining: number | null;
+    totalDays: number | null;
+    cancelAtPeriodEnd: boolean;
+    usage: {
+        interviewsUsed: number;
+        interviewsLimit: number | 'UNLIMITED';
+    };
+}
+
+export async function getMySubscription(): Promise<SubscriptionDetails> {
+    const token = localStorage.getItem('token');
+    return apiCall<SubscriptionDetails>('/subscription/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+}
+
+export async function createPortalSession(): Promise<{ url: string }> {
+    const token = localStorage.getItem('token');
+    return apiCall<{ url: string }>('/subscription/create-portal-session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
+    });
+}

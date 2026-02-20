@@ -65,7 +65,7 @@ export async function verifySession(req: Request, res: Response, next: NextFunct
             return;
         }
         const result = await subscriptionService.verifySession(sessionId);
-        res.json(result);
+        res.json({ success: true, data: result });
     } catch (error) {
         next(error);
     }
@@ -76,6 +76,28 @@ export async function syncSubscription(req: Request, res: Response, next: NextFu
         const userId = (req as any).user?.userId;
         const result = await subscriptionService.syncSubscriptionStatus(userId);
         res.json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getMySubscription(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+        const data = await subscriptionService.getSubscriptionDetails(userId);
+        res.json({ success: true, data });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function createPortalSession(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+        const url = await subscriptionService.createPortalSession(userId);
+        res.json({ success: true, data: { url } });
     } catch (error) {
         next(error);
     }
