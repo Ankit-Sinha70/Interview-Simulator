@@ -108,6 +108,8 @@ export default function Home() {
     setError(null);
     try {
       const result: AnswerResponse = await submitAnswer(sessionId, answer, meta);
+
+      // Save this Q&A to history
       if (currentQuestion) {
         setHistory((prev) => [
           ...prev,
@@ -119,10 +121,24 @@ export default function Home() {
         ]);
       }
       setLatestEvaluation(result.evaluation);
-      setCurrentQuestion(result.nextQuestion);
-      setQuestionNumber(result.questionNumber + 1);
       setVoiceTranscript(undefined);
       setVoiceMeta(undefined);
+
+      if (result.sessionEnded) {
+        console.log('[Interview] Session ended by backend:', result.reason);
+        if (result.finalReport) {
+          setReport(result.finalReport);
+        } else {
+          const finalReport = await completeInterview(sessionId, attentionStatsRef.current || undefined);
+          setReport(finalReport);
+        }
+        setCurrentQuestion(null);
+        setAppState('report');
+        return;
+      }
+
+      setCurrentQuestion(result.nextQuestion);
+      setQuestionNumber(result.questionNumber + 1);
     } catch (err: any) {
       setError(err.message || 'Failed to submit answer');
     } finally {

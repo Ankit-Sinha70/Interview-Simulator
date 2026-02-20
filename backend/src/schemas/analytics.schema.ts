@@ -16,6 +16,13 @@ export interface IAnalyticsDoc extends Document {
     strongestDimension: string;
     questionsCount: number;
     averageTimePerQuestion: number;
+    fastestAnswerTime: number;
+    slowestAnswerTime: number;
+    timeEfficiencyScore: number;
+    totalDurationSeconds: number;
+    focusScore: number;
+    distractionEvents: number;
+    focusCategory: string | null;
     voiceConfidenceScore: number | null;
     hireBand: string | null;
     promptVersion: string;
@@ -38,6 +45,13 @@ const AnalyticsSchema = new Schema<IAnalyticsDoc>({
     strongestDimension: { type: String, required: true },
     questionsCount: { type: Number, required: true },
     averageTimePerQuestion: { type: Number, default: 0 },
+    fastestAnswerTime: { type: Number, default: 0 },
+    slowestAnswerTime: { type: Number, default: 0 },
+    timeEfficiencyScore: { type: Number, default: 0 },
+    totalDurationSeconds: { type: Number, default: 0 },
+    focusScore: { type: Number, default: 0 },
+    distractionEvents: { type: Number, default: 0 },
+    focusCategory: { type: String, default: null },
     voiceConfidenceScore: { type: Number, default: null },
     hireBand: { type: String, default: null },
     promptVersion: { type: String, required: true },
