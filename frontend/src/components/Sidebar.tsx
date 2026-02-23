@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, BarChart3, Settings, LogOut, Zap } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -96,15 +97,22 @@ export default function Sidebar() {
                         <p className="text-sm font-bold truncate">{user.name}</p>
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        onClick={logout}
+                    <ConfirmDialog
                         title="Sign Out"
+                        description="Are you sure you want to sign out?"
+                        confirmText="Sign Out"
+                        onConfirm={logout}
+                        destructive
                     >
-                        <LogOut className="w-4 h-4" />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            title="Sign Out"
+                        >
+                            <LogOut className="w-4 h-4" />
+                        </Button>
+                    </ConfirmDialog>
                 </div>
             </div>
         </aside>

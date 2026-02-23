@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SubscriptionCard from '@/components/subscription/SubscriptionCard';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function SettingsPage() {
     const { user, logout } = useAuth();
@@ -46,9 +47,17 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex justify-end pt-2">
-                <Button variant="destructive" onClick={logout} className="text-sm">
-                    Sign Out
-                </Button>
+                <ConfirmDialog
+                    title="Sign Out"
+                    description="Are you sure you want to sign out from your account?"
+                    confirmText="Sign Out"
+                    onConfirm={logout}
+                    destructive
+                >
+                    <Button variant="destructive" className="text-sm">
+                        Sign Out
+                    </Button>
+                </ConfirmDialog>
             </div>
         </div>
     );

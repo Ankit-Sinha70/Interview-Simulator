@@ -27,6 +27,21 @@ const PASSWORD_RULES: PasswordCheck[] = [
 type PageState = 'validating' | 'valid' | 'invalid' | 'success';
 
 export default function ResetPasswordPage() {
+    return (
+        <React.Suspense fallback={
+            <div className="fixed inset-0 flex items-center justify-center p-4 z-10">
+                <div className="flex items-center gap-3 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Loading...</span>
+                </div>
+            </div>
+        }>
+            <ResetPasswordContent />
+        </React.Suspense>
+    );
+}
+
+function ResetPasswordContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const token = searchParams.get('token');

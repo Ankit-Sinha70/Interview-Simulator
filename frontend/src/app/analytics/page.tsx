@@ -56,6 +56,14 @@ import { Sparkles, X } from 'lucide-react';
 // ... (other imports stay the same)
 
 export default function AnalyticsPage() {
+    return (
+        <React.Suspense fallback={<AnalyticsSkeleton />}>
+            <AnalyticsContent />
+        </React.Suspense>
+    );
+}
+
+function AnalyticsContent() {
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const router = useRouter();

@@ -7,6 +7,8 @@ const router = Router();
 
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.post('/google', authController.googleLogin);
+router.post('/meta', authController.metaLogin);
 router.get('/me', authenticateToken, authController.getMe);
 
 // Password Reset Flow
