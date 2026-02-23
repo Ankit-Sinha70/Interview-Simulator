@@ -2,11 +2,16 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
+import axios from 'axios';
 import { User, IUser } from '../models/user.model';
 import { sendPasswordResetEmail } from '../utils/email';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_123';
 const SALT_ROUNDS = 10;
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export async function register(name: string, email: string, password: string): Promise<{ token: string, user: IUser }> {
     // Check if user exists
@@ -38,6 +43,10 @@ export async function login(email: string, password: string): Promise<{ token: s
         throw new Error('Invalid credentials');
     }
 
+    if (!user.passwordHash) {
+        throw new Error('Please login using your connected OAuth provider');
+    }
+
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
         throw new Error('Invalid credentials');
@@ -47,6 +56,78 @@ export async function login(email: string, password: string): Promise<{ token: s
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
     return { token, user };
+}
+
+export async function googleLogin(idToken: string): Promise<{ token: string, user: IUser }> {
+    const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+        throw new Error('Invalid Google token');
+    }
+
+    const { email, name, sub: googleId, email_verified } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+        if (!user.providerId) {
+            user.provider = 'google';
+            user.providerId = googleId;
+            user.emailVerified = email_verified || false;
+            await user.save();
+        }
+    } else {
+        user = new User({
+            name: name || 'Google User',
+            email,
+            provider: 'google',
+            providerId: googleId,
+            emailVerified: email_verified || false,
+        });
+        await user.save();
+    }
+
+    const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    return { token, user };
+}
+
+export async function metaLogin(accessToken: string): Promise<{ token: string, user: IUser }> {
+    try {
+        const response = await axios.get(`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`);
+        const { id: metaId, name, email } = response.data;
+
+        if (!email) {
+            throw new Error('Email not provided by Meta');
+        }
+
+        let user = await User.findOne({ email });
+
+        if (user) {
+            if (!user.providerId) {
+                user.provider = 'meta';
+                user.providerId = metaId;
+                user.emailVerified = true;
+                await user.save();
+            }
+        } else {
+            user = new User({
+                name: name || 'Meta User',
+                email,
+                provider: 'meta',
+                providerId: metaId,
+                emailVerified: true,
+            });
+            await user.save();
+        }
+
+        const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+        return { token, user };
+    } catch (err: any) {
+        throw new Error('Invalid Meta token');
+    }
 }
 
 export async function verifyToken(token: string): Promise<any> {

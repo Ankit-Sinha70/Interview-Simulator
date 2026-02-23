@@ -35,7 +35,48 @@ export async function login(req: Request, res: Response, next: NextFunction) {
         const result = await authService.login(email, password);
         res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-        if (error.message === 'Invalid credentials') {
+        if (error.message === 'Invalid credentials' || error.message === 'Please login using your connected OAuth provider') {
+            return res.status(401).json({ success: false, error: error.message });
+        }
+        next(error);
+    }
+}
+
+/**
+ * POST /api/auth/google
+ */
+export async function googleLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { idToken } = req.body;
+        if (!idToken) {
+            return res.status(400).json({ success: false, error: 'idToken is required' });
+        }
+
+        const result = await authService.googleLogin(idToken);
+        res.status(200).json({ success: true, data: result });
+    } catch (error: any) {
+        if (error.message === 'Invalid Google token') {
+            return res.status(401).json({ success: false, error: error.message });
+        }
+        // If it's a "Email already in use" type of error, handle similarly (though linked automatically)
+        next(error);
+    }
+}
+
+/**
+ * POST /api/auth/meta
+ */
+export async function metaLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { accessToken } = req.body;
+        if (!accessToken) {
+            return res.status(400).json({ success: false, error: 'accessToken is required' });
+        }
+
+        const result = await authService.metaLogin(accessToken);
+        res.status(200).json({ success: true, data: result });
+    } catch (error: any) {
+        if (error.message === 'Invalid Meta token' || error.message === 'Email not provided by Meta') {
             return res.status(401).json({ success: false, error: error.message });
         }
         next(error);

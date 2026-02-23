@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Eye, EyeOff, Plus, X } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface RecentLogin {
     email: string;
@@ -30,6 +31,19 @@ export default function LoginPage() {
                 setRecentLogins(JSON.parse(stored));
             } catch (e) {
                 console.error("Failed to parse recent logins", e);
+            }
+        }
+
+        // Handle Meta OAuth Redirect
+        if (typeof window !== 'undefined' && window.location.hash) {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            const state = hashParams.get('state');
+
+            if (accessToken && state === 'meta_login_state') {
+                // Clear hash from URL immediately for cleanliness
+                window.history.replaceState(null, '', window.location.pathname);
+                handleOAuthSubmit('meta', { accessToken });
             }
         }
     }, []);
@@ -61,6 +75,23 @@ export default function LoginPage() {
                 setRecentLogins(updatedLogins);
                 localStorage.setItem('recentLogins', JSON.stringify(updatedLogins));
             }
+
+            login(data.data.token, data.data.user);
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
+    const handleOAuthSubmit = async (provider: 'google' | 'meta', payload: any) => {
+        setError('');
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/${provider}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error);
 
             login(data.data.token, data.data.user);
         } catch (err: any) {
@@ -206,6 +237,49 @@ export default function LoginPage() {
                                     )}
                                 </div>
                             </form>
+
+                            <div className="mt-6">
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-white/10"></div>
+                                    </div>
+                                    <div className="relative flex justify-center text-sm">
+                                        <span className="px-2 bg-[#120f22] text-slate-400">Or continue with</span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 space-y-3">
+                                    <div className="flex justify-center w-full [&>div]:w-full [&>div]:flex [&>div]:justify-center">
+                                        <GoogleLogin
+                                            onSuccess={credentialResponse => {
+                                                handleOAuthSubmit('google', { idToken: credentialResponse.credential });
+                                            }}
+                                            onError={() => {
+                                                setError('Google login failed');
+                                            }}
+                                            theme="filled_black"
+                                            size="large"
+                                            shape="pill"
+                                            width="356" // approximately fits the container
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const appId = process.env.NEXT_PUBLIC_META_APP_ID || '';
+                                            const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/login` : '';
+                                            const url = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&state=meta_login_state&response_type=token&scope=email,public_profile`;
+
+                                            // Handle redirection or popup appropriately
+                                            window.location.href = url;
+                                        }}
+                                        className="w-full h-10 font-medium text-sm bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-full transition-all flex items-center justify-center gap-2"
+                                    >
+                                        Continue with Facebook
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Switch Mode Button */}
