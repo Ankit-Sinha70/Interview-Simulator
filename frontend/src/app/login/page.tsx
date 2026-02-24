@@ -264,7 +264,7 @@ export default function LoginPage() {
                                         />
                                     </div>
 
-                                    <button
+                                    {/* <button
                                         type="button"
                                         onClick={() => {
                                             const appId = process.env.NEXT_PUBLIC_META_APP_ID || '';
@@ -277,7 +277,7 @@ export default function LoginPage() {
                                         className="w-full h-10 font-medium text-sm bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-full transition-all flex items-center justify-center gap-2"
                                     >
                                         Continue with Facebook
-                                    </button>
+                                    </button> */}
                                 </div>
                             </div>
                         </div>
