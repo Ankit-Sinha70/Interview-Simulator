@@ -34,7 +34,7 @@ export function PrivacyModal({ onEnable }: { onEnable: () => void }) {
                     </button>
                     <button
                         onClick={() => { setIsMonitoring(true); setIsOpen(false); onEnable(); }}
-                        className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium shadow-lg shadow-primary/20 transition-colors"
+                        className="flex-1 px-4 py-2 bg-primary text-primary-foreground hover:bg-secondary/90 text-white rounded-lg font-medium shadow-lg shadow-secondary/20 transition-colors"
                     >
                         Enable
                     </button>

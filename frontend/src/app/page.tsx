@@ -92,6 +92,16 @@ function HomeContent() {
     }
   }, [user, authLoading, router]);
 
+  // Sidebar Visibility Management
+  useEffect(() => {
+    if (appState === 'interview') {
+      document.body.classList.add('hide-sidebar');
+    } else {
+      document.body.classList.remove('hide-sidebar');
+    }
+    return () => document.body.classList.remove('hide-sidebar');
+  }, [appState]);
+
   // ─── Start Interview ───
   const handleStart = useCallback(async (role: string, experienceLevel: 'Junior' | 'Mid' | 'Senior') => {
     setIsLoading(true);
@@ -247,7 +257,7 @@ function HomeContent() {
       )}
 
       {appState === 'interview' && (
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
+        <main className="flex-1 w-full max-w-8xl mx-auto px-4 sm:px-6 py-6 pb-24">
 
 
 

@@ -30,6 +30,7 @@ function CameraManager({ children }: { children: React.ReactNode }) {
     const loopRef = useRef<number>(0);
     const frameCountRef = useRef(0);
     const lastSyncRef = useRef(0);
+    const initRef = useRef(false);
 
     const runLoop = useCallback(async () => {
         if (!isMonitoring) {
@@ -77,31 +78,35 @@ function CameraManager({ children }: { children: React.ReactNode }) {
         setIsModelLoaded(true);
     }, [calculateGaze, isLookingAway, update, setIsLookAway, setGazeDirection, setIsModelLoaded]);
 
+    // Called when the MediaPipe script finishes loading
+    const handleScriptLoad = useCallback(async () => {
+        if (initRef.current) return;
+        initRef.current = true;
+
+        try {
+            await startCamera();
+            await loadModel(onResults);
+            loopRef.current = requestAnimationFrame(runLoop);
+        } catch (err) {
+            console.error("[CameraProvider] Initialization failed:", err);
+        }
+    }, [startCamera, loadModel, onResults, runLoop]);
+
     useEffect(() => {
-        const init = async () => {
-            try {
-                await startCamera();
-                const fm = await loadModel(onResults);
-                loopRef.current = requestAnimationFrame(runLoop);
-            } catch (err) {
-                console.error("Initialization failed", err);
-            }
-        };
-
-        init();
-
         return () => {
             cancelAnimationFrame(loopRef.current);
             stopCamera();
             closeModel();
         };
-    }, [startCamera, loadModel, onResults, runLoop, stopCamera, closeModel]);
+    }, [stopCamera, closeModel]);
 
     return (
         <>
             <Script
                 src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"
                 strategy="afterInteractive"
+                onLoad={handleScriptLoad}
+                onError={(e) => console.error("[CameraProvider] MediaPipe script failed to load:", e)}
             />
             <video
                 ref={videoRef}
@@ -113,3 +118,4 @@ function CameraManager({ children }: { children: React.ReactNode }) {
         </>
     );
 }
+

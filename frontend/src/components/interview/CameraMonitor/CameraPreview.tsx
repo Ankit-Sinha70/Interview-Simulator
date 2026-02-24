@@ -9,16 +9,36 @@ export function CameraPreview() {
         isMonitoring, isModelLoaded, gazeDirection, isLookAway, stats, setIsMonitoring
     } = useAttention();
 
-    const [position, setPosition] = useState({ x: 20, y: 20 });
+    const CAMERA_W = 320;
+    const CAMERA_H = 240;
+
+    const clampPosition = (x: number, y: number) => {
+        const minX = 12;
+        const maxX = window.innerWidth - CAMERA_W - 12;
+        const minY = 12;
+        const maxY = window.innerHeight - CAMERA_H - 12;
+        return {
+            x: Math.max(minX, Math.min(maxX, x)),
+            y: Math.max(minY, Math.min(maxY, y)),
+        };
+    };
+
+    const [position, setPosition] = useState({ x: 0, y: 0 });
     const isDragging = useRef(false);
     const dragStart = useRef({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        setPosition({
-            x: window.innerWidth - 340,
-            y: window.innerHeight - 260
-        });
+        setPosition(clampPosition(
+            window.innerWidth - CAMERA_W - 20,
+            window.innerHeight - CAMERA_H - 20,
+        ));
+
+        const handleResize = () => {
+            setPosition((prev) => clampPosition(prev.x, prev.y));
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     const onMouseDown = (e: React.MouseEvent) => {
@@ -32,10 +52,10 @@ export function CameraPreview() {
     useEffect(() => {
         const onMouseMove = (e: MouseEvent) => {
             if (!isDragging.current) return;
-            setPosition({
-                x: e.clientX - dragStart.current.x,
-                y: e.clientY - dragStart.current.y
-            });
+            setPosition(clampPosition(
+                e.clientX - dragStart.current.x,
+                e.clientY - dragStart.current.y,
+            ));
         };
         const onMouseUp = () => { isDragging.current = false; };
         window.addEventListener("mousemove", onMouseMove);

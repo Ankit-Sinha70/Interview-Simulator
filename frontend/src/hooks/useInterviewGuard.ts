@@ -39,7 +39,7 @@ export function useInterviewGuard(active: boolean) {
     const confirmQuit = useCallback(() => {
         console.log("[InterviewGuard] confirmQuit action - redirecting");
         setShowQuitModal(false);
-        router.push("/dashboard");
+        router.push("/");
     }, [router]);
 
     return {
