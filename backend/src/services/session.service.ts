@@ -3,6 +3,7 @@ import { InterviewSessionModel } from '../schemas/interviewSession.schema';
 import { InterviewSession, Role, ExperienceLevel, InterviewMode } from '../models/interviewSession.model';
 import { isDbConnected } from '../config/db.config';
 import { getCurrentPromptVersion } from './promptVersion.service';
+import { getDifficultyBand } from '../constants/difficultyMatrix';
 
 // ─── In-Memory Fallback Store ───
 const memoryStore = new Map<string, InterviewSession>();
@@ -24,6 +25,7 @@ export async function createSession(
         userId: userId || undefined,
         role,
         experienceLevel,
+        difficultyBand: getDifficultyBand(experienceLevel),
         mode,
         status: 'CREATED',
         questions: [],
@@ -103,6 +105,7 @@ function docToSession(doc: any): InterviewSession {
         userId: obj.userId,
         role: obj.role,
         experienceLevel: obj.experienceLevel,
+        difficultyBand: obj.difficultyBand || { min: 1, max: 10 },
         mode: obj.mode,
         status: obj.status,
         questions: obj.questions || [],

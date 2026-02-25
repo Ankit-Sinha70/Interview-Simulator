@@ -4,6 +4,13 @@
 
 // ─── Enums & Literal Types ───
 
+// ─── Difficulty Band ───
+
+export interface DifficultyBand {
+    min: number; // 1-10 scale
+    max: number;
+}
+
 export type Role = 'Frontend Developer' | 'Backend Developer' | 'Fullstack Developer' | 'Custom';
 export type ExperienceLevel = 'Junior' | 'Mid' | 'Senior';
 export type SessionStatus = 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED' | 'TIME_EXPIRED' | 'MAX_QUESTIONS_REACHED';
@@ -64,6 +71,7 @@ export interface QuestionEntry {
     questionText: string;
     topic: string;
     difficulty: Difficulty;
+    levelScore: number; // 1-10 numeric difficulty score within band
     type: QuestionType;
     generatedFromWeakness?: string;
     answer: AnswerInfo | null;
@@ -103,6 +111,7 @@ export interface InterviewSession {
     userId?: string;
     role: Role | string;
     experienceLevel: ExperienceLevel;
+    difficultyBand: DifficultyBand;
     mode: InterviewMode;
     status: SessionStatus;
     questions: QuestionEntry[];
@@ -160,6 +169,7 @@ export interface TimeAnalysis {
 export interface GeneratedQuestion {
     question: string;
     difficulty: Difficulty;
+    levelScore: number;
     topic: string;
 }
 
@@ -168,5 +178,6 @@ export interface FollowUpQuestion {
     focusArea: string; // Keep for backward compatibility, mapped to 'topic'
     topic: string;
     difficulty: Difficulty;
+    levelScore: number;
     intent: FollowUpIntent;
 }

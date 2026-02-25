@@ -65,6 +65,7 @@ function HomeContent() {
   const [history, setHistory] = useState<InterviewHistoryEntry[]>([]);
   const [latestEvaluation, setLatestEvaluation] = useState<Evaluation | null>(null);
   const [report, setReport] = useState<FinalReport | null>(null);
+  const [experienceLevel, setExperienceLevel] = useState<'Junior' | 'Mid' | 'Senior'>('Junior');
 
   // Voice state
   const [voiceTranscript, setVoiceTranscript] = useState<string | undefined>();
@@ -107,6 +108,7 @@ function HomeContent() {
     setIsLoading(true);
     setError(null);
     try {
+      setExperienceLevel(experienceLevel);
       const result = await startInterview({ role, experienceLevel, mode: 'text' });
       setSessionId(result.sessionId);
       setCurrentQuestion(result.question);

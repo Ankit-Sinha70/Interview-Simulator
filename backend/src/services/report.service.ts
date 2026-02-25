@@ -104,9 +104,17 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         attentionStats: attentionStats || null,
     } as any);
 
+    // ─── Calculate Difficulty Consistency ───
+    const expLevel = session.experienceLevel as ExperienceLevel;
+    const totalQs = session.questions.length;
+    const withinBand = session.questions.filter(q =>
+        isDifficultyAllowed(q.difficulty, expLevel)
+    ).length;
+    const difficultyConsistency = totalQs > 0 ? Math.round((withinBand / totalQs) * 100) : 100;
+
     // Save analytics (only if DB is connected)
     if (isDbConnected()) {
-        saveAnalytics(session, finalReport, calculatedHireBand).catch(() => { });
+        saveAnalytics(session, finalReport, calculatedHireBand, difficultyConsistency).catch(() => { });
     }
 
     return finalReport;
@@ -119,6 +127,7 @@ async function saveAnalytics(
     session: any,
     report: FinalReport,
     hireBand: HireBand,
+    difficultyConsistency: number = 100,
 ): Promise<void> {
     try {
         // Calculate total session duration
@@ -154,6 +163,7 @@ async function saveAnalytics(
             focusCategory: session.attentionStats?.focusCategory || null,
             voiceConfidenceScore: null,
             hireBand,
+            difficultyConsistency,
             promptVersion: session.promptVersion,
         });
     } catch (err) {

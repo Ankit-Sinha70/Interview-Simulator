@@ -18,6 +18,7 @@ export interface StartInterviewRequest {
 export interface GeneratedQuestion {
     question: string;
     difficulty: 'easy' | 'medium' | 'hard';
+    levelScore?: number;
     topic: string;
 }
 

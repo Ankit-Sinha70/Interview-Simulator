@@ -25,6 +25,7 @@ import {
     determineFollowUpIntent,
     findWeakestDimension,
 } from '../utils/scoreCalculator';
+import { clampDifficulty } from '../constants/difficultyMatrix';
 
 // ─── Weakness Dimension Map ───
 
@@ -151,6 +152,7 @@ export async function startInterview(
         questionText: firstQuestion.question,
         topic: firstQuestion.topic,
         difficulty: firstQuestion.difficulty,
+        levelScore: firstQuestion.levelScore || 1,
         type: 'initial',
         answer: null,
         evaluation: null,

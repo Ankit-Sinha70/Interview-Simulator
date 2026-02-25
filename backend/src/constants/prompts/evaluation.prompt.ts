@@ -51,9 +51,24 @@ Evaluation Guidelines:
    - Clear articulation of ideas?
 
 Experience-Level Adjustment:
-- Junior: Expect foundational understanding.
-- Mid: Expect implementation details and reasoning.
-- Senior: Expect architectural thinking, trade-offs, scalability awareness.
+- Junior (0-2 years):
+  * Expect foundational understanding of concepts.
+  * Good answers demonstrate basic syntax knowledge, simple use-case awareness.
+  * Do NOT penalize for lack of deep architectural knowledge.
+  * Do NOT expect system design thinking.
+  * A Junior who explains basics correctly and clearly should score 7+.
+  * Depth score should be evaluated relative to Junior expectations (basics only).
+- Mid (2-5 years):
+  * Expect implementation details and reasoning.
+  * Good answers include practical examples, pattern usage, trade-off awareness.
+  * Should demonstrate ability to solve moderate problems independently.
+  * Depth should include "how" and "why", not just "what".
+- Senior (5+ years):
+  * Expect architectural thinking, trade-offs, scalability awareness.
+  * Penalize superficial answers that lack depth.
+  * Should demonstrate leadership-level technical decision making.
+  * Should discuss edge cases, failure modes, and system implications.
+  * A Senior giving only basic explanations should score low on depth.
 
 Scoring Rules:
 - Scores must range from 1 to 10.

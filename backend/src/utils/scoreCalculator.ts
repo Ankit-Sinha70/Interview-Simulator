@@ -1,4 +1,5 @@
-import { Evaluation, ExperienceLevel, Difficulty, AggregatedScores, HireBand } from '../models/interviewSession.model';
+import { Evaluation, ExperienceLevel, Difficulty, AggregatedScores, HireBand, DifficultyBand } from '../models/interviewSession.model';
+import { clampDifficulty } from '../constants/difficultyMatrix';
 
 // ─── Role-Aware Weight Maps ───
 
@@ -133,9 +134,13 @@ export function findWeakestDimension(evaluation: Evaluation): string {
 const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard'];
 
 /**
- * Get next difficulty level — gradual escalation
+ * Get next difficulty level — gradual escalation, clamped within experience band
  */
-export function getNextDifficulty(currentDifficulty: Difficulty, overallScore: number): Difficulty {
+export function getNextDifficulty(
+    currentDifficulty: Difficulty,
+    overallScore: number,
+    experienceLevel?: ExperienceLevel,
+): Difficulty {
     const currentIndex = DIFFICULTY_ORDER.indexOf(currentDifficulty);
     if (overallScore > 8 && currentIndex < DIFFICULTY_ORDER.length - 1) return DIFFICULTY_ORDER[currentIndex + 1];
     if (overallScore <= 5 && currentIndex > 0) return DIFFICULTY_ORDER[currentIndex - 1];

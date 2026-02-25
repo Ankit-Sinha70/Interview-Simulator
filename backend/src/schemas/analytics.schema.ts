@@ -25,6 +25,7 @@ export interface IAnalyticsDoc extends Document {
     focusCategory: string | null;
     voiceConfidenceScore: number | null;
     hireBand: string | null;
+    difficultyConsistency: number; // % of questions within allowed band
     promptVersion: string;
     createdAt: Date;
 }
@@ -54,6 +55,7 @@ const AnalyticsSchema = new Schema<IAnalyticsDoc>({
     focusCategory: { type: String, default: null },
     voiceConfidenceScore: { type: Number, default: null },
     hireBand: { type: String, default: null },
+    difficultyConsistency: { type: Number, default: 100 },
     promptVersion: { type: String, required: true },
 }, {
     timestamps: { createdAt: true, updatedAt: false },

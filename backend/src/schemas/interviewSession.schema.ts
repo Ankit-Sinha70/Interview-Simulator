@@ -32,6 +32,7 @@ const QuestionEntrySchema = new Schema({
     questionText: { type: String, required: true },
     topic: { type: String, required: true },
     difficulty: { type: String, enum: ['easy', 'medium', 'hard'], required: true },
+    levelScore: { type: Number, default: 1 },
     type: { type: String, enum: ['initial', 'followup'], required: true },
     generatedFromWeakness: { type: String, default: null },
     answer: { type: AnswerInfoSchema, default: null },
@@ -88,6 +89,7 @@ export interface IInterviewSessionDoc extends Document {
     userId: string | null;
     role: string;
     experienceLevel: string;
+    difficultyBand: { min: number; max: number };
     mode: string;
     status: string;
     questions: any[];
@@ -119,6 +121,7 @@ const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
     userId: { type: String, default: null, index: true },
     role: { type: String, required: true },
     experienceLevel: { type: String, enum: ['Junior', 'Mid', 'Senior'], required: true },
+    difficultyBand: { type: DifficultyBandSchema, default: () => ({ min: 1, max: 10 }) },
     mode: { type: String, enum: ['text', 'voice', 'hybrid'], default: 'text' },
     status: { type: String, enum: ['CREATED', 'IN_PROGRESS', 'COMPLETED', 'ABANDONED', 'TIME_EXPIRED', 'MAX_QUESTIONS_REACHED'], default: 'CREATED', index: true },
     questions: { type: [QuestionEntrySchema] as any, default: [] },
