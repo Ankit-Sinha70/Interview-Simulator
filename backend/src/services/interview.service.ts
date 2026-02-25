@@ -22,6 +22,7 @@ import {
     determineFollowUpIntent,
     findWeakestDimension,
 } from '../utils/scoreCalculator';
+import { clampDifficulty } from '../constants/difficultyMatrix';
 
 // ─── Weakness Dimension Map ───
 
@@ -78,6 +79,7 @@ export async function startInterview(
         questionText: firstQuestion.question,
         topic: firstQuestion.topic,
         difficulty: firstQuestion.difficulty,
+        levelScore: firstQuestion.levelScore || 1,
         type: 'initial',
         answer: null,
         evaluation: null,
@@ -175,7 +177,11 @@ export async function processAnswer(
 
     // Determine Intent & Target Difficulty
     const followUpIntent = determineFollowUpIntent(evaluation, topicMastered);
-    const targetDifficulty = getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore);
+    const targetDifficulty = getNextDifficulty(
+        currentQuestion.difficulty,
+        evaluation.overallScore,
+        session.experienceLevel as ExperienceLevel,
+    );
 
     // Build Question History for Anti-Repetition
     const questionHistory = session.questions.map(q => q.questionText);
@@ -201,7 +207,8 @@ export async function processAnswer(
     const nextQuestion: GeneratedQuestion = {
         question: followUp.question,
         topic: followUp.topic,
-        difficulty: followUp.difficulty
+        difficulty: followUp.difficulty,
+        levelScore: followUp.levelScore || 1,
     };
 
     // Track intent for analytics/debugging if needed
@@ -213,6 +220,7 @@ export async function processAnswer(
         questionText: nextQuestion.question,
         topic: nextQuestion.topic,
         difficulty: nextQuestion.difficulty,
+        levelScore: nextQuestion.levelScore || 1,
         type: 'followup',
         generatedFromWeakness,
         answer: null,

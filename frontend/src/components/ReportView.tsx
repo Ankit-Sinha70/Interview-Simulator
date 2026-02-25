@@ -5,14 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { FinalReport } from '@/services/api';
+import { FinalReport, AggregatedScores } from '@/services/api';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip } from 'recharts';
 
 interface ReportViewProps {
     report: FinalReport;
+    scores: AggregatedScores;
     onNewSession: () => void;
+    experienceLevel?: 'Junior' | 'Mid' | 'Senior';
 }
 
-export default function ReportView({ report, onNewSession }: ReportViewProps) {
+export default function ReportView({ report, scores, onNewSession, experienceLevel }: ReportViewProps) {
     const confidenceColors: Record<string, string> = {
         High: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
         Medium: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
@@ -34,6 +37,42 @@ export default function ReportView({ report, onNewSession }: ReportViewProps) {
         : report.averageScore >= 4
             ? 'from-amber-400 to-orange-400'
             : 'from-red-400 to-rose-500';
+
+    const radarData = [
+        { subject: 'Technical', A: scores?.averageTechnical || 0, fullMark: 10 },
+        { subject: 'Depth', A: scores?.averageDepth || 0, fullMark: 10 },
+        { subject: 'Problem Solving', A: scores?.averageProblemSolving || 0, fullMark: 10 },
+        { subject: 'Clarity', A: scores?.averageClarity || 0, fullMark: 10 },
+        { subject: 'Communication', A: scores?.averageCommunication || 0, fullMark: 10 },
+    ];
+
+    // Level Performance Insight
+    const getLevelInsight = () => {
+        if (!experienceLevel) return null;
+        const score = report.averageScore;
+
+        if (experienceLevel === 'Junior' && score >= 8) {
+            return { emoji: '🚀', text: 'You\'re performing above Junior level! Consider attempting Mid-level interviews.', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+        }
+        if (experienceLevel === 'Junior' && score >= 6) {
+            return { emoji: '💪', text: 'Solid Junior performance. Keep practicing to build confidence for Mid-level.', color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' };
+        }
+        if (experienceLevel === 'Mid' && score >= 8) {
+            return { emoji: '⭐', text: 'Excellent! You\'re performing at Senior level. Consider testing yourself there.', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+        }
+        if (experienceLevel === 'Mid' && score < 5) {
+            return { emoji: '📖', text: 'Focus on strengthening fundamentals. Junior-level practice might help build a stronger foundation.', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' };
+        }
+        if (experienceLevel === 'Senior' && score >= 8) {
+            return { emoji: '🏆', text: 'Outstanding Senior-level performance. You\'re interview-ready!', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+        }
+        if (experienceLevel === 'Senior' && score < 6) {
+            return { emoji: '📚', text: 'Senior-level interviews are demanding. Consider reviewing key architecture concepts.', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' };
+        }
+        return null;
+    };
+
+    const levelInsight = getLevelInsight();
 
     return (
         <div className="max-w-[750px] mx-auto px-6 py-10">
@@ -62,9 +101,9 @@ export default function ReportView({ report, onNewSession }: ReportViewProps) {
                         </Badge>
                         {report.hireBand && (
                             <Badge className={`${report.hireBand === 'Strong Hire' ? 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' :
-                                    report.hireBand === 'Hire' ? 'text-sky-400 bg-sky-500/15 border-sky-500/30' :
-                                        report.hireBand === 'Borderline' ? 'text-amber-400 bg-amber-500/15 border-amber-500/30' :
-                                            'text-red-400 bg-red-500/15 border-red-500/30'
+                                report.hireBand === 'Hire' ? 'text-sky-400 bg-sky-500/15 border-sky-500/30' :
+                                    report.hireBand === 'Borderline' ? 'text-amber-400 bg-amber-500/15 border-amber-500/30' :
+                                        'text-red-400 bg-red-500/15 border-red-500/30'
                                 } text-[13px] font-bold px-5 py-1.5 border`}>
                                 {report.hireBand}
                             </Badge>
@@ -72,6 +111,47 @@ export default function ReportView({ report, onNewSession }: ReportViewProps) {
                     </div>
                 </CardContent>
             </Card>
+
+
+
+            {/* Radar Chart */}
+            <Card className="animate-fadeInUp bg-card border-border shadow-lg mb-6" style={{ animationDelay: '150ms' }}>
+                <CardHeader>
+                    <CardTitle className="text-base font-bold text-center">🏆 Performance Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] w-full flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                            <PolarGrid stroke="#374151" />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                            <Radar
+                                name="Score"
+                                dataKey="A"
+                                stroke="#8b5cf6"
+                                strokeWidth={3}
+                                fill="#8b5cf6"
+                                fillOpacity={0.3}
+                            />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#fff' }}
+                                itemStyle={{ color: '#a78bfa' }}
+                            />
+                        </RadarChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+
+
+            {/* Level Performance Insight */}
+            {levelInsight && (
+                <div className="animate-fadeInUp mb-6" style={{ animationDelay: '150ms' }}>
+                    <div className={`rounded-xl border px-5 py-4 flex items-center gap-3 ${levelInsight.color}`}>
+                        <span className="text-2xl">{levelInsight.emoji}</span>
+                        <p className="text-sm font-medium">{levelInsight.text}</p>
+                    </div>
+                </div>
+            )}
+
 
             {/* Strongest & Weakest Areas */}
             <div className="animate-fadeInUp grid grid-cols-2 gap-4 mb-6" style={{ animationDelay: '200ms' }}>

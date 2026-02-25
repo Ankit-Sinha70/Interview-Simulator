@@ -41,6 +41,7 @@ export default function Home() {
   const [history, setHistory] = useState<InterviewHistoryEntry[]>([]);
   const [latestEvaluation, setLatestEvaluation] = useState<Evaluation | null>(null);
   const [report, setReport] = useState<FinalReport | null>(null);
+  const [experienceLevel, setExperienceLevel] = useState<'Junior' | 'Mid' | 'Senior'>('Junior');
 
   // Voice state
   const [voiceTranscript, setVoiceTranscript] = useState<string | undefined>();
@@ -52,6 +53,7 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     try {
+      setExperienceLevel(experienceLevel);
       const result = await startInterview({ role, experienceLevel, mode: 'text' });
       setSessionId(result.sessionId);
       setCurrentQuestion(result.question);
@@ -158,8 +160,17 @@ export default function Home() {
       )}
 
       {appState === 'report' && report && (
-        <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          <ReportView report={report} onNewSession={handleNewSession} />
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 pb-12">
+          <ReportView report={report} onNewSession={handleNewSession} experienceLevel={experienceLevel} scores={{
+            averageTechnical: 0,
+            averageDepth: 0,
+            averageClarity: 0,
+            averageProblemSolving: 0,
+            averageCommunication: 0,
+            overallAverage: report.averageScore,
+            strongestDimension: report.strongestAreas[0] || 'N/A',
+            weakestDimension: report.weakestAreas[0] || 'N/A'
+          }} />
         </main>
       )}
 

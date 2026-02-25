@@ -3,6 +3,7 @@ import { generateReport } from '../ai/report.engine';
 import {
     FinalReport,
     HireBand,
+    ExperienceLevel,
 } from '../models/interviewSession.model';
 import {
     calculateVariance,
@@ -13,6 +14,7 @@ import {
 } from '../utils/scoreCalculator';
 import { isDbConnected } from '../config/db.config';
 import { AnalyticsModel } from '../schemas/analytics.schema';
+import { isDifficultyAllowed } from '../constants/difficultyMatrix';
 
 /**
  * Complete an interview and generate the final enriched report
@@ -77,9 +79,17 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         completedAt: new Date().toISOString(),
     } as any);
 
+    // ─── Calculate Difficulty Consistency ───
+    const expLevel = session.experienceLevel as ExperienceLevel;
+    const totalQs = session.questions.length;
+    const withinBand = session.questions.filter(q =>
+        isDifficultyAllowed(q.difficulty, expLevel)
+    ).length;
+    const difficultyConsistency = totalQs > 0 ? Math.round((withinBand / totalQs) * 100) : 100;
+
     // Save analytics (only if DB is connected)
     if (isDbConnected()) {
-        saveAnalytics(session, finalReport, calculatedHireBand).catch(() => { });
+        saveAnalytics(session, finalReport, calculatedHireBand, difficultyConsistency).catch(() => { });
     }
 
     return finalReport;
@@ -92,6 +102,7 @@ async function saveAnalytics(
     session: any,
     report: FinalReport,
     hireBand: HireBand,
+    difficultyConsistency: number = 100,
 ): Promise<void> {
     try {
         await AnalyticsModel.create({
@@ -107,6 +118,7 @@ async function saveAnalytics(
             averageTimePerQuestion: 0,
             voiceConfidenceScore: null,
             hireBand,
+            difficultyConsistency,
             promptVersion: session.promptVersion,
         });
     } catch (err) {

@@ -13,6 +13,7 @@ export interface IAnalyticsDoc extends Document {
     averageTimePerQuestion: number;
     voiceConfidenceScore: number | null;
     hireBand: string | null;
+    difficultyConsistency: number; // % of questions within allowed band
     promptVersion: string;
     createdAt: Date;
 }
@@ -30,6 +31,7 @@ const AnalyticsSchema = new Schema<IAnalyticsDoc>({
     averageTimePerQuestion: { type: Number, default: 0 },
     voiceConfidenceScore: { type: Number, default: null },
     hireBand: { type: String, default: null },
+    difficultyConsistency: { type: Number, default: 100 },
     promptVersion: { type: String, required: true },
 }, {
     timestamps: { createdAt: true, updatedAt: false },
