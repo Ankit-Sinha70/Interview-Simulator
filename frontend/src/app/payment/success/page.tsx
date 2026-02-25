@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 import Confetti from 'react-confetti';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const sessionId = searchParams.get('session_id');
@@ -180,5 +180,17 @@ export default function PaymentSuccessPage() {
                 </Card>
             </div>
         </div>
+    );
+}
+
+export default function PaymentSuccessPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-[#0a0a1a]">
+                <Loader2 className="w-12 h-12 text-[var(--accent-violet)] animate-spin" />
+            </div>
+        }>
+            <PaymentSuccessContent />
+        </Suspense>
     );
 }
