@@ -4,6 +4,7 @@ import {
     FinalReport,
     HireBand,
     AttentionStats,
+    ExperienceLevel,
 } from '../models/interviewSession.model';
 import {
     calculateVariance,
@@ -14,6 +15,7 @@ import {
 } from '../utils/scoreCalculator';
 import { isDbConnected } from '../config/db.config';
 import { AnalyticsModel } from '../schemas/analytics.schema';
+import { isDifficultyAllowed } from '../constants/difficultyMatrix';
 // ...
 export async function generateFinalReport(sessionId: string, attentionStats?: AttentionStats): Promise<FinalReport> {
     const session = await sessionService.getSession(sessionId);

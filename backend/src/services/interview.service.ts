@@ -341,6 +341,7 @@ export async function processAnswer(
         questionText: followUp.question,
         topic: followUp.topic,
         difficulty: followUp.difficulty,
+        levelScore: followUp.levelScore || 1,
         type: 'followup',
         generatedFromWeakness: followUp.intent,
         answer: null,
