@@ -265,13 +265,34 @@ function HomeContent() {
           <header className="sticky top-4 z-40 bg-background/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-sm px-4 py-3 mb-8 flex items-center justify-between animate-slide-in-down">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" title="Live" />
-              <h1 className="text-sm font-bold tracking-tight text-muted-foreground uppercase">Interview Session</h1>
+              <h1 className="text-sm font-bold tracking-tight text-muted-foreground uppercase hidden sm:block">Interview Session</h1>
               <Badge variant="outline" className="text-xs border-[var(--accent-violet)] text-[var(--accent-violet)] bg-[var(--accent-violet)]/5">
                 Q{questionNumber}
               </Badge>
+              {(() => {
+                // Calculate running average if we have any evaluations
+                const scores = [...history.map(h => h.evaluation.overallScore)];
+                if (latestEvaluation) scores.push(latestEvaluation.overallScore);
+
+                if (scores.length === 0) return null;
+
+                const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+                const roundedAvg = avg.toFixed(1);
+
+                const colorClass = avg >= 7 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' :
+                  avg >= 4 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' :
+                    'text-red-500 bg-red-500/10 border-red-500/20';
+
+                return (
+                  <Badge variant="outline" className={`text-xs ml-1 ${colorClass}`}>
+                    Avg: {roundedAvg}/10
+                  </Badge>
+                );
+              })()}
+
               {user?.planType === 'FREE' && (
-                <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-500 ml-2">
-                  Free User ({user.interviewsUsedThisMonth}/2 Used)
+                <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-500 ml-2 hidden sm:inline-flex">
+                  Free ({user.interviewsUsedThisMonth}/2)
                 </Badge>
               )}
             </div>

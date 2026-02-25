@@ -27,8 +27,8 @@ export async function createCheckoutSession(userId: string, billingCycle: 'MONTH
             },
         ],
         mode: 'subscription',
-        success_url: `${CLIENT_URL}/?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${CLIENT_URL}/pricing`,
+        success_url: `${CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${CLIENT_URL}/payment/cancel`,
         customer_email: user.email,
         metadata: {
             userId: user._id.toString(),
