@@ -70,6 +70,11 @@ const TimeAnalysisSchema = new Schema({
     insights: { type: [String], default: [] },
 }, { _id: false });
 
+const DifficultyBandSchema = new Schema({
+    min: { type: Number, required: true },
+    max: { type: Number, required: true },
+}, { _id: false });
+
 const FinalReportSchema = new Schema({
     averageScore: { type: Number, required: true },
     strongestAreas: { type: [String], default: [] },
