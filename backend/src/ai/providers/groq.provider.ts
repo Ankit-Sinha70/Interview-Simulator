@@ -2,43 +2,32 @@ import Groq from 'groq-sdk';
 import { IAIProvider } from '../ai.types';
 import { aiConfig } from '../../config/ai.config';
 
-/**
- * Groq AI Provider
- * Uses Llama 3 models via Groq's high-speed API.
- */
 export class GroqProvider implements IAIProvider {
     readonly name = 'groq';
     private client: Groq;
 
     constructor() {
-        if (!aiConfig.groq.apiKey) {
-            console.warn('[Groq] Warning: GROQ_API_KEY is missing. Provider will fail if called.');
+        if (!process.env.GROQ_API_KEY) {
+            throw new Error('GROQ_API_KEY is not set in environment variables');
         }
         this.client = new Groq({
-            apiKey: aiConfig.groq.apiKey || 'dummy_key', // prevent crash on startup, fail on call
+            apiKey: process.env.GROQ_API_KEY,
         });
     }
 
     async callAI<T>(prompt: string): Promise<T> {
-        if (!aiConfig.groq.apiKey) {
-            throw new Error('GROQ_API_KEY is not configured.');
-        }
-
         try {
             const completion = await this.client.chat.completions.create({
                 messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a helpful AI assistant that outputs strictly valid JSON.',
-                    },
                     {
                         role: 'user',
                         content: prompt,
                     },
                 ],
-                model: aiConfig.groq.model,
+                model: aiConfig.groq.model || 'llama-3.3-70b-versatile',
+                temperature: 0.3,
+                max_tokens: 2048,
                 response_format: { type: 'json_object' },
-                temperature: 0.7,
             });
 
             const content = completion.choices[0]?.message?.content;
@@ -53,29 +42,17 @@ export class GroqProvider implements IAIProvider {
         }
     }
 
-    /**
-     * Helper to clean markdown code blocks and excess text from JSON responses
-     */
-    private cleanAndParseJSON<T>(text: string): T {
-        let cleaned = text.trim();
+    private cleanAndParseJSON<T>(content: string): T {
+        // 1. Remove markdown code blocks if present
+        let clean = content.replace(/```json\n?/g, '').replace(/```/g, '');
 
-        // Remove markdown code blocks (```json ... ```)
-        if (cleaned.startsWith('```')) {
-            cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
-        }
-
-        // Extract JSON specifically if there's extra text
-        const firstBrace = cleaned.indexOf('{');
-        const lastBrace = cleaned.lastIndexOf('}');
-
-        if (firstBrace !== -1 && lastBrace !== -1) {
-            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-        }
+        // 2. Trim whitespace
+        clean = clean.trim();
 
         try {
-            return JSON.parse(cleaned) as T;
+            return JSON.parse(clean) as T;
         } catch (e) {
-            console.error('[Groq] JSON Parse failed. Content:', text);
+            console.error('[Groq] JSON Parse Error. Content:', content);
             throw new Error('Failed to parse AI response as JSON');
         }
     }

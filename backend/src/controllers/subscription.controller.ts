@@ -13,7 +13,10 @@ export async function createCheckoutSession(req: Request, res: Response, next: N
             return;
         }
 
-        const url = await subscriptionService.createCheckoutSession(userId);
+        const { billingCycle } = req.body;
+        const validCycle = billingCycle === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
+
+        const url = await subscriptionService.createCheckoutSession(userId, validCycle);
         res.json({ url });
     } catch (error) {
         next(error);
@@ -55,5 +58,50 @@ export async function webhook(req: Request, res: Response) {
     } catch (err: any) {
         console.error(`[Stripe] Handler Error: ${err.message}`);
         res.status(500).send('Handler failed');
+    }
+}
+export async function verifySession(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { sessionId } = req.body;
+        if (!sessionId) {
+            res.status(400).json({ error: 'Session ID required' });
+            return;
+        }
+        const result = await subscriptionService.verifySession(sessionId);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function syncSubscription(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        const result = await subscriptionService.syncSubscriptionStatus(userId);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getMySubscription(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+        const data = await subscriptionService.getSubscriptionDetails(userId);
+        res.json({ success: true, data });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function createPortalSession(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+        const url = await subscriptionService.createPortalSession(userId);
+        res.json({ success: true, data: { url } });
+    } catch (error) {
+        next(error);
     }
 }

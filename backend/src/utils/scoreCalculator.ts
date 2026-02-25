@@ -28,9 +28,9 @@ const WEIGHT_MAPS: Record<ExperienceLevel, WeightMap> = {
     },
     Senior: {
         depthScore: 0.30,
-        technicalScore: 0.25,
         problemSolvingScore: 0.25,
-        clarityScore: 0.10,
+        technicalScore: 0.20,
+        clarityScore: 0.15,
         communicationScore: 0.10,
     },
 };
@@ -142,22 +142,9 @@ export function getNextDifficulty(
     experienceLevel?: ExperienceLevel,
 ): Difficulty {
     const currentIndex = DIFFICULTY_ORDER.indexOf(currentDifficulty);
-    let next: Difficulty;
-
-    if (overallScore > 8 && currentIndex < DIFFICULTY_ORDER.length - 1) {
-        next = DIFFICULTY_ORDER[currentIndex + 1];
-    } else if (overallScore <= 5 && currentIndex > 0) {
-        next = DIFFICULTY_ORDER[currentIndex - 1];
-    } else {
-        next = currentDifficulty;
-    }
-
-    // Clamp within experience band if provided
-    if (experienceLevel) {
-        next = clampDifficulty(next, experienceLevel);
-    }
-
-    return next;
+    if (overallScore > 8 && currentIndex < DIFFICULTY_ORDER.length - 1) return DIFFICULTY_ORDER[currentIndex + 1];
+    if (overallScore <= 5 && currentIndex > 0) return DIFFICULTY_ORDER[currentIndex - 1];
+    return currentDifficulty;
 }
 
 export function determineFollowUpIntent(

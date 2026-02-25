@@ -4,15 +4,23 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IUser extends Document {
     name: string;
     email: string;
-    passwordHash: string;
+    passwordHash?: string;
+
+    provider?: 'local' | 'google' | 'meta';
+    providerId?: string;
+    emailVerified?: boolean;
 
     rolePreference?: string;
     experienceLevel?: string;
 
     planType: 'FREE' | 'PRO';
     subscriptionStatus: 'ACTIVE' | 'CANCELED' | 'PAST_DUE';
+    billingCycle?: 'MONTHLY' | 'ANNUAL' | null;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
+
+    resetPasswordToken?: string;
+    resetPasswordExpires?: Date;
 
     interviewsUsedThisMonth: number;
     monthlyResetDate: Date;
@@ -26,15 +34,23 @@ export interface IUser extends Document {
 const UserSchema: Schema = new Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    passwordHash: { type: String, required: true },
+    passwordHash: { type: String },
+
+    provider: { type: String, enum: ['local', 'google', 'meta'], default: 'local' },
+    providerId: { type: String },
+    emailVerified: { type: Boolean, default: false },
 
     rolePreference: { type: String },
     experienceLevel: { type: String },
 
     planType: { type: String, enum: ['FREE', 'PRO'], default: 'FREE' },
     subscriptionStatus: { type: String, enum: ['ACTIVE', 'CANCELED', 'PAST_DUE'], default: 'ACTIVE' },
+    billingCycle: { type: String, enum: ['MONTHLY', 'ANNUAL', null], default: null },
     stripeCustomerId: { type: String },
     stripeSubscriptionId: { type: String },
+
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
 
     interviewsUsedThisMonth: { type: Number, default: 0 },
     monthlyResetDate: { type: Date, default: () => new Date() },

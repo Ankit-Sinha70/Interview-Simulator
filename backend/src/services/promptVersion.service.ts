@@ -53,7 +53,11 @@ export async function seedPromptVersions(): Promise<void> {
         reportPrompt: getReportPrompt({
             questionsAndEvaluations: '{{data}}',
             role: '{{role}}',
-            level: '{{level}}',
+            level: '{{level}}' as any,
+            aggregatedScores: '{{aggregatedScores}}' as any,
+            hireBand: '{{hireBand}}' as any,
+            confidenceLevel: '{{confidenceLevel}}' as any,
+            weaknessFrequency: '{{weaknessFrequency}}' as any,
         }),
     });
 

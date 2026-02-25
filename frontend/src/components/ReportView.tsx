@@ -5,17 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { FinalReport, AggregatedScores } from '@/services/api';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip } from 'recharts';
+import { FinalReport, AggregatedScores, AttentionStats } from '@/services/api';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface ReportViewProps {
     report: FinalReport;
     scores: AggregatedScores;
     onNewSession: () => void;
-    experienceLevel?: 'Junior' | 'Mid' | 'Senior';
+    attentionStats?: AttentionStats;
 }
 
-export default function ReportView({ report, scores, onNewSession, experienceLevel }: ReportViewProps) {
+export default function ReportView({ report, scores, onNewSession, attentionStats }: ReportViewProps) {
     const confidenceColors: Record<string, string> = {
         High: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
         Medium: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
@@ -46,36 +46,8 @@ export default function ReportView({ report, scores, onNewSession, experienceLev
         { subject: 'Communication', A: scores?.averageCommunication || 0, fullMark: 10 },
     ];
 
-    // Level Performance Insight
-    const getLevelInsight = () => {
-        if (!experienceLevel) return null;
-        const score = report.averageScore;
-
-        if (experienceLevel === 'Junior' && score >= 8) {
-            return { emoji: '🚀', text: 'You\'re performing above Junior level! Consider attempting Mid-level interviews.', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
-        }
-        if (experienceLevel === 'Junior' && score >= 6) {
-            return { emoji: '💪', text: 'Solid Junior performance. Keep practicing to build confidence for Mid-level.', color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' };
-        }
-        if (experienceLevel === 'Mid' && score >= 8) {
-            return { emoji: '⭐', text: 'Excellent! You\'re performing at Senior level. Consider testing yourself there.', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
-        }
-        if (experienceLevel === 'Mid' && score < 5) {
-            return { emoji: '📖', text: 'Focus on strengthening fundamentals. Junior-level practice might help build a stronger foundation.', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' };
-        }
-        if (experienceLevel === 'Senior' && score >= 8) {
-            return { emoji: '🏆', text: 'Outstanding Senior-level performance. You\'re interview-ready!', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
-        }
-        if (experienceLevel === 'Senior' && score < 6) {
-            return { emoji: '📚', text: 'Senior-level interviews are demanding. Consider reviewing key architecture concepts.', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' };
-        }
-        return null;
-    };
-
-    const levelInsight = getLevelInsight();
-
     return (
-        <div className="max-w-[750px] mx-auto px-6 py-10">
+        <div className="max-w-[1196px] mx-auto">
             {/* Header */}
             <div className="animate-fadeInUp text-center mb-10">
                 <div className="text-6xl mb-4">📋</div>
@@ -90,7 +62,7 @@ export default function ReportView({ report, scores, onNewSession, experienceLev
                         Overall Score
                     </div>
                     <div className={`text-7xl font-black bg-gradient-to-r ${scoreGradient} bg-clip-text text-transparent leading-none mb-4`}>
-                        {report.averageScore}/10
+                        {report.averageScore.toFixed(1)}/10
                     </div>
                     <div className="flex items-center justify-center gap-3 flex-wrap">
                         <Badge className={`${confidenceColors[report.confidenceLevel]} text-[13px] font-bold px-5 py-1.5 border`}>
@@ -111,8 +83,6 @@ export default function ReportView({ report, scores, onNewSession, experienceLev
                     </div>
                 </CardContent>
             </Card>
-
-
 
             {/* Radar Chart */}
             <Card className="animate-fadeInUp bg-card border-border shadow-lg mb-6" style={{ animationDelay: '150ms' }}>
@@ -141,17 +111,113 @@ export default function ReportView({ report, scores, onNewSession, experienceLev
                 </CardContent>
             </Card>
 
-
-            {/* Level Performance Insight */}
-            {levelInsight && (
-                <div className="animate-fadeInUp mb-6" style={{ animationDelay: '150ms' }}>
-                    <div className={`rounded-xl border px-5 py-4 flex items-center gap-3 ${levelInsight.color}`}>
-                        <span className="text-2xl">{levelInsight.emoji}</span>
-                        <p className="text-sm font-medium">{levelInsight.text}</p>
-                    </div>
-                </div>
+            {/* Attention Analysis */}
+            {attentionStats && (
+                <Card className="animate-fadeInUp bg-card border-blue-500/15 shadow-lg mb-6" style={{ animationDelay: '250ms' }}>
+                    <CardHeader>
+                        <CardTitle className="text-base font-bold text-center">👀 Attention Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div className="p-3 bg-blue-500/5 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-400">{attentionStats.focusScore}%</div>
+                                <div className="text-xs text-muted-foreground uppercase">Focus Score</div>
+                            </div>
+                            <div className="p-3 bg-blue-500/5 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-400">{attentionStats.totalLookAwayTime}s</div>
+                                <div className="text-xs text-muted-foreground uppercase">looked away</div>
+                            </div>
+                            <div className="p-3 bg-blue-500/5 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-400">{attentionStats.distractionEvents}</div>
+                                <div className="text-xs text-muted-foreground uppercase">Distractions</div>
+                            </div>
+                            <div className="p-3 bg-blue-500/5 rounded-lg">
+                                <Badge className={
+                                    attentionStats.focusCategory === 'Excellent' ? 'bg-green-500/20 text-green-400' :
+                                        attentionStats.focusCategory === 'Good' ? 'bg-blue-500/20 text-blue-400' :
+                                            attentionStats.focusCategory === 'Moderate' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                'bg-red-500/20 text-red-400'
+                                }>
+                                    {attentionStats.focusCategory}
+                                </Badge>
+                                <div className="text-xs text-muted-foreground mt-1 uppercase">Rating</div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             )}
 
+            {/* Time Analysis */}
+            {report.timeAnalysis && (
+                <Card className="animate-fadeInUp bg-card border-[var(--accent-violet)]/15 shadow-lg mb-6" style={{ animationDelay: '300ms' }}>
+                    <CardHeader>
+                        <CardTitle className="text-base font-bold text-center">⏱️ Time Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {/* Metrics Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.averageTimePerQuestion}s</div>
+                                <div className="text-xs text-muted-foreground uppercase">Avg Time</div>
+                            </div>
+                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.fastestAnswerTime}s</div>
+                                <div className="text-xs text-muted-foreground uppercase">Fastest</div>
+                            </div>
+                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.slowestAnswerTime}s</div>
+                                <div className="text-xs text-muted-foreground uppercase">Slowest</div>
+                            </div>
+                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.timeEfficiencyScore}/10</div>
+                                <div className="text-xs text-muted-foreground uppercase">Efficiency Score</div>
+                            </div>
+                        </div>
+
+                        {/* Time vs Question Chart */}
+                        <div className="h-[250px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={report.timeAnalysis.charts || []} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.5} />
+                                    <XAxis dataKey="questionIndex" tickFormatter={(val) => `Q${val}`} stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Seconds', angle: -90, position: 'insideLeft', fill: '#6B7280', fontSize: 10 }} />
+                                    <Tooltip
+                                        cursor={{ fill: 'rgba(139, 92, 246, 0.1)' }}
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                const data = payload[0].payload;
+                                                return (
+                                                    <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
+                                                        <p className="font-bold text-slate-200 mb-1">Question {data.questionIndex}</p>
+                                                        <p className="text-violet-400 text-sm">Time: <span className="font-bold">{data.timeSeconds}s</span></p>
+                                                        <p className="text-emerald-400 text-sm">Score: <span className="font-bold">{data.score}/10</span></p>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                    />
+                                    <Bar dataKey="timeSeconds" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Insights */}
+                        {report.timeAnalysis.insights && report.timeAnalysis.insights.length > 0 && (
+                            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                                <h4 className="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">💡 Efficiency Insights</h4>
+                                <ul className="space-y-2">
+                                    {report.timeAnalysis.insights.map((insight, i) => (
+                                        <li key={i} className="flex gap-2 text-sm text-slate-400">
+                                            <span className="text-violet-400">•</span> {insight}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Strongest & Weakest Areas */}
             <div className="animate-fadeInUp grid grid-cols-2 gap-4 mb-6" style={{ animationDelay: '200ms' }}>
@@ -161,7 +227,7 @@ export default function ReportView({ report, scores, onNewSession, experienceLev
                             🏆 Strongest Areas
                         </h3>
                         <div className="space-y-2">
-                            {report.strongestAreas.map((area, i) => (
+                            {report.strongestAreas?.map((area, i) => (
                                 <div key={i} className="bg-emerald-500/[0.08] rounded-lg px-3.5 py-2.5 text-muted-foreground text-[13px] font-medium flex items-center gap-2">
                                     <span className="text-emerald-400">✓</span> {area}
                                 </div>
@@ -176,7 +242,7 @@ export default function ReportView({ report, scores, onNewSession, experienceLev
                             📌 Areas to Improve
                         </h3>
                         <div className="space-y-2">
-                            {report.weakestAreas.map((area, i) => (
+                            {report.weakestAreas?.map((area, i) => (
                                 <div key={i} className="bg-red-500/[0.08] rounded-lg px-3.5 py-2.5 text-muted-foreground text-[13px] font-medium flex items-center gap-2">
                                     <span className="text-red-400">!</span> {area}
                                 </div>
@@ -192,7 +258,7 @@ export default function ReportView({ report, scores, onNewSession, experienceLev
                     <CardTitle className="text-base font-bold">🗺️ Improvement Roadmap</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-0">
-                    {report.improvementRoadmap.map((step, i) => (
+                    {report.improvementRoadmap?.map((step, i) => (
                         <div key={i}>
                             <div className="flex gap-4 py-4">
                                 <div className="w-8 h-8 rounded-full bg-[var(--accent-violet)] flex items-center justify-center text-white text-[13px] font-bold shrink-0">

@@ -7,6 +7,13 @@ const router = Router();
 
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.post('/google', authController.googleLogin);
+router.post('/meta', authController.metaLogin);
 router.get('/me', authenticateToken, authController.getMe);
+
+// Password Reset Flow
+router.post('/forgot-password', authController.forgotPassword);
+router.get('/validate-reset-token', authController.validateResetToken);
+router.post('/reset-password', authController.resetPassword);
 
 export default router;

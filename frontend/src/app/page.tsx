@@ -1,6 +1,8 @@
+
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +12,8 @@ import AnswerInput from '@/components/AnswerInput';
 import VoiceInput from '@/components/VoiceInput';
 import EvaluationCard from '@/components/EvaluationCard';
 import ReportView from '@/components/ReportView';
+import UpgradeModal from '@/components/UpgradeModal';
+import { useAuth } from '@/context/AuthContext';
 import {
   startInterview,
   submitAnswer,
@@ -19,7 +23,10 @@ import {
   FinalReport,
   AnswerResponse,
   VoiceMetadata,
+  verifySubscription,
+  AttentionStats,
 } from '@/services/api';
+import { EyeTracker } from '@/components/eye-tracker/EyeTracker';
 
 type AppState = 'setup' | 'interview' | 'report';
 
@@ -30,6 +37,23 @@ interface InterviewHistoryEntry {
 }
 
 export default function Home() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    }>
+      <HomeContent />
+    </React.Suspense>
+  );
+}
+
+function HomeContent() {
+  const attentionStatsRef = React.useRef<AttentionStats | null>(null);
+  const { user, isLoading: authLoading, refreshUser } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [appState, setAppState] = useState<AppState>('setup');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +72,37 @@ export default function Home() {
   const [voiceMeta, setVoiceMeta] = useState<VoiceMetadata | undefined>();
   const [useVoice, setUseVoice] = useState(false);
 
+  // Refresh user data if returning from Stripe payment
+  // Refresh user data if returning from Stripe payment
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    if (sessionId && user?.planType === 'FREE') {
+      verifySubscription(sessionId)
+        .then(() => refreshUser())
+        .then(() => {
+          router.replace('/analytics?upgraded=true');
+        })
+        .catch(err => console.error("Verification failed", err));
+    }
+  }, [searchParams, user, refreshUser, router]);
+
+  // Auth Protection
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  // Sidebar Visibility Management
+  useEffect(() => {
+    if (appState === 'interview') {
+      document.body.classList.add('hide-sidebar');
+    } else {
+      document.body.classList.remove('hide-sidebar');
+    }
+    return () => document.body.classList.remove('hide-sidebar');
+  }, [appState]);
+
   // ─── Start Interview ───
   const handleStart = useCallback(async (role: string, experienceLevel: 'Junior' | 'Mid' | 'Senior') => {
     setIsLoading(true);
@@ -60,7 +115,11 @@ export default function Home() {
       setQuestionNumber(1);
       setAppState('interview');
     } catch (err: any) {
-      setError(err.message || 'Failed to start interview');
+      if (err.message && err.message.includes('Limit reached')) {
+        setError('Free plan limit reached. Please upgrade to Pro.');
+      } else {
+        setError(err.message || 'Failed to start interview');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +132,8 @@ export default function Home() {
     setError(null);
     try {
       const result: AnswerResponse = await submitAnswer(sessionId, answer, meta);
+
+      // Save this Q&A to history
       if (currentQuestion) {
         setHistory((prev) => [
           ...prev,
@@ -84,10 +145,24 @@ export default function Home() {
         ]);
       }
       setLatestEvaluation(result.evaluation);
-      setCurrentQuestion(result.nextQuestion);
-      setQuestionNumber(result.questionNumber + 1);
       setVoiceTranscript(undefined);
       setVoiceMeta(undefined);
+
+      if (result.sessionEnded) {
+        console.log('[Interview] Session ended by backend:', result.reason);
+        if (result.finalReport) {
+          setReport(result.finalReport);
+        } else {
+          const finalReport = await completeInterview(sessionId, attentionStatsRef.current || undefined);
+          setReport(finalReport);
+        }
+        setCurrentQuestion(null);
+        setAppState('report');
+        return;
+      }
+
+      setCurrentQuestion(result.nextQuestion);
+      setQuestionNumber(result.questionNumber + 1);
     } catch (err: any) {
       setError(err.message || 'Failed to submit answer');
     } finally {
@@ -131,6 +206,15 @@ export default function Home() {
     setVoiceMeta(meta);
   }, []);
 
+  // Loading state for auth
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
   // ─── Layout Components ───
   const ErrorBanner = error ? (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-slide-in-down w-[90%] max-w-lg">
@@ -161,7 +245,7 @@ export default function Home() {
 
       {appState === 'report' && report && (
         <main className="flex-1 w-full max-w-7xl mx-auto px-4 pb-12">
-          <ReportView report={report} onNewSession={handleNewSession} experienceLevel={experienceLevel} scores={{
+          <ReportView report={report} onNewSession={handleNewSession} scores={{
             averageTechnical: 0,
             averageDepth: 0,
             averageClarity: 0,
@@ -175,19 +259,57 @@ export default function Home() {
       )}
 
       {appState === 'interview' && (
-        <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24">
+        <main className="flex-1 w-full max-w-8xl mx-auto px-4 sm:px-6 py-6 pb-24">
+
+
 
           {/* Top Navbar */}
           <header className="sticky top-4 z-40 bg-background/80 backdrop-blur-md border border-border/50 rounded-2xl shadow-sm px-4 py-3 mb-8 flex items-center justify-between animate-slide-in-down">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" title="Live" />
-              <h1 className="text-sm font-bold tracking-tight text-muted-foreground uppercase">Interview Session</h1>
+              <h1 className="text-sm font-bold tracking-tight text-muted-foreground uppercase hidden sm:block">Interview Session</h1>
               <Badge variant="outline" className="text-xs border-[var(--accent-violet)] text-[var(--accent-violet)] bg-[var(--accent-violet)]/5">
                 Q{questionNumber}
               </Badge>
+              {(() => {
+                // Calculate running average if we have any evaluations
+                const scores = [...history.map(h => h.evaluation.overallScore)];
+                if (latestEvaluation) scores.push(latestEvaluation.overallScore);
+
+                if (scores.length === 0) return null;
+
+                const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+                const roundedAvg = avg.toFixed(1);
+
+                const colorClass = avg >= 7 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' :
+                  avg >= 4 ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' :
+                    'text-red-500 bg-red-500/10 border-red-500/20';
+
+                return (
+                  <Badge variant="outline" className={`text-xs ml-1 ${colorClass}`}>
+                    Avg: {roundedAvg}/10
+                  </Badge>
+                );
+              })()}
+
+              {user?.planType === 'FREE' && (
+                <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-500 ml-2 hidden sm:inline-flex">
+                  Free ({user.interviewsUsedThisMonth}/2)
+                </Badge>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
+              {user?.planType === 'FREE' && (
+                <UpgradeModal
+                  trigger={
+                    <Button size="sm" variant="outline" className="h-8 text-xs border-[var(--accent-violet)] text-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/10">
+                      Upgrade
+                    </Button>
+                  }
+                />
+              )}
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -212,6 +334,8 @@ export default function Home() {
               )}
             </div>
           </header>
+
+          <EyeTracker statsRef={attentionStatsRef} />
 
           <div className="space-y-6">
             {/* Latest Evaluation (Feedback) */}

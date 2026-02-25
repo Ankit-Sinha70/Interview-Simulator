@@ -37,6 +37,9 @@ const QuestionEntrySchema = new Schema({
     generatedFromWeakness: { type: String, default: null },
     answer: { type: AnswerInfoSchema, default: null },
     evaluation: { type: EvaluationSchema, default: null },
+    startedAt: { type: Date, default: null },
+    answeredAt: { type: Date, default: null },
+    timeTakenSeconds: { type: Number, default: 0 },
 }, { _id: false });
 
 const AggregatedScoresSchema = new Schema({
@@ -58,9 +61,13 @@ const WeaknessTrackerSchema = new Schema({
     communicationWeakCount: { type: Number, default: 0 },
 }, { _id: false });
 
-const DifficultyBandSchema = new Schema({
-    min: { type: Number, required: true },
-    max: { type: Number, required: true },
+const TimeAnalysisSchema = new Schema({
+    averageTimePerQuestion: { type: Number, required: true },
+    fastestAnswerTime: { type: Number, required: true },
+    slowestAnswerTime: { type: Number, required: true },
+    timeEfficiencyScore: { type: Number, required: true },
+    charts: { type: [{ questionIndex: Number, timeSeconds: Number, score: Number }], default: [] },
+    insights: { type: [String], default: [] },
 }, { _id: false });
 
 const FinalReportSchema = new Schema({
@@ -72,6 +79,7 @@ const FinalReportSchema = new Schema({
     hireBand: { type: String, enum: ['Strong Hire', 'Hire', 'Borderline', 'No Hire'], default: null },
     improvementRoadmap: { type: [String], default: [] },
     nextPreparationFocus: { type: [String], default: [] },
+    timeAnalysis: { type: TimeAnalysisSchema, default: null },
 }, { _id: false });
 
 // ─── Main Session Schema ───
@@ -87,6 +95,10 @@ export interface IInterviewSessionDoc extends Document {
     questions: any[];
     totalQuestions: number;
     currentQuestionIndex: number;
+    maxQuestions: number;
+    maxDurationMinutes: number;
+    endsAt: Date | null;
+    hasShownFiveMinWarning: boolean;
     aggregatedScores: any | null;
     weaknessTracker: any;
     topicScores: Map<string, number[]>;
@@ -95,6 +107,13 @@ export interface IInterviewSessionDoc extends Document {
     createdAt: Date;
     updatedAt: Date;
     completedAt: Date | null;
+    attentionStats: {
+        focusScore: number;
+        totalLookAwayTime: number;
+        longestLookAway: number;
+        distractionEvents: number;
+        focusCategory: string;
+    } | null;
 }
 
 const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
@@ -104,16 +123,29 @@ const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
     experienceLevel: { type: String, enum: ['Junior', 'Mid', 'Senior'], required: true },
     difficultyBand: { type: DifficultyBandSchema, default: () => ({ min: 1, max: 10 }) },
     mode: { type: String, enum: ['text', 'voice', 'hybrid'], default: 'text' },
-    status: { type: String, enum: ['CREATED', 'IN_PROGRESS', 'COMPLETED'], default: 'CREATED', index: true },
+    status: { type: String, enum: ['CREATED', 'IN_PROGRESS', 'COMPLETED', 'ABANDONED', 'TIME_EXPIRED', 'MAX_QUESTIONS_REACHED'], default: 'CREATED', index: true },
     questions: { type: [QuestionEntrySchema] as any, default: [] },
     totalQuestions: { type: Number, default: 0 },
     currentQuestionIndex: { type: Number, default: 0 },
+    maxQuestions: { type: Number, default: 10 },
+    maxDurationMinutes: { type: Number, default: 60 },
+    endsAt: { type: Date, default: null },
+    hasShownFiveMinWarning: { type: Boolean, default: false },
     aggregatedScores: { type: AggregatedScoresSchema, default: null },
     weaknessTracker: { type: WeaknessTrackerSchema, default: () => ({}) },
     topicScores: { type: Map, of: [Number], default: () => new Map() },
     finalReport: { type: FinalReportSchema, default: null },
     promptVersion: { type: String, default: 'v1.0' },
     completedAt: { type: Date, default: null },
+    attentionStats: {
+        type: {
+            focusScore: { type: Number, required: true },
+            totalLookAwayTime: { type: Number, required: true },
+            longestLookAway: { type: Number, required: true },
+            distractionEvents: { type: Number, required: true },
+            focusCategory: { type: String, required: true },
+        }, default: null
+    },
 }, {
     timestamps: true, // auto createdAt + updatedAt
 });

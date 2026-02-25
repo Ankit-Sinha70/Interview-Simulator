@@ -151,6 +151,14 @@
   }
 }
 
+/* Sidebar hiding for active interviews on the SPA dashboard */
+body.hide-sidebar aside {
+  display: none !important;
+}
+body.hide-sidebar main {
+  margin-left: 0 !important;
+}
+
 /* Custom Animations (Replacing tailwindcss-animate) */
 @keyframes fadeInUp {
   from {

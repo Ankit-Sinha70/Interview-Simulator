@@ -13,7 +13,7 @@ export interface DifficultyBand {
 
 export type Role = 'Frontend Developer' | 'Backend Developer' | 'Fullstack Developer' | 'Custom';
 export type ExperienceLevel = 'Junior' | 'Mid' | 'Senior';
-export type SessionStatus = 'CREATED' | 'IN_PROGRESS' | 'COMPLETED';
+export type SessionStatus = 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED' | 'TIME_EXPIRED' | 'MAX_QUESTIONS_REACHED';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type ConfidenceLevel = 'High' | 'Medium' | 'Low';
 export type InterviewMode = 'text' | 'voice' | 'hybrid';
@@ -31,11 +31,21 @@ export interface VoiceMetadata {
     wordsPerMinute: number;
 }
 
+export interface VoiceEvaluation {
+    confidenceScore: number;
+    fluencyScore: number;
+    structureScore: number;
+    professionalismScore: number;
+    spokenDeliveryOverall: number;
+    feedback: string[];
+}
+
 // ─── Answer Info ───
 
 export interface AnswerInfo {
     text: string;
     voiceMeta?: VoiceMetadata;
+    voiceEvaluation?: VoiceEvaluation;
     answeredAt: string;
 }
 
@@ -66,6 +76,9 @@ export interface QuestionEntry {
     generatedFromWeakness?: string;
     answer: AnswerInfo | null;
     evaluation: Evaluation | null;
+    startedAt: string;
+    answeredAt?: string;
+    timeTakenSeconds?: number;
 }
 
 // ─── Aggregated Scores ───
@@ -104,6 +117,10 @@ export interface InterviewSession {
     questions: QuestionEntry[];
     totalQuestions: number;
     currentQuestionIndex: number;
+    maxQuestions: number;
+    maxDurationMinutes: number;
+    endsAt: string | null;
+    hasShownFiveMinWarning: boolean;
     aggregatedScores: AggregatedScores | null;
     weaknessTracker: WeaknessTracker;
     topicScores: Record<string, number[]>;
@@ -112,6 +129,15 @@ export interface InterviewSession {
     createdAt: string;
     updatedAt: string;
     completedAt: string | null;
+    attentionStats: AttentionStats | null;
+}
+
+export interface AttentionStats {
+    focusScore: number;
+    totalLookAwayTime: number;
+    longestLookAway: number;
+    distractionEvents: number;
+    focusCategory: 'Excellent' | 'Good' | 'Moderate' | 'Low';
 }
 
 // ─── Final Report ───
@@ -125,6 +151,17 @@ export interface FinalReport {
     hireBand: HireBand;
     improvementRoadmap: string[];
     nextPreparationFocus: string[];
+    executiveSummary?: string;
+    timeAnalysis?: TimeAnalysis;
+}
+
+export interface TimeAnalysis {
+    averageTimePerQuestion: number;
+    fastestAnswerTime: number;
+    slowestAnswerTime: number;
+    timeEfficiencyScore: number;
+    charts: { questionIndex: number; timeSeconds: number; score: number }[];
+    insights: string[];
 }
 
 // ─── AI Response Types ───
