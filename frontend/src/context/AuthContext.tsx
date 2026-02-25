@@ -4,12 +4,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-interface User {
+export interface User {
     _id: string;
     name: string;
     email: string;
+    profilePicture?: string;
     planType: 'FREE' | 'PRO';
     interviewsUsedThisMonth: number;
+    provider?: 'local' | 'google' | 'meta';
+    subscriptionStatus?: 'ACTIVE' | 'CANCELED' | 'PAST_DUE';
+    createdAt?: string;
 }
 
 interface AuthContextType {
@@ -18,6 +22,7 @@ interface AuthContextType {
     login: (token: string, user: User) => void;
     logout: () => void;
     refreshUser: () => Promise<void>;
+    updateUserAuthContext: (updatedUser: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,8 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (token) await fetchUser(token);
     };
 
+    const updateUserAuthContext = (updatedUser: User) => {
+        setUser(updatedUser);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
+        <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser, updateUserAuthContext }}>
             {children}
         </AuthContext.Provider>
     );

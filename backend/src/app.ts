@@ -3,6 +3,7 @@ import cors from 'cors';
 import interviewRoutes from './routes/interview.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 import subscriptionRoutes from './routes/subscription.routes';
 import { errorMiddleware } from './middlewares/error.middleware';
 
@@ -35,6 +36,7 @@ app.get('/api/health', (_req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/interview', interviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/subscription', subscriptionRoutes);

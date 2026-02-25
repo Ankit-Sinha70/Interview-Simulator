@@ -5,6 +5,7 @@ export interface IUser extends Document {
     name: string;
     email: string;
     passwordHash?: string;
+    profilePicture?: string;
 
     provider?: 'local' | 'google' | 'meta';
     providerId?: string;
@@ -35,6 +36,7 @@ const UserSchema: Schema = new Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     passwordHash: { type: String },
+    profilePicture: { type: String },
 
     provider: { type: String, enum: ['local', 'google', 'meta'], default: 'local' },
     providerId: { type: String },
