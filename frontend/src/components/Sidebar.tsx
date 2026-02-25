@@ -4,7 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, BarChart3, Settings, LogOut, Zap } from 'lucide-react';
+import {
+    LayoutDashboard,
+    BarChart3,
+    Settings,
+    LogOut,
+    Zap,
+    Crown,
+    User as UserIcon
+} from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function Sidebar() {
@@ -54,6 +62,7 @@ export default function Sidebar() {
             <div className="flex-1 px-4 space-y-2">
                 <div className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-widest px-3 mb-2">Menu</div>
                 <NavItem href="/" icon={LayoutDashboard} label="Dashboard" />
+                <NavItem href="/profile" icon={UserIcon} label="Profile" />
                 <NavItem href="/analytics" icon={BarChart3} label="Analytics" />
                 <NavItem href="/settings" icon={Settings} label="Settings" />
 
@@ -90,9 +99,15 @@ export default function Sidebar() {
             {/* User Profile / Logout */}
             <div className="p-4 border-t border-border/50">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 shadow-sm">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-sm font-bold">
-                        {user.name.charAt(0).toUpperCase()}
-                    </div>
+                    {user.profilePicture ? (
+                        <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-slate-700">
+                            <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                        </div>
+                    ) : (
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                            {user.name.charAt(0).toUpperCase()}
+                        </div>
+                    )}
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold truncate">{user.name}</p>
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>

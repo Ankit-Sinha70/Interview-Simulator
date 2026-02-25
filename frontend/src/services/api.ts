@@ -15,6 +15,8 @@ export interface StartInterviewRequest {
     mode?: 'text' | 'voice' | 'hybrid';
 }
 
+import { User } from '../context/AuthContext';
+
 export interface GeneratedQuestion {
     question: string;
     difficulty: 'easy' | 'medium' | 'hard';
@@ -292,3 +294,45 @@ export async function createPortalSession(): Promise<{ url: string }> {
         }
     });
 }
+
+// ==========================================
+// 8. USER PROFILE API
+// ==========================================
+
+export const uploadProfilePicture = async (base64Image: string): Promise<User> => {
+    const token = localStorage.getItem('token');
+    const res = await apiCall<{ data: User }>('/users/profile-picture', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ profilePicture: base64Image }),
+    });
+    return res.data;
+};
+
+export const updateProfile = async (name: string): Promise<User> => {
+    const token = localStorage.getItem('token');
+    const res = await apiCall<{ data: User }>('/users/update-profile', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name }),
+    });
+    return res.data;
+};
+
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    const token = localStorage.getItem('token');
+    return apiCall<{ success: boolean; message: string }>('/users/change-password', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+    });
+};
