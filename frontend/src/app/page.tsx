@@ -25,8 +25,11 @@ import {
   VoiceMetadata,
   verifySubscription,
   AttentionStats,
+  getWelcomeOfferStatus,
+  WelcomeOfferStatus,
 } from '@/services/api';
 import { EyeTracker } from '@/components/eye-tracker/EyeTracker';
+import WelcomeOfferModal from '@/components/WelcomeOfferModal';
 
 type AppState = 'setup' | 'interview' | 'report';
 
@@ -72,6 +75,10 @@ function HomeContent() {
   const [voiceMeta, setVoiceMeta] = useState<VoiceMetadata | undefined>();
   const [useVoice, setUseVoice] = useState(false);
 
+  // Welcome offer state
+  const [showWelcomeOffer, setShowWelcomeOffer] = useState(false);
+  const [welcomeOfferData, setWelcomeOfferData] = useState<WelcomeOfferStatus | null>(null);
+
   // Refresh user data if returning from Stripe payment
   // Refresh user data if returning from Stripe payment
   useEffect(() => {
@@ -102,6 +109,22 @@ function HomeContent() {
     }
     return () => document.body.classList.remove('hide-sidebar');
   }, [appState]);
+
+  // Welcome Offer Check
+  useEffect(() => {
+    if (!user || authLoading || appState !== 'setup') return;
+    if (user.planType !== 'FREE') return;
+
+    getWelcomeOfferStatus()
+      .then((data) => {
+        if (data.showOffer) {
+          setWelcomeOfferData(data);
+          // Show after 1s delay for better UX
+          setTimeout(() => setShowWelcomeOffer(true), 1000);
+        }
+      })
+      .catch((err) => console.error('Failed to check welcome offer:', err));
+  }, [user, authLoading, appState]);
 
   // ─── Start Interview ───
   const handleStart = useCallback(async (role: string, experienceLevel: 'Junior' | 'Mid' | 'Senior') => {
@@ -230,6 +253,35 @@ function HomeContent() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/20">
       {ErrorBanner}
+
+      {/* Welcome Offer Modal */}
+      {welcomeOfferData && (
+        <WelcomeOfferModal
+          isOpen={showWelcomeOffer}
+          onClose={() => setShowWelcomeOffer(false)}
+          expiresAt={welcomeOfferData.expiresAt}
+          savings={welcomeOfferData.savings}
+          onUpgrade={async () => {
+            try {
+              const token = localStorage.getItem('token');
+              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/subscription/create-checkout-session`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ billingCycle: 'YEARLY', couponCode: 'WELCOME30' }),
+              });
+              const data = await res.json();
+              if (data.url) {
+                window.location.href = data.url;
+              }
+            } catch (err) {
+              console.error('Welcome offer upgrade failed:', err);
+            }
+          }}
+        />
+      )}
 
       {/* Dynamic Background Mesh */}
       <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden opacity-30">
