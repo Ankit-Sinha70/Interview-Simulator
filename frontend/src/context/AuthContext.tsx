@@ -14,6 +14,8 @@ export interface User {
     provider?: 'local' | 'google' | 'meta';
     subscriptionStatus?: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'REFUNDED';
     refunded?: boolean;
+    hasSeenWelcomeOffer?: boolean;
+    hasEverSubscribed?: boolean;
     createdAt?: string;
 }
 

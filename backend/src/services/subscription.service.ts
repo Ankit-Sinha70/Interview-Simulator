@@ -7,14 +7,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 const CLIENT_URL = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
 
-export async function createCheckoutSession(userId: string, billingCycle: 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY' = 'MONTHLY') {
+export async function createCheckoutSession(userId: string, billingCycle: 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY' = 'MONTHLY', couponCode?: string) {
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
 
     const plan = await SubscriptionPlan.findOne({ billingCycle, isActive: true });
     if (!plan) throw new Error(`Active pricing plan for ${billingCycle} is not configured.`);
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: any = {
         line_items: [
             {
                 price: plan.stripePriceId,
@@ -28,7 +28,13 @@ export async function createCheckoutSession(userId: string, billingCycle: 'MONTH
         metadata: {
             userId: user._id.toString(),
         },
-    });
+    };
+
+    if (couponCode) {
+        sessionParams.discounts = [{ coupon: couponCode }];
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return session.url;
 }
@@ -61,6 +67,8 @@ export async function handleWebhook(event: Stripe.Event) {
                     stripeSubscriptionId: session.subscription as string,
                     subscriptionStatus: 'ACTIVE',
                     subscriptionStartDate: new Date(),
+                    hasEverSubscribed: true,
+                    hasSeenWelcomeOffer: true,
                 };
 
                 // Store payment intent for potential future refunds

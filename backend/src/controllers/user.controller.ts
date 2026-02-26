@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { User } from '../models/user.model';
+import { SubscriptionPlan } from '../models/subscriptionPlan.model';
 import bcrypt from 'bcrypt';
 
 /**
@@ -156,6 +157,69 @@ export async function uploadProfilePicture(req: Request, res: Response, next: Ne
 
         const updatedUser = await User.findById(userId).select('-passwordHash -resetPasswordToken -resetPasswordExpires');
         res.status(200).json({ success: true, data: updatedUser });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * GET /api/users/welcome-offer-status
+ * Returns whether the welcome offer popup should be shown
+ */
+export async function getWelcomeOfferStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        const now = new Date();
+        const showOffer =
+            user.planType === 'FREE' &&
+            !user.hasSeenWelcomeOffer &&
+            !user.hasEverSubscribed &&
+            !!user.welcomeOfferExpiresAt &&
+            user.welcomeOfferExpiresAt > now;
+
+        let savings: number | null = null;
+        if (showOffer) {
+            const yearlyPlan = await SubscriptionPlan.findOne({ billingCycle: 'YEARLY', isActive: true });
+            if (yearlyPlan) {
+                savings = Math.round(yearlyPlan.price * 0.30);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                showOffer,
+                expiresAt: showOffer ? user.welcomeOfferExpiresAt!.toISOString() : null,
+                savings,
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * POST /api/users/dismiss-welcome-offer
+ * Marks the welcome offer as seen so it won't appear again
+ */
+export async function dismissWelcomeOffer(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+
+        await User.findByIdAndUpdate(userId, { hasSeenWelcomeOffer: true });
+        res.status(200).json({ success: true, message: 'Welcome offer dismissed' });
     } catch (error) {
         next(error);
     }

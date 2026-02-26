@@ -24,10 +24,12 @@ export async function register(name: string, email: string, password: string): P
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
     // Create user
+    const welcomeOfferExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
     const user = new User({
         name,
         email,
         passwordHash,
+        welcomeOfferExpiresAt,
     });
     await user.save();
 
@@ -81,12 +83,14 @@ export async function googleLogin(idToken: string): Promise<{ token: string, use
             await user.save();
         }
     } else {
+        const welcomeOfferExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
         user = new User({
             name: name || 'Google User',
             email,
             provider: 'google',
             providerId: googleId,
             emailVerified: email_verified || false,
+            welcomeOfferExpiresAt,
         });
         await user.save();
     }
@@ -114,12 +118,14 @@ export async function metaLogin(accessToken: string): Promise<{ token: string, u
                 await user.save();
             }
         } else {
+            const welcomeOfferExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
             user = new User({
                 name: name || 'Meta User',
                 email,
                 provider: 'meta',
                 providerId: metaId,
                 emailVerified: true,
+                welcomeOfferExpiresAt,
             });
             await user.save();
         }
