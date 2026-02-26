@@ -13,7 +13,11 @@ export async function register(req: Request, res: Response, next: NextFunction) 
         }
 
         const result = await authService.register(name, email, password);
-        res.status(201).json({ success: true, data: result });
+        res.status(201).json({
+            success: true,
+            message: result.message,
+            requiresLogin: result.requiresLogin
+        });
     } catch (error: any) {
         if (error.message === 'Email already registered') {
             return res.status(409).json({ success: false, error: error.message });
