@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-import UpgradeModal from '@/components/UpgradeModal';
+import Link from 'next/link';
 import { Lock, ArrowRight } from 'lucide-react';
 
 interface InterviewRecord {
@@ -121,11 +121,11 @@ export default function InterviewHistoryTable({ interviews, limitedHistory }: In
                                     You're viewing your last 2 sessions. Upgrade to Pro to unlock your complete interview history and advanced trend analytics.
                                 </p>
                             </div>
-                            <UpgradeModal trigger={
+                            <Link href="/pricing">
                                 <button className="mt-2 flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-all shadow-lg shadow-violet-500/20">
                                     Upgrade to Pro <ArrowRight className="w-3.5 h-3.5" />
                                 </button>
-                            } />
+                            </Link>
                         </div>
                     </div>
                 )}

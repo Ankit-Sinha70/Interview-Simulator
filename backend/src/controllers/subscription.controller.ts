@@ -15,9 +15,10 @@ export async function createCheckoutSession(req: Request, res: Response, next: N
         }
 
         const { billingCycle } = req.body;
-        const validCycle = billingCycle === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
+        const validCycles = ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'];
+        const validCycle = validCycles.includes(billingCycle) ? billingCycle : 'MONTHLY';
 
-        const url = await subscriptionService.createCheckoutSession(userId, validCycle);
+        const url = await subscriptionService.createCheckoutSession(userId, validCycle as any);
         res.json({ url });
     } catch (error) {
         next(error);
@@ -129,6 +130,20 @@ export async function requestRefund(req: Request, res: Response, next: NextFunct
             return;
         }
         res.json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function resumeSubscription(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+        const result = await subscriptionService.resumeSubscription(userId);
+        res.json(result);
     } catch (error) {
         next(error);
     }

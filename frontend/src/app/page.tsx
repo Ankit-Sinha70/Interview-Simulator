@@ -12,7 +12,7 @@ import AnswerInput from '@/components/AnswerInput';
 import VoiceInput from '@/components/VoiceInput';
 import EvaluationCard from '@/components/EvaluationCard';
 import ReportView from '@/components/ReportView';
-import UpgradeModal from '@/components/UpgradeModal';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import {
   startInterview,
@@ -301,13 +301,11 @@ function HomeContent() {
 
             <div className="flex items-center gap-2">
               {user?.planType === 'FREE' && (
-                <UpgradeModal
-                  trigger={
-                    <Button size="sm" variant="outline" className="h-8 text-xs border-[var(--accent-violet)] text-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/10">
-                      Upgrade
-                    </Button>
-                  }
-                />
+                <Link href="/pricing">
+                  <Button size="sm" variant="outline" className="h-8 text-xs border-[var(--accent-violet)] text-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/10">
+                    Upgrade
+                  </Button>
+                </Link>
               )}
 
               <Button

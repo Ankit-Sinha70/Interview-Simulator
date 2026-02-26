@@ -16,7 +16,7 @@ export interface IUser extends Document {
 
     planType: 'FREE' | 'PRO';
     subscriptionStatus: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'REFUNDED';
-    billingCycle?: 'MONTHLY' | 'ANNUAL' | null;
+    billingCycle?: 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY' | null;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
     stripePaymentIntentId?: string;
@@ -55,7 +55,7 @@ const UserSchema: Schema = new Schema({
 
     planType: { type: String, enum: ['FREE', 'PRO'], default: 'FREE' },
     subscriptionStatus: { type: String, enum: ['ACTIVE', 'CANCELED', 'PAST_DUE', 'REFUNDED'], default: 'ACTIVE' },
-    billingCycle: { type: String, enum: ['MONTHLY', 'ANNUAL', null], default: null },
+    billingCycle: { type: String, enum: ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY', null], default: null },
     stripeCustomerId: { type: String },
     stripeSubscriptionId: { type: String },
     stripePaymentIntentId: { type: String },

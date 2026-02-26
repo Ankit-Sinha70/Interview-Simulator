@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { XCircle, ArrowLeft, RefreshCcw } from 'lucide-react';
-import UpgradeModal from '@/components/UpgradeModal';
+import Link from 'next/link';
 
 export default function PaymentCancelPage() {
     const router = useRouter();
@@ -54,13 +54,11 @@ export default function PaymentCancelPage() {
                             </p>
 
                             <div className="space-y-4 w-full">
-                                <UpgradeModal
-                                    trigger={
-                                        <Button className="w-full bg-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/90 text-white font-bold h-10 rounded-xl transition-all shadow-[0_0_25px_rgba(139,92,246,0.3)] hover:shadow-[0_0_35px_rgba(139,92,246,0.5)] text-lg">
-                                            <RefreshCcw className="w-5 h-5 mr-3" /> Try Upgrade Again
-                                        </Button>
-                                    }
-                                />
+                                <Link href="/pricing" className="w-full">
+                                    <Button className="w-full bg-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/90 text-white font-bold h-10 rounded-xl transition-all shadow-[0_0_25px_rgba(139,92,246,0.3)] hover:shadow-[0_0_35px_rgba(139,92,246,0.5)] text-lg">
+                                        <RefreshCcw className="w-5 h-5 mr-3" /> Try Upgrade Again
+                                    </Button>
+                                </Link>
                                 <Button
                                     onClick={() => router.push('/')}
                                     variant="outline"

@@ -270,7 +270,7 @@ export interface SubscriptionDetails {
     totalDays: number | null;
     cancelAtPeriodEnd: boolean;
     hasStripeId?: boolean;
-    billingCycle?: 'MONTHLY' | 'ANNUAL' | null;
+    billingCycle?: 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY' | null;
     refunded?: boolean;
     refundDate?: string;
     subscriptionStartDate?: string;
@@ -323,6 +323,33 @@ export async function requestRefund(reason?: string): Promise<{ success: boolean
             'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ reason }),
+    });
+}
+
+export interface ISubscriptionPlan {
+    _id: string;
+    billingCycle: 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
+    stripePriceId: string;
+    price: number;
+    durationMonths: number;
+    discountPercent: number;
+    isActive: boolean;
+}
+
+export async function getSubscriptionPlans(): Promise<ISubscriptionPlan[]> {
+    return apiCall<ISubscriptionPlan[]>('/plans', {
+        method: 'GET'
+    });
+}
+
+export async function resumeSubscription(): Promise<{ success: boolean; status: string }> {
+    const token = localStorage.getItem('token');
+    return apiCall<{ success: boolean; status: string }>('/subscription/resume', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
     });
 }
 

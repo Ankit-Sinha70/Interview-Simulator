@@ -5,6 +5,7 @@ import analyticsRoutes from './routes/analytics.routes';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import subscriptionRoutes from './routes/subscription.routes';
+import subscriptionPlanRoutes from './routes/subscriptionPlan.routes';
 import { errorMiddleware } from './middlewares/error.middleware';
 
 const app = express();
@@ -40,6 +41,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/interview', interviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/plans', subscriptionPlanRoutes);
 
 // Error handling
 app.use(errorMiddleware);
