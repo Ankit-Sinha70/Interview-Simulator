@@ -19,4 +19,8 @@ router.post('/sync', authenticateToken as any, subscriptionController.syncSubscr
 router.get('/me', authenticateToken as any, subscriptionController.getMySubscription as any);
 router.post('/create-portal-session', authenticateToken as any, subscriptionController.createPortalSession as any);
 
+// Refund routes
+router.get('/refund-eligibility', authenticateToken as any, subscriptionController.checkRefundEligibility as any);
+router.post('/request-refund', authenticateToken as any, subscriptionController.requestRefund as any);
+
 export default router;

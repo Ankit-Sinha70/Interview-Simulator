@@ -263,14 +263,17 @@ export async function abandonSession(sessionId: string): Promise<any> {
 
 export interface SubscriptionDetails {
     planType: 'FREE' | 'PRO';
-    status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE';
+    status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'REFUNDED';
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
     daysRemaining: number | null;
     totalDays: number | null;
     cancelAtPeriodEnd: boolean;
     hasStripeId?: boolean;
-    billingCycle?: 'MONTHLY' | 'ANNUAL' | null;
+    billingCycle?: 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY' | null;
+    refunded?: boolean;
+    refundDate?: string;
+    subscriptionStartDate?: string;
     usage: {
         interviewsUsed: number;
         interviewsLimit: number | 'UNLIMITED';
@@ -287,6 +290,61 @@ export async function getMySubscription(): Promise<SubscriptionDetails> {
 export async function createPortalSession(): Promise<{ url: string }> {
     const token = localStorage.getItem('token');
     return apiCall<{ url: string }>('/subscription/create-portal-session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
+    });
+}
+
+// ─── Refund ───
+
+export interface RefundEligibility {
+    eligible: boolean;
+    reason?: string;
+    daysSincePurchase?: number;
+    interviewsUsed?: number;
+}
+
+export async function checkRefundEligibility(): Promise<RefundEligibility> {
+    const token = localStorage.getItem('token');
+    return apiCall<RefundEligibility>('/subscription/refund-eligibility', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+}
+
+export async function requestRefund(reason?: string): Promise<{ success: boolean; refundAmount?: number; message: string }> {
+    const token = localStorage.getItem('token');
+    return apiCall<{ success: boolean; refundAmount?: number; message: string }>('/subscription/request-refund', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason }),
+    });
+}
+
+export interface ISubscriptionPlan {
+    _id: string;
+    billingCycle: 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
+    stripePriceId: string;
+    price: number;
+    durationMonths: number;
+    discountPercent: number;
+    isActive: boolean;
+}
+
+export async function getSubscriptionPlans(): Promise<ISubscriptionPlan[]> {
+    return apiCall<ISubscriptionPlan[]>('/plans', {
+        method: 'GET'
+    });
+}
+
+export async function resumeSubscription(): Promise<{ success: boolean; status: string }> {
+    const token = localStorage.getItem('token');
+    return apiCall<{ success: boolean; status: string }>('/subscription/resume', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

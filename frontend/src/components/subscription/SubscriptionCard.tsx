@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CreditCard, CheckCircle, Clock, TrendingUp, Zap, Lock, ExternalLink, RotateCcw, Loader2, AlertCircle, XCircle } from 'lucide-react';
-import { getMySubscription, createPortalSession, SubscriptionDetails } from '@/services/api';
-import UpgradeModal from '@/components/UpgradeModal';
+import { CreditCard, CheckCircle, Clock, TrendingUp, Zap, Lock, ExternalLink, RotateCcw, Loader2, AlertCircle, XCircle, Undo2, ArrowUpCircle } from 'lucide-react';
+import { getMySubscription, createPortalSession, checkRefundEligibility, requestRefund, resumeSubscription, SubscriptionDetails } from '@/services/api';
+import Link from 'next/link';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
     ACTIVE: {
@@ -26,6 +29,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
         bg: 'bg-zinc-700/30',
         border: 'border-zinc-600/25',
         icon: <XCircle className="w-3.5 h-3.5" />,
+    },
+    REFUNDED: {
+        label: 'Refunded',
+        color: 'text-orange-400',
+        bg: 'bg-orange-500/10',
+        border: 'border-orange-500/25',
+        icon: <Undo2 className="w-3.5 h-3.5" />,
     },
 };
 
@@ -54,7 +64,10 @@ export default function SubscriptionCard() {
     const [sub, setSub] = useState<SubscriptionDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [portalLoading, setPortalLoading] = useState(false);
+    const [refundLoading, setRefundLoading] = useState(false);
+    const [resumeLoading, setResumeLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { refreshUser } = useAuth();
 
     useEffect(() => {
         getMySubscription()
@@ -72,6 +85,39 @@ export default function SubscriptionCard() {
             alert(err.message || 'Could not open billing portal. Please try again.');
         } finally {
             setPortalLoading(false);
+        }
+    };
+
+    const handleRefund = async () => {
+        setRefundLoading(true);
+        try {
+            const result = await requestRefund('User-initiated refund from settings');
+            toast.success(result.message || 'Refund processed successfully!');
+            await refreshUser();
+            // Reload subscription card data
+            const updated = await getMySubscription();
+            setSub(updated);
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to process refund. Please try again.');
+        } finally {
+            setRefundLoading(false);
+        }
+    };
+
+    const handleRefundClick = async () => {
+        setRefundLoading(true);
+        try {
+            const eligibility = await checkRefundEligibility();
+            if (!eligibility.eligible) {
+                toast.error(eligibility.reason || 'You are not eligible for a refund.');
+                return;
+            }
+            // If eligible, the ConfirmDialog will handle showing
+            // We set refundLoading false so the dialog button is clickable
+        } catch (err: any) {
+            toast.error(err.message || 'Could not check refund eligibility.');
+        } finally {
+            setRefundLoading(false);
         }
     };
 
@@ -96,6 +142,35 @@ export default function SubscriptionCard() {
     const isPro = sub.planType === 'PRO';
     const benefits = isPro ? PRO_BENEFITS : FREE_BENEFITS;
 
+    const getPlanLabel = (cycle?: string | null) => {
+        if (!cycle) return '';
+        const map: Record<string, string> = {
+            'MONTHLY': 'Monthly',
+            'QUARTERLY': 'Quarterly',
+            'HALF_YEARLY': 'Half-Yearly',
+            'YEARLY': 'Yearly'
+        };
+        return map[cycle] || '';
+    };
+
+    const handleResume = async () => {
+        try {
+            setResumeLoading(true);
+            const res = await resumeSubscription();
+            if (res.success) {
+                toast.success('Subscription resumed successfully!');
+                const updated = await getMySubscription();
+                setSub(updated);
+            } else {
+                toast.error('Failed to resume subscription');
+            }
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.message || 'An error occurred');
+        } finally {
+            setResumeLoading(false);
+        }
+    };
     // Billing progress
     const daysElapsed = sub.totalDays != null && sub.daysRemaining != null
         ? sub.totalDays - sub.daysRemaining
@@ -115,7 +190,7 @@ export default function SubscriptionCard() {
                     <div>
                         <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Current Plan</p>
                         <h3 className={`text-xl font-black ${isPro ? 'text-violet-300' : 'text-zinc-300'}`}>
-                            {isPro ? (sub.billingCycle === 'ANNUAL' ? '✦ Pro (Annual)' : '✦ Pro') : 'Free'}
+                            {isPro ? (sub.billingCycle ? `✦ Pro (${getPlanLabel(sub.billingCycle)})` : '✦ Pro') : 'Free'}
                         </h3>
                     </div>
                 </div>
@@ -131,7 +206,7 @@ export default function SubscriptionCard() {
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/8 border border-amber-500/20">
                         <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
                         <p className="text-sm text-amber-300">
-                            Your {sub.billingCycle === 'ANNUAL' ? 'Annual ' : ''}subscription will <strong>cancel on {formatDate(sub.currentPeriodEnd)}</strong>. You'll retain access until then.
+                            Your {sub.billingCycle ? `${getPlanLabel(sub.billingCycle)} ` : ''}subscription will <strong>cancel on {formatDate(sub.currentPeriodEnd)}</strong>. You'll retain access until then.
                         </p>
                     </div>
                 )}
@@ -239,6 +314,24 @@ export default function SubscriptionCard() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Upgrade Nudge Banner for Monthly Users */}
+                        {isPro && sub.billingCycle === 'MONTHLY' && !sub.cancelAtPeriodEnd && sub.status === 'ACTIVE' && (
+                            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-500/10 to-indigo-500/10 border border-violet-500/20">
+                                <div className="flex items-center gap-3">
+                                    <ArrowUpCircle className="w-5 h-5 text-violet-400 shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-violet-100">Save $72 annually</p>
+                                        <p className="text-xs text-violet-300/80">Upgrade to a Yearly plan today.</p>
+                                    </div>
+                                </div>
+                                <Link href="/pricing">
+                                    <button className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-lg shadow-violet-500/20 transition-all">
+                                        Upgrade
+                                    </button>
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -278,11 +371,11 @@ export default function SubscriptionCard() {
                                 )}
                                 {sub.cancelAtPeriodEnd && (
                                     <button
-                                        onClick={handleManageBilling}
-                                        disabled={portalLoading}
+                                        onClick={handleResume}
+                                        disabled={resumeLoading}
                                         className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-sm font-semibold transition-all disabled:opacity-50"
                                     >
-                                        {portalLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                                        {resumeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
                                         Resume Subscription
                                     </button>
                                 )}
@@ -294,17 +387,36 @@ export default function SubscriptionCard() {
                                     {!sub.cancelAtPeriodEnd && 'Cancel Subscription'}
                                     {sub.cancelAtPeriodEnd && 'Billing Portal'}
                                 </button>
+                                {/* Refund Button */}
+                                {!sub.refunded && (
+                                    <ConfirmDialog
+                                        title="Request Refund"
+                                        description="Refund will cancel your Pro plan immediately. You will lose access to all premium features including unlimited interviews, advanced analytics, and voice mode. This action cannot be undone."
+                                        confirmText={refundLoading ? 'Processing…' : 'Yes, Refund Me'}
+                                        onConfirm={handleRefund}
+                                        destructive
+                                    >
+                                        <button
+                                            onClick={handleRefundClick}
+                                            disabled={refundLoading}
+                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-semibold transition-all disabled:opacity-50"
+                                        >
+                                            {refundLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Undo2 className="w-3.5 h-3.5" />}
+                                            Request Refund
+                                        </button>
+                                    </ConfirmDialog>
+                                )}
                             </>
                         ) : (
                             <span className="text-xs text-muted-foreground italic">Billing managed externally</span>
                         )
                     ) : (
-                        <UpgradeModal trigger={
+                        <Link href="/pricing">
                             <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-violet-500/20 transition-all">
                                 <Zap className="w-4 h-4" />
                                 Upgrade to Pro
                             </button>
-                        } />
+                        </Link>
                     )}
                 </div>
             </div>

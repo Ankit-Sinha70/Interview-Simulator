@@ -30,3 +30,17 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
         return res.status(403).json({ success: false, error: 'Forbidden: Invalid token' });
     }
 }
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+    const user = (req as AuthRequest).user;
+    if (!user || !user.email) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: No user found' });
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail || user.email !== adminEmail) {
+        return res.status(403).json({ success: false, error: 'Forbidden: Admin access only' });
+    }
+
+    next();
+}

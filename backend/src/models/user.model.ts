@@ -15,10 +15,18 @@ export interface IUser extends Document {
     experienceLevel?: string;
 
     planType: 'FREE' | 'PRO';
-    subscriptionStatus: 'ACTIVE' | 'CANCELED' | 'PAST_DUE';
-    billingCycle?: 'MONTHLY' | 'ANNUAL' | null;
+    subscriptionStatus: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'REFUNDED';
+    billingCycle?: 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY' | null;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
+    stripePaymentIntentId?: string;
+    subscriptionStartDate?: Date;
+
+    refunded: boolean;
+    refundAmount: number;
+    refundReason?: string;
+    refundDate?: Date;
+    stripeRefundId?: string;
 
     resetPasswordToken?: string;
     resetPasswordExpires?: Date;
@@ -46,10 +54,18 @@ const UserSchema: Schema = new Schema({
     experienceLevel: { type: String },
 
     planType: { type: String, enum: ['FREE', 'PRO'], default: 'FREE' },
-    subscriptionStatus: { type: String, enum: ['ACTIVE', 'CANCELED', 'PAST_DUE'], default: 'ACTIVE' },
-    billingCycle: { type: String, enum: ['MONTHLY', 'ANNUAL', null], default: null },
+    subscriptionStatus: { type: String, enum: ['ACTIVE', 'CANCELED', 'PAST_DUE', 'REFUNDED'], default: 'ACTIVE' },
+    billingCycle: { type: String, enum: ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY', null], default: null },
     stripeCustomerId: { type: String },
     stripeSubscriptionId: { type: String },
+    stripePaymentIntentId: { type: String },
+    subscriptionStartDate: { type: Date },
+
+    refunded: { type: Boolean, default: false },
+    refundAmount: { type: Number, default: 0 },
+    refundReason: { type: String },
+    refundDate: { type: Date },
+    stripeRefundId: { type: String },
 
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },

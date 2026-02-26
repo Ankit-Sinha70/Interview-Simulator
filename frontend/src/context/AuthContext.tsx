@@ -12,7 +12,8 @@ export interface User {
     planType: 'FREE' | 'PRO';
     interviewsUsedThisMonth: number;
     provider?: 'local' | 'google' | 'meta';
-    subscriptionStatus?: 'ACTIVE' | 'CANCELED' | 'PAST_DUE';
+    subscriptionStatus?: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'REFUNDED';
+    refunded?: boolean;
     createdAt?: string;
 }
 
