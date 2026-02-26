@@ -263,7 +263,7 @@ export async function abandonSession(sessionId: string): Promise<any> {
 
 export interface SubscriptionDetails {
     planType: 'FREE' | 'PRO';
-    status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE';
+    status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'REFUNDED';
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
     daysRemaining: number | null;
@@ -271,6 +271,9 @@ export interface SubscriptionDetails {
     cancelAtPeriodEnd: boolean;
     hasStripeId?: boolean;
     billingCycle?: 'MONTHLY' | 'ANNUAL' | null;
+    refunded?: boolean;
+    refundDate?: string;
+    subscriptionStartDate?: string;
     usage: {
         interviewsUsed: number;
         interviewsLimit: number | 'UNLIMITED';
@@ -292,6 +295,34 @@ export async function createPortalSession(): Promise<{ url: string }> {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         }
+    });
+}
+
+// ─── Refund ───
+
+export interface RefundEligibility {
+    eligible: boolean;
+    reason?: string;
+    daysSincePurchase?: number;
+    interviewsUsed?: number;
+}
+
+export async function checkRefundEligibility(): Promise<RefundEligibility> {
+    const token = localStorage.getItem('token');
+    return apiCall<RefundEligibility>('/subscription/refund-eligibility', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+}
+
+export async function requestRefund(reason?: string): Promise<{ success: boolean; refundAmount?: number; message: string }> {
+    const token = localStorage.getItem('token');
+    return apiCall<{ success: boolean; refundAmount?: number; message: string }>('/subscription/request-refund', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reason }),
     });
 }
 

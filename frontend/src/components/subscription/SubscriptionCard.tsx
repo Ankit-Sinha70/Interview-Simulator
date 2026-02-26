@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CreditCard, CheckCircle, Clock, TrendingUp, Zap, Lock, ExternalLink, RotateCcw, Loader2, AlertCircle, XCircle } from 'lucide-react';
-import { getMySubscription, createPortalSession, SubscriptionDetails } from '@/services/api';
+import { CreditCard, CheckCircle, Clock, TrendingUp, Zap, Lock, ExternalLink, RotateCcw, Loader2, AlertCircle, XCircle, Undo2 } from 'lucide-react';
+import { getMySubscription, createPortalSession, checkRefundEligibility, requestRefund, SubscriptionDetails } from '@/services/api';
 import UpgradeModal from '@/components/UpgradeModal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
     ACTIVE: {
@@ -26,6 +29,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
         bg: 'bg-zinc-700/30',
         border: 'border-zinc-600/25',
         icon: <XCircle className="w-3.5 h-3.5" />,
+    },
+    REFUNDED: {
+        label: 'Refunded',
+        color: 'text-orange-400',
+        bg: 'bg-orange-500/10',
+        border: 'border-orange-500/25',
+        icon: <Undo2 className="w-3.5 h-3.5" />,
     },
 };
 
@@ -54,7 +64,9 @@ export default function SubscriptionCard() {
     const [sub, setSub] = useState<SubscriptionDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [portalLoading, setPortalLoading] = useState(false);
+    const [refundLoading, setRefundLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { refreshUser } = useAuth();
 
     useEffect(() => {
         getMySubscription()
@@ -72,6 +84,39 @@ export default function SubscriptionCard() {
             alert(err.message || 'Could not open billing portal. Please try again.');
         } finally {
             setPortalLoading(false);
+        }
+    };
+
+    const handleRefund = async () => {
+        setRefundLoading(true);
+        try {
+            const result = await requestRefund('User-initiated refund from settings');
+            toast.success(result.message || 'Refund processed successfully!');
+            await refreshUser();
+            // Reload subscription card data
+            const updated = await getMySubscription();
+            setSub(updated);
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to process refund. Please try again.');
+        } finally {
+            setRefundLoading(false);
+        }
+    };
+
+    const handleRefundClick = async () => {
+        setRefundLoading(true);
+        try {
+            const eligibility = await checkRefundEligibility();
+            if (!eligibility.eligible) {
+                toast.error(eligibility.reason || 'You are not eligible for a refund.');
+                return;
+            }
+            // If eligible, the ConfirmDialog will handle showing
+            // We set refundLoading false so the dialog button is clickable
+        } catch (err: any) {
+            toast.error(err.message || 'Could not check refund eligibility.');
+        } finally {
+            setRefundLoading(false);
         }
     };
 
@@ -294,6 +339,25 @@ export default function SubscriptionCard() {
                                     {!sub.cancelAtPeriodEnd && 'Cancel Subscription'}
                                     {sub.cancelAtPeriodEnd && 'Billing Portal'}
                                 </button>
+                                {/* Refund Button */}
+                                {!sub.refunded && (
+                                    <ConfirmDialog
+                                        title="Request Refund"
+                                        description="Refund will cancel your Pro plan immediately. You will lose access to all premium features including unlimited interviews, advanced analytics, and voice mode. This action cannot be undone."
+                                        confirmText={refundLoading ? 'Processing…' : 'Yes, Refund Me'}
+                                        onConfirm={handleRefund}
+                                        destructive
+                                    >
+                                        <button
+                                            onClick={handleRefundClick}
+                                            disabled={refundLoading}
+                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-semibold transition-all disabled:opacity-50"
+                                        >
+                                            {refundLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Undo2 className="w-3.5 h-3.5" />}
+                                            Request Refund
+                                        </button>
+                                    </ConfirmDialog>
+                                )}
                             </>
                         ) : (
                             <span className="text-xs text-muted-foreground italic">Billing managed externally</span>

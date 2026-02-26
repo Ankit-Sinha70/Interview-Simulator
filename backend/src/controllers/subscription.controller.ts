@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import Stripe from 'stripe';
 import * as subscriptionService from '../services/subscription.service';
+import * as refundService from '../services/refund.service';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -101,6 +102,33 @@ export async function createPortalSession(req: Request, res: Response, next: Nex
         if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
         const url = await subscriptionService.createPortalSession(userId);
         res.json({ success: true, data: { url } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function checkRefundEligibility(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+        const result = await refundService.checkRefundEligibility(userId);
+        res.json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function requestRefund(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+        const { reason } = req.body;
+        const result = await refundService.processRefund(userId, reason);
+        if (!result.success) {
+            res.status(400).json({ success: false, error: { message: result.message } });
+            return;
+        }
+        res.json({ success: true, data: result });
     } catch (error) {
         next(error);
     }
