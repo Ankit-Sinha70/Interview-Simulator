@@ -136,14 +136,9 @@ export default function WelcomeOfferModal({ isOpen, onClose, expiresAt, savings,
                             <div>
                                 <div className="text-violet-300 text-xs font-semibold uppercase tracking-wider mb-1">Yearly Plan</div>
                                 <div className="flex items-baseline gap-2">
-                                    <span className="text-4xl font-extrabold text-white">30%</span>
-                                    <span className="text-lg font-bold text-violet-300">OFF</span>
+                                    <span className="text-4xl font-extrabold text-white">Save $72</span>
+                                    <span className="text-lg font-bold text-violet-300">instantly</span>
                                 </div>
-                                {savings && (
-                                    <div className="mt-1 text-emerald-400 text-sm font-semibold">
-                                        💰 Save ₹{savings.toLocaleString()} instantly
-                                    </div>
-                                )}
                             </div>
                             <div className="text-right">
                                 <div className="flex items-center gap-1.5 text-amber-400/90 text-xs font-medium mb-1">
@@ -192,7 +187,7 @@ export default function WelcomeOfferModal({ isOpen, onClose, expiresAt, savings,
                         ) : (
                             <span className="flex items-center gap-2">
                                 <Sparkles className="h-4 w-4" />
-                                Upgrade Now — Save {savings ? `₹${savings.toLocaleString()}` : '30%'}
+                                Upgrade Now — Save $72
                             </span>
                         )}
                     </Button>

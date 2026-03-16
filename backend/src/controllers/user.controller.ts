@@ -181,6 +181,7 @@ export async function getWelcomeOfferStatus(req: Request, res: Response, next: N
         const now = new Date();
         const showOffer =
             user.planType === 'FREE' &&
+            user.completedInterviews >= 1 &&
             !user.hasSeenWelcomeOffer &&
             !user.hasEverSubscribed &&
             !!user.welcomeOfferExpiresAt &&
@@ -218,7 +219,10 @@ export async function dismissWelcomeOffer(req: Request, res: Response, next: Nex
             return res.status(401).json({ success: false, error: 'Unauthorized' });
         }
 
-        await User.findByIdAndUpdate(userId, { hasSeenWelcomeOffer: true });
+        await User.findByIdAndUpdate(userId, {
+            hasSeenWelcomeOffer: true,
+            welcomeOfferShownAt: new Date(),
+        });
         res.status(200).json({ success: true, message: 'Welcome offer dismissed' });
     } catch (error) {
         next(error);
