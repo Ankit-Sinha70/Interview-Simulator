@@ -34,6 +34,12 @@ export interface IUser extends Document {
     interviewsUsedThisMonth: number;
     monthlyResetDate: Date;
 
+    completedInterviews: number;
+    hasSeenWelcomeOffer: boolean;
+    hasEverSubscribed: boolean;
+    welcomeOfferExpiresAt?: Date;
+    welcomeOfferShownAt?: Date;
+
     createdAt: Date;
     updatedAt: Date;
 
@@ -72,6 +78,12 @@ const UserSchema: Schema = new Schema({
 
     interviewsUsedThisMonth: { type: Number, default: 0 },
     monthlyResetDate: { type: Date, default: () => new Date() },
+
+    completedInterviews: { type: Number, default: 0 },
+    hasSeenWelcomeOffer: { type: Boolean, default: false },
+    hasEverSubscribed: { type: Boolean, default: false },
+    welcomeOfferExpiresAt: { type: Date },
+    welcomeOfferShownAt: { type: Date },
 }, {
     timestamps: true
 });

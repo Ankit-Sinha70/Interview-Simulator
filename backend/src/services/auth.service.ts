@@ -13,7 +13,7 @@ const SALT_ROUNDS = 10;
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
-export async function register(name: string, email: string, password: string): Promise<{ token: string, user: IUser }> {
+export async function register(name: string, email: string, password: string): Promise<{ message: string, requiresLogin: boolean, user: IUser }> {
     // Check if user exists
     const existing = await User.findOne({ email });
     if (existing) {
@@ -31,10 +31,11 @@ export async function register(name: string, email: string, password: string): P
     });
     await user.save();
 
-    // Generate token
-    const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-
-    return { token, user };
+    return {
+        message: "Account created successfully",
+        requiresLogin: true,
+        user
+    };
 }
 
 export async function login(email: string, password: string): Promise<{ token: string, user: IUser }> {

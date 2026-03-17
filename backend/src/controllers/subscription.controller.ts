@@ -14,11 +14,11 @@ export async function createCheckoutSession(req: Request, res: Response, next: N
             return;
         }
 
-        const { billingCycle } = req.body;
+        const { billingCycle, couponCode } = req.body;
         const validCycles = ['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY'];
         const validCycle = validCycles.includes(billingCycle) ? billingCycle : 'MONTHLY';
 
-        const url = await subscriptionService.createCheckoutSession(userId, validCycle as any);
+        const url = await subscriptionService.createCheckoutSession(userId, validCycle as any, couponCode);
         res.json({ url });
     } catch (error) {
         next(error);

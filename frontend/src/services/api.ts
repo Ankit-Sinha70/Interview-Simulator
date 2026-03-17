@@ -394,3 +394,29 @@ export const changePassword = async (currentPassword: string, newPassword: strin
         body: JSON.stringify({ currentPassword, newPassword }),
     });
 };
+
+// ─── Welcome Offer ───
+
+export interface WelcomeOfferStatus {
+    showOffer: boolean;
+    expiresAt: string | null;
+    savings: number | null;
+}
+
+export async function getWelcomeOfferStatus(): Promise<WelcomeOfferStatus> {
+    const token = localStorage.getItem('token');
+    return apiCall<WelcomeOfferStatus>('/users/welcome-offer-status', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+}
+
+export async function dismissWelcomeOffer(): Promise<void> {
+    const token = localStorage.getItem('token');
+    await apiCall<any>('/users/dismiss-welcome-offer', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
+    });
+}

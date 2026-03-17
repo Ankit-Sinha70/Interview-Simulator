@@ -16,6 +16,7 @@ import {
 import { isDbConnected } from '../config/db.config';
 import { AnalyticsModel } from '../schemas/analytics.schema';
 import { isDifficultyAllowed } from '../constants/difficultyMatrix';
+import { User } from '../models/user.model';
 // ...
 export async function generateFinalReport(sessionId: string, attentionStats?: AttentionStats): Promise<FinalReport> {
     const session = await sessionService.getSession(sessionId);
@@ -117,6 +118,31 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
     // Save analytics (only if DB is connected)
     if (isDbConnected()) {
         saveAnalytics(session, finalReport, calculatedHireBand, difficultyConsistency).catch(() => { });
+    }
+
+    // ─── Increment completedInterviews & trigger welcome offer on first completion ───
+    if (session.userId) {
+        try {
+            const user = await User.findById(session.userId);
+            if (user) {
+                user.completedInterviews = (user.completedInterviews || 0) + 1;
+
+                // Start the 24h welcome offer timer on FIRST completion for FREE users
+                if (
+                    user.completedInterviews === 1 &&
+                    user.planType === 'FREE' &&
+                    !user.hasEverSubscribed &&
+                    !user.welcomeOfferExpiresAt
+                ) {
+                    user.welcomeOfferExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+                    console.log(`[WelcomeOffer] Timer started for user ${user._id} — expires at ${user.welcomeOfferExpiresAt.toISOString()}`);
+                }
+
+                await user.save();
+            }
+        } catch (err) {
+            console.error('[Report] Failed to update completedInterviews:', (err as Error).message);
+        }
     }
 
     return finalReport;

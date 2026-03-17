@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Eye, EyeOff, Plus, X } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
+import { SuccessDialog } from '@/components/ui/SuccessDialog';
 
 interface RecentLogin {
     email: string;
@@ -23,6 +24,7 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [recentLogins, setRecentLogins] = useState<RecentLogin[]>([]);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     useEffect(() => {
         const stored = localStorage.getItem('recentLogins');
@@ -61,22 +63,34 @@ export default function LoginPage() {
                 body: JSON.stringify(body)
             });
             const data = await res.json();
-            if (!data.success) throw new Error(data.error);
+            if (!data.success) throw new Error(data.error || data.message || 'Authentication failed');
+
+            // Handle successful registration
+            if (!isLogin && res.status === 201) {
+                // Clear the form to prevent double-submit
+                setName('');
+                setEmail('');
+                setPassword('');
+                setShowSuccessModal(true);
+                return; // Stop here, do not log in
+            }
 
             // Save to recent logins on successful login
             if (isLogin) {
                 const newLogin: RecentLogin = {
-                    email: data.data.user.email,
-                    name: data.data.user.name
+                    email: data.data?.user?.email || email,
+                    name: data.data?.user?.name || name || 'User'
                 };
                 const existing = recentLogins.filter(l => l.email !== newLogin.email);
                 const updatedLogins = [newLogin, ...existing].slice(0, 2); // Keep max 2
 
                 setRecentLogins(updatedLogins);
                 localStorage.setItem('recentLogins', JSON.stringify(updatedLogins));
+
+                // Login immediately
+                login(data.data.token, data.data.user);
             }
 
-            login(data.data.token, data.data.user);
         } catch (err: any) {
             setError(err.message);
         }
@@ -294,6 +308,15 @@ export default function LoginPage() {
                     </div>
                 </div>
             </main>
+
+            <SuccessDialog
+                isOpen={showSuccessModal}
+                onOpenChange={setShowSuccessModal}
+                title="Account Created Successfully! 🎉"
+                description="Your account has been created successfully. You can now log in and start your AI interview journey."
+                buttonText="Go to Login"
+                onConfirm={() => setIsLogin(true)}
+            />
         </div>
     );
 }
