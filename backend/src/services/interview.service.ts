@@ -122,8 +122,13 @@ export async function startInterview(
         await user.save();
     }
 
-    if (user.planType === 'FREE' && user.interviewsUsedThisMonth >= 2) {
-        throw new Error('Free plan limit reached. Upgrade to Pro for unlimited interviews.');
+    const FREE_PLAN_LIMIT = 3;
+
+    console.log(`[Interview] Creating session. User ${userId} plan: ${user.planType}, Used: ${user.interviewsUsedThisMonth}/${FREE_PLAN_LIMIT}`);
+
+    if (user.planType === 'FREE' && user.interviewsUsedThisMonth >= FREE_PLAN_LIMIT) {
+        console.warn(`[Interview] Limit reached for user ${userId}. Used: ${user.interviewsUsedThisMonth}`);
+        throw new Error('Free plan limit reached. Please upgrade to Pro.');
     }
 
     // Increment usage

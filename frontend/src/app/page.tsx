@@ -1,11 +1,11 @@
-
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import InterviewLimitModal from '@/components/InterviewLimitModal';
 import SessionSetup from '@/components/SessionSetup';
 import QuestionCard from '@/components/QuestionCard';
 import AnswerInput from '@/components/AnswerInput';
@@ -62,6 +62,11 @@ function HomeContent() {
   const [error, setError] = useState<string | null>(null);
 
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [loadingActiveSession, setLoadingActiveSession] = useState(true);
+
+  // Interview Limit Modal state
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitData, setLimitData] = useState({ used: 0, max: 3 });
   const [currentQuestion, setCurrentQuestion] = useState<GeneratedQuestion | null>(null);
   const [questionNumber, setQuestionNumber] = useState(1);
 
@@ -138,15 +143,23 @@ function HomeContent() {
       setQuestionNumber(1);
       setAppState('interview');
     } catch (err: any) {
+      console.error('Error starting interview:', err);
+
+      // Check if it's the specific limit error from the backend
       if (err.message && err.message.includes('Limit reached')) {
-        setError('Free plan limit reached. Please upgrade to Pro.');
+        // Determine limits based on plan type (though usually only FREE hits this)
+        const limit = user?.planType === 'PRO' ? Infinity : 3;
+        const used = user?.interviewsUsedThisMonth || 3;
+
+        setLimitData({ used, max: limit });
+        setShowLimitModal(true);
       } else {
-        setError(err.message || 'Failed to start interview');
+        setError(err.message || 'Failed to start interview.');
       }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   // ─── Submit Answer ───
   const handleSubmitAnswer = useCallback(async (answer: string, meta?: VoiceMetadata) => {
@@ -391,7 +404,7 @@ function HomeContent() {
             {/* Latest Evaluation (Feedback) */}
             {latestEvaluation && (
               <div className="animate-slide-in-down">
-                <EvaluationCard evaluation={latestEvaluation} questionNumber={questionNumber - 1} />
+                <EvaluationCard evaluation={latestEvaluation} questionNumber={questionNumber - 1} isPro={user?.planType === 'PRO'} />
               </div>
             )}
 
@@ -441,9 +454,12 @@ function HomeContent() {
                               Score: {entry.evaluation.overallScore}/10
                             </Badge>
                           </div>
-                          <p className="text-sm text-foreground/80 line-clamp-2">
+                          <p className="text-sm text-foreground/80 line-clamp-2 mb-3">
                             {entry.question.question}
                           </p>
+                          <div className="pt-2 border-t border-border/50">
+                            <EvaluationCard evaluation={entry.evaluation} questionNumber={entry.questionNumber} isPro={user?.planType === 'PRO'} />
+                          </div>
                         </CardContent>
                       </Card>
                     </div>
@@ -454,6 +470,13 @@ function HomeContent() {
           </div>
         </main>
       )}
+
+      <InterviewLimitModal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        interviewsUsed={limitData.used}
+        limit={limitData.max}
+      />
     </div>
   );
 }

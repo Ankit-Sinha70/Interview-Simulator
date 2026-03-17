@@ -4,9 +4,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { getSession, getWelcomeOfferStatus, WelcomeOfferStatus } from '@/services/api';
 import ReportView from '@/components/ReportView';
-import WelcomeOfferModal from '@/components/WelcomeOfferModal';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ReportPage() {
+    const { user } = useAuth();
     const params = useParams();
     const sessionId = params.id as string;
     const [report, setReport] = useState<any>(null);
@@ -56,6 +57,7 @@ export default function ReportPage() {
                 scores={session?.aggregatedScores}
                 attentionStats={session?.attentionStats}
                 onNewSession={() => window.location.href = '/interview/start'}
+                isPro={user?.planType === 'PRO'}
             />
 
             {/* Welcome Offer Modal — shown after first completed interview */}

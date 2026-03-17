@@ -7,15 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { FinalReport, AggregatedScores, AttentionStats } from '@/services/api';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import LockedSection from './LockedSection';
 
 interface ReportViewProps {
     report: FinalReport;
     scores: AggregatedScores;
     onNewSession: () => void;
     attentionStats?: AttentionStats;
+    isPro?: boolean;
 }
 
-export default function ReportView({ report, scores, onNewSession, attentionStats }: ReportViewProps) {
+export default function ReportView({ report, scores, onNewSession, attentionStats, isPro = false }: ReportViewProps) {
     const confidenceColors: Record<string, string> = {
         High: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
         Medium: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
@@ -85,138 +87,197 @@ export default function ReportView({ report, scores, onNewSession, attentionStat
             </Card>
 
             {/* Radar Chart */}
-            <Card className="animate-fadeInUp bg-card border-border shadow-lg mb-6" style={{ animationDelay: '150ms' }}>
-                <CardHeader>
-                    <CardTitle className="text-base font-bold text-center">🏆 Performance Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent className="h-[300px] w-full flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                            <PolarGrid stroke="#374151" />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                            <Radar
-                                name="Score"
-                                dataKey="A"
-                                stroke="#8b5cf6"
-                                strokeWidth={3}
-                                fill="#8b5cf6"
-                                fillOpacity={0.3}
-                            />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#fff' }}
-                                itemStyle={{ color: '#a78bfa' }}
-                            />
-                        </RadarChart>
-                    </ResponsiveContainer>
-                </CardContent>
-            </Card>
+            <div className="animate-fadeInUp mb-6" style={{ animationDelay: '150ms' }}>
+                {isPro ? (
+                    <Card className="bg-card border-border shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-base font-bold text-center">🏆 Performance Breakdown</CardTitle>
+                        </CardHeader>
+                        <CardContent className="h-[300px] w-full flex items-center justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                                    <PolarGrid stroke="#374151" />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                                    <Radar
+                                        name="Score"
+                                        dataKey="A"
+                                        stroke="#8b5cf6"
+                                        strokeWidth={3}
+                                        fill="#8b5cf6"
+                                        fillOpacity={0.3}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#fff' }}
+                                        itemStyle={{ color: '#a78bfa' }}
+                                    />
+                                </RadarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <LockedSection featureLabel="Unlock Detailed Performance Breakdown">
+                        <Card className="bg-card border-border shadow-lg">
+                            <CardHeader>
+                                <CardTitle className="text-base font-bold text-center">🏆 Performance Breakdown</CardTitle>
+                            </CardHeader>
+                            <CardContent className="h-[300px] w-full flex items-center justify-center">
+                                {/* Static placeholder for blur */}
+                                <div className="w-full h-full bg-slate-800/20 rounded-full border border-slate-700/30 flex items-center justify-center opacity-50">
+                                    <div className="w-3/4 h-3/4 bg-violet-500/10 rounded-full border border-violet-500/20" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </LockedSection>
+                )}
+            </div>
 
             {/* Attention Analysis */}
             {attentionStats && (
-                <Card className="animate-fadeInUp bg-card border-blue-500/15 shadow-lg mb-6" style={{ animationDelay: '250ms' }}>
-                    <CardHeader>
-                        <CardTitle className="text-base font-bold text-center">👀 Attention Analysis</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div className="p-3 bg-blue-500/5 rounded-lg">
-                                <div className="text-2xl font-bold text-blue-400">{attentionStats.focusScore}%</div>
-                                <div className="text-xs text-muted-foreground uppercase">Focus Score</div>
-                            </div>
-                            <div className="p-3 bg-blue-500/5 rounded-lg">
-                                <div className="text-2xl font-bold text-blue-400">{attentionStats.totalLookAwayTime}s</div>
-                                <div className="text-xs text-muted-foreground uppercase">looked away</div>
-                            </div>
-                            <div className="p-3 bg-blue-500/5 rounded-lg">
-                                <div className="text-2xl font-bold text-blue-400">{attentionStats.distractionEvents}</div>
-                                <div className="text-xs text-muted-foreground uppercase">Distractions</div>
-                            </div>
-                            <div className="p-3 bg-blue-500/5 rounded-lg">
-                                <Badge className={
-                                    attentionStats.focusCategory === 'Excellent' ? 'bg-green-500/20 text-green-400' :
-                                        attentionStats.focusCategory === 'Good' ? 'bg-blue-500/20 text-blue-400' :
-                                            attentionStats.focusCategory === 'Moderate' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                'bg-red-500/20 text-red-400'
-                                }>
-                                    {attentionStats.focusCategory}
-                                </Badge>
-                                <div className="text-xs text-muted-foreground mt-1 uppercase">Rating</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="animate-fadeInUp mb-6" style={{ animationDelay: '250ms' }}>
+                    {isPro ? (
+                        <Card className="bg-card border-blue-500/15 shadow-lg">
+                            <CardHeader>
+                                <CardTitle className="text-base font-bold text-center">👀 Attention Analysis</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                    <div className="p-3 bg-blue-500/5 rounded-lg">
+                                        <div className="text-2xl font-bold text-blue-400">{attentionStats.focusScore}%</div>
+                                        <div className="text-xs text-muted-foreground uppercase">Focus Score</div>
+                                    </div>
+                                    <div className="p-3 bg-blue-500/5 rounded-lg">
+                                        <div className="text-2xl font-bold text-blue-400">{attentionStats.totalLookAwayTime}s</div>
+                                        <div className="text-xs text-muted-foreground uppercase">looked away</div>
+                                    </div>
+                                    <div className="p-3 bg-blue-500/5 rounded-lg">
+                                        <div className="text-2xl font-bold text-blue-400">{attentionStats.distractionEvents}</div>
+                                        <div className="text-xs text-muted-foreground uppercase">Distractions</div>
+                                    </div>
+                                    <div className="p-3 bg-blue-500/5 rounded-lg">
+                                        <Badge className={
+                                            attentionStats.focusCategory === 'Excellent' ? 'bg-green-500/20 text-green-400' :
+                                                attentionStats.focusCategory === 'Good' ? 'bg-blue-500/20 text-blue-400' :
+                                                    attentionStats.focusCategory === 'Moderate' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        'bg-red-500/20 text-red-400'
+                                        }>
+                                            {attentionStats.focusCategory}
+                                        </Badge>
+                                        <div className="text-xs text-muted-foreground mt-1 uppercase">Rating</div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <LockedSection featureLabel="Unlock Confidence & Speaking Analysis">
+                            <Card className="bg-card border-blue-500/15 shadow-lg">
+                                <CardHeader>
+                                    <CardTitle className="text-base font-bold text-center">👀 Attention Analysis</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                        <div className="p-3 bg-blue-500/5 rounded-lg h-[72px]" />
+                                        <div className="p-3 bg-blue-500/5 rounded-lg h-[72px]" />
+                                        <div className="p-3 bg-blue-500/5 rounded-lg h-[72px]" />
+                                        <div className="p-3 bg-blue-500/5 rounded-lg h-[72px]" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </LockedSection>
+                    )}
+                </div>
             )}
 
             {/* Time Analysis */}
             {report.timeAnalysis && (
-                <Card className="animate-fadeInUp bg-card border-[var(--accent-violet)]/15 shadow-lg mb-6" style={{ animationDelay: '300ms' }}>
-                    <CardHeader>
-                        <CardTitle className="text-base font-bold text-center">⏱️ Time Analysis</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {/* Metrics Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
-                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.averageTimePerQuestion}s</div>
-                                <div className="text-xs text-muted-foreground uppercase">Avg Time</div>
-                            </div>
-                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
-                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.fastestAnswerTime}s</div>
-                                <div className="text-xs text-muted-foreground uppercase">Fastest</div>
-                            </div>
-                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
-                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.slowestAnswerTime}s</div>
-                                <div className="text-xs text-muted-foreground uppercase">Slowest</div>
-                            </div>
-                            <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
-                                <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.timeEfficiencyScore}/10</div>
-                                <div className="text-xs text-muted-foreground uppercase">Efficiency Score</div>
-                            </div>
-                        </div>
+                <div className="animate-fadeInUp mb-6" style={{ animationDelay: '300ms' }}>
+                    {isPro ? (
+                        <Card className="bg-card border-[var(--accent-violet)]/15 shadow-lg">
+                            <CardHeader>
+                                <CardTitle className="text-base font-bold text-center">⏱️ Time Analysis</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Metrics Grid */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                    <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                        <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.averageTimePerQuestion}s</div>
+                                        <div className="text-xs text-muted-foreground uppercase">Avg Time</div>
+                                    </div>
+                                    <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                        <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.fastestAnswerTime}s</div>
+                                        <div className="text-xs text-muted-foreground uppercase">Fastest</div>
+                                    </div>
+                                    <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                        <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.slowestAnswerTime}s</div>
+                                        <div className="text-xs text-muted-foreground uppercase">Slowest</div>
+                                    </div>
+                                    <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10">
+                                        <div className="text-2xl font-bold text-[var(--accent-violet)]">{report.timeAnalysis.timeEfficiencyScore}/10</div>
+                                        <div className="text-xs text-muted-foreground uppercase">Efficiency Score</div>
+                                    </div>
+                                </div>
 
-                        {/* Time vs Question Chart */}
-                        <div className="h-[250px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={report.timeAnalysis.charts || []} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.5} />
-                                    <XAxis dataKey="questionIndex" tickFormatter={(val) => `Q${val}`} stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Seconds', angle: -90, position: 'insideLeft', fill: '#6B7280', fontSize: 10 }} />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(139, 92, 246, 0.1)' }}
-                                        content={({ active, payload }) => {
-                                            if (active && payload && payload.length) {
-                                                const data = payload[0].payload;
-                                                return (
-                                                    <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-                                                        <p className="font-bold text-slate-200 mb-1">Question {data.questionIndex}</p>
-                                                        <p className="text-violet-400 text-sm">Time: <span className="font-bold">{data.timeSeconds}s</span></p>
-                                                        <p className="text-emerald-400 text-sm">Score: <span className="font-bold">{data.score}/10</span></p>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        }}
-                                    />
-                                    <Bar dataKey="timeSeconds" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                                {/* Time vs Question Chart */}
+                                <div className="h-[250px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={report.timeAnalysis.charts || []} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.5} />
+                                            <XAxis dataKey="questionIndex" tickFormatter={(val) => `Q${val}`} stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} />
+                                            <YAxis stroke="#9CA3AF" fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Seconds', angle: -90, position: 'insideLeft', fill: '#6B7280', fontSize: 10 }} />
+                                            <Tooltip
+                                                cursor={{ fill: 'rgba(139, 92, 246, 0.1)' }}
+                                                content={({ active, payload }) => {
+                                                    if (active && payload && payload.length) {
+                                                        const data = payload[0].payload;
+                                                        return (
+                                                            <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
+                                                                <p className="font-bold text-slate-200 mb-1">Question {data.questionIndex}</p>
+                                                                <p className="text-violet-400 text-sm">Time: <span className="font-bold">{data.timeSeconds}s</span></p>
+                                                                <p className="text-emerald-400 text-sm">Score: <span className="font-bold">{data.score}/10</span></p>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                }}
+                                            />
+                                            <Bar dataKey="timeSeconds" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
 
-                        {/* Insights */}
-                        {report.timeAnalysis.insights && report.timeAnalysis.insights.length > 0 && (
-                            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
-                                <h4 className="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">💡 Efficiency Insights</h4>
-                                <ul className="space-y-2">
-                                    {report.timeAnalysis.insights.map((insight, i) => (
-                                        <li key={i} className="flex gap-2 text-sm text-slate-400">
-                                            <span className="text-violet-400">•</span> {insight}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                                {/* Insights */}
+                                {report.timeAnalysis.insights && report.timeAnalysis.insights.length > 0 && (
+                                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                                        <h4 className="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">💡 Efficiency Insights</h4>
+                                        <ul className="space-y-2">
+                                            {report.timeAnalysis.insights.map((insight, i) => (
+                                                <li key={i} className="flex gap-2 text-sm text-slate-400">
+                                                    <span className="text-violet-400">•</span> {insight}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <LockedSection featureLabel="Unlock Time Efficiency Insights">
+                            <Card className="bg-card border-[var(--accent-violet)]/15 shadow-lg">
+                                <CardHeader>
+                                    <CardTitle className="text-base font-bold text-center">⏱️ Time Analysis</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                        <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10 h-[72px]" />
+                                        <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10 h-[72px]" />
+                                        <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10 h-[72px]" />
+                                        <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10 h-[72px]" />
+                                    </div>
+                                    <div className="h-[250px] w-full bg-slate-800/20 rounded-lg border border-slate-700/30" />
+                                </CardContent>
+                            </Card>
+                        </LockedSection>
+                    )}
+                </div>
             )}
 
             {/* Strongest & Weakest Areas */}
@@ -253,43 +314,90 @@ export default function ReportView({ report, scores, onNewSession, attentionStat
             </div>
 
             {/* Improvement Roadmap */}
-            <Card className="animate-fadeInUp bg-card border-border shadow-lg mb-6" style={{ animationDelay: '300ms' }}>
-                <CardHeader>
-                    <CardTitle className="text-base font-bold">🗺️ Improvement Roadmap</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-0">
-                    {report.improvementRoadmap?.map((step, i) => (
-                        <div key={i}>
-                            <div className="flex gap-4 py-4">
-                                <div className="w-8 h-8 rounded-full bg-[var(--accent-violet)] flex items-center justify-center text-white text-[13px] font-bold shrink-0">
-                                    {i + 1}
+            <div className="animate-fadeInUp mb-6" style={{ animationDelay: '300ms' }}>
+                {isPro ? (
+                    <Card className="bg-card border-border shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-base font-bold">🗺️ Improvement Roadmap</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-0">
+                            {report.improvementRoadmap?.map((step, i) => (
+                                <div key={i}>
+                                    <div className="flex gap-4 py-4">
+                                        <div className="w-8 h-8 rounded-full bg-[var(--accent-violet)] flex items-center justify-center text-white text-[13px] font-bold shrink-0">
+                                            {i + 1}
+                                        </div>
+                                        <p className="text-muted-foreground text-sm leading-relaxed pt-1">
+                                            {step}
+                                        </p>
+                                    </div>
+                                    {i < report.improvementRoadmap.length - 1 && <Separator className="bg-border" />}
                                 </div>
-                                <p className="text-muted-foreground text-sm leading-relaxed pt-1">
-                                    {step}
-                                </p>
-                            </div>
-                            {i < report.improvementRoadmap.length - 1 && <Separator className="bg-border" />}
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
+                            ))}
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <LockedSection featureLabel="Unlock AI Improvement Roadmap">
+                        <Card className="bg-card border-border shadow-lg">
+                            <CardHeader>
+                                <CardTitle className="text-base font-bold">🗺️ Improvement Roadmap</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-0">
+                                {[1, 2, 3].map((_, i) => (
+                                    <div key={i}>
+                                        <div className="flex gap-4 py-4">
+                                            <div className="w-8 h-8 rounded-full bg-[var(--accent-violet)]/50 flex items-center justify-center text-white/50 text-[13px] font-bold shrink-0">
+                                                {i + 1}
+                                            </div>
+                                            <div className="space-y-2 flex-1 pt-1">
+                                                <div className="h-4 w-full bg-slate-800/50 rounded" />
+                                                <div className="h-4 w-3/4 bg-slate-800/50 rounded" />
+                                            </div>
+                                        </div>
+                                        {i < 2 && <Separator className="bg-border" />}
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </LockedSection>
+                )}
+            </div>
 
             {/* Next Preparation Focus */}
             {report.nextPreparationFocus && report.nextPreparationFocus.length > 0 && (
-                <Card className="animate-fadeInUp bg-card border-[var(--accent-teal)]/15 shadow-lg mb-8" style={{ animationDelay: '400ms' }}>
-                    <CardHeader>
-                        <CardTitle className="text-base font-bold">📚 What to Study Next</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 gap-2">
-                            {report.nextPreparationFocus.map((focus, i) => (
-                                <div key={i} className="bg-[var(--accent-teal)]/[0.06] rounded-lg px-3.5 py-2.5 text-muted-foreground text-[13px] font-medium flex items-center gap-2">
-                                    <span className="text-[var(--accent-teal)]">→</span> {focus}
+                <div className="animate-fadeInUp mb-8" style={{ animationDelay: '400ms' }}>
+                    {isPro ? (
+                        <Card className="bg-card border-[var(--accent-teal)]/15 shadow-lg">
+                            <CardHeader>
+                                <CardTitle className="text-base font-bold">📚 What to Study Next</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {report.nextPreparationFocus.map((focus, i) => (
+                                        <div key={i} className="bg-[var(--accent-teal)]/[0.06] rounded-lg px-3.5 py-2.5 text-muted-foreground text-[13px] font-medium flex items-center gap-2">
+                                            <span className="text-[var(--accent-teal)]">→</span> {focus}
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <LockedSection featureLabel="Unlock Personalized Learning Path">
+                            <Card className="bg-card border-[var(--accent-teal)]/15 shadow-lg">
+                                <CardHeader>
+                                    <CardTitle className="text-base font-bold">📚 What to Study Next</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[1, 2, 3].map((_, i) => (
+                                            <div key={i} className="bg-[var(--accent-teal)]/[0.06] rounded-lg px-3.5 py-2.5 h-[42px]" />
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </LockedSection>
+                    )}
+                </div>
             )}
 
             {/* New Session Button */}
