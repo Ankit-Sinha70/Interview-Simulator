@@ -5,14 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import ScoreBar from './ScoreBar';
+import LockedSection from './LockedSection';
 import { Evaluation } from '@/services/api';
 
 interface EvaluationCardProps {
     evaluation: Evaluation;
     questionNumber: number;
+    isPro?: boolean;
 }
 
-export default function EvaluationCard({ evaluation, questionNumber }: EvaluationCardProps) {
+export default function EvaluationCard({ evaluation, questionNumber, isPro = false }: EvaluationCardProps) {
     const overallColor = evaluation.overallScore >= 7
         ? 'text-emerald-400 bg-emerald-500/15'
         : evaluation.overallScore >= 4
@@ -76,19 +78,40 @@ export default function EvaluationCard({ evaluation, questionNumber }: Evaluatio
                 </div>
 
                 {/* Improvements */}
-                <div className="bg-violet-500/[0.06] rounded-lg p-4 border border-violet-500/[0.12]">
-                    <h4 className="text-[var(--accent-violet)] text-xs font-bold uppercase tracking-wider mb-3">
-                        💡 Improvements
-                    </h4>
-                    <ul className="space-y-1">
-                        {evaluation.improvements.map((imp, i) => (
-                            <li key={i} className="text-muted-foreground text-[13px] leading-relaxed pl-4 relative">
-                                <span className="absolute left-0 text-[var(--accent-violet)] text-xs">{i + 1}.</span>
-                                {imp}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
+                {isPro ? (
+                    <div className="bg-violet-500/[0.06] rounded-lg p-4 border border-violet-500/[0.12]">
+                        <h4 className="text-[var(--accent-violet)] text-xs font-bold uppercase tracking-wider mb-3">
+                            💡 Improvements
+                        </h4>
+                        <ul className="space-y-1">
+                            {evaluation.improvements.map((imp, i) => (
+                                <li key={i} className="text-muted-foreground text-[13px] leading-relaxed pl-4 relative">
+                                    <span className="absolute left-0 text-[var(--accent-violet)] text-xs">{i + 1}.</span>
+                                    {imp}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ) : (
+                    <LockedSection featureLabel="See How To Improve">
+                        <div className="bg-violet-500/[0.06] rounded-lg p-4 border border-violet-500/[0.12]">
+                            <h4 className="text-[var(--accent-violet)] text-xs font-bold uppercase tracking-wider mb-3">
+                                💡 Improvements
+                            </h4>
+                            <div className="space-y-3">
+                                {[1, 2, 3].map((_, i) => (
+                                    <div key={i} className="flex gap-3">
+                                        <div className="w-4 h-4 rounded-full bg-violet-500/20 shrink-0 mt-0.5" />
+                                        <div className="flex-1 space-y-2 pt-1">
+                                            <div className="h-2 w-full bg-slate-800/50 rounded" />
+                                            <div className="h-2 w-4/5 bg-slate-800/50 rounded" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </LockedSection>
+                )}
             </CardContent>
         </Card>
     );

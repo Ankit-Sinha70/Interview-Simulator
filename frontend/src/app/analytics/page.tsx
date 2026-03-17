@@ -11,6 +11,7 @@ import FocusStats from '@/components/analytics/FocusStats';
 import WeaknessInsights from '@/components/analytics/WeaknessInsights';
 import InterviewHistoryTable from '@/components/analytics/InterviewHistoryTable';
 import SessionIntegrity from '@/components/analytics/SessionIntegrity';
+import LockedSection from '@/components/LockedSection';
 
 // ─── Skeleton Components ───
 
@@ -173,18 +174,39 @@ function AnalyticsContent() {
             {/* 4. Time Analytics + 5. Focus Analytics */}
             <div className="grid gap-6 md:grid-cols-2">
                 <TimeStats timeStats={data.timeStats} />
-                <FocusStats focusStats={data.focusStats} />
+                {user?.planType === 'PRO' ? (
+                    <FocusStats focusStats={data.focusStats} />
+                ) : (
+                    <LockedSection featureLabel="Unlock Focus Tracking">
+                        <FocusStats focusStats={data.focusStats} />
+                    </LockedSection>
+                )}
             </div>
 
             {/* 6. Weakness Insights */}
-            <WeaknessInsights
-                weaknessInsights={data.weaknessInsights}
-                totalSessions={data.totalSessions}
-            />
+            {user?.planType === 'PRO' ? (
+                <WeaknessInsights
+                    weaknessInsights={data.weaknessInsights}
+                    totalSessions={data.totalSessions}
+                />
+            ) : (
+                <LockedSection featureLabel="Unlock AI Weakness Analysis">
+                    <WeaknessInsights
+                        weaknessInsights={data.weaknessInsights}
+                        totalSessions={data.totalSessions}
+                    />
+                </LockedSection>
+            )}
 
             {/* 7. Session Integrity */}
             {data.sessionIntegrity && (
-                <SessionIntegrity sessionIntegrity={data.sessionIntegrity} />
+                user?.planType === 'PRO' ? (
+                    <SessionIntegrity sessionIntegrity={data.sessionIntegrity} />
+                ) : (
+                    <LockedSection featureLabel="Unlock Integrity Checks">
+                        <SessionIntegrity sessionIntegrity={data.sessionIntegrity} />
+                    </LockedSection>
+                )
             )}
 
             {/* 8. Full History */}
