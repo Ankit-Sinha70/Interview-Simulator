@@ -39,6 +39,8 @@ export interface VoiceEvaluation {
     structureScore: number;
     professionalismScore: number;
     spokenDeliveryOverall: number;
+    toneVariation: string;
+    detectedIssues: string[];
     feedback: string[];
 }
 

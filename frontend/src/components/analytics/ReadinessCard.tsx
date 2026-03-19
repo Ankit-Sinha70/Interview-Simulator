@@ -11,6 +11,13 @@ interface ReadinessCardProps {
     timeEfficiency: number;
     focusAverage: number;
     consistencyScore: number;
+    skills: {
+        technical: number;
+        problemSolving: number;
+        communication: number;
+        depth: number;
+        clarity: number;
+    };
 }
 
 export default function ReadinessCard({
@@ -20,6 +27,7 @@ export default function ReadinessCard({
     timeEfficiency,
     focusAverage,
     consistencyScore,
+    skills,
 }: ReadinessCardProps) {
     const trendIcon = trend === 'Improving'
         ? <TrendingUp className="w-4 h-4" />
@@ -49,7 +57,15 @@ export default function ReadinessCard({
             {/* Gradient accent */}
             <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-violet)]/5 to-[var(--accent-teal)]/5 pointer-events-none" />
 
-            <CardContent className="p-6 md:p-8 relative z-10">
+            <CardContent className="p-6 md:p-8 relative z-10 flex flex-col gap-6">
+                {/* Headline Section */}
+                <div>
+                    <h3 className="text-2xl font-bold text-white">
+                        You are <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-500">{readinessScore}%</span> ready
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">Based on your recent interview performance metrics.</p>
+                </div>
+
                 <div className="flex flex-col lg:flex-row items-center gap-8">
                     {/* Gauge */}
                     <div className="flex flex-col items-center gap-3">
@@ -84,16 +100,47 @@ export default function ReadinessCard({
                             </svg>
                         </div>
                         <div className="text-center">
-                            <h2 className="text-lg font-bold text-white">Interview Readiness</h2>
-                            <div className={`inline-flex items-center gap-1.5 mt-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${trendColor}`}>
+                            <h2 className="text-lg font-bold text-white mb-2">Overall Score</h2>
+                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${trendColor}`}>
                                 {trendIcon}
                                 {trend}
                             </div>
                         </div>
                     </div>
 
-                    {/* Sub metrics */}
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
+                    {/* Breakdown Bars */}
+                    <div className="flex flex-col gap-4 w-full lg:w-1/3">
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between text-xs font-semibold text-slate-300">
+                                <span>Technical Mastery</span>
+                                <span>{skills?.technical || 0}/10</span>
+                            </div>
+                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full bg-violet-500 transition-all duration-1000 ease-out" style={{ width: `${((skills?.technical || 0)/10)*100}%` }} />
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between text-xs font-semibold text-slate-300">
+                                <span>Problem Solving</span>
+                                <span>{skills?.problemSolving || 0}/10</span>
+                            </div>
+                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full bg-cyan-500 transition-all duration-1000 ease-out" style={{ width: `${((skills?.problemSolving || 0)/10)*100}%` }} />
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between text-xs font-semibold text-slate-300">
+                                <span>Communication</span>
+                                <span>{skills?.communication || 0}/10</span>
+                            </div>
+                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out" style={{ width: `${((skills?.communication || 0)/10)*100}%` }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sub metrics grid */}
+                    <div className="flex-1 grid grid-cols-2 gap-3 w-full">
                         {subMetrics.map((metric) => (
                             <div
                                 key={metric.label}

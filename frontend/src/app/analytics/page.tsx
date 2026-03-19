@@ -159,6 +159,7 @@ function AnalyticsContent() {
                 timeEfficiency={data.timeEfficiency}
                 focusAverage={data.focusAverage}
                 consistencyScore={data.consistencyScore}
+                skills={data.skills}
             />
 
             {/* 2. Performance Trend + 3. Skill Breakdown */}

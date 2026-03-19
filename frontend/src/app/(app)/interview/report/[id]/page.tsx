@@ -6,6 +6,7 @@ import { getSession, getWelcomeOfferStatus, WelcomeOfferStatus } from '@/service
 import ReportView from '@/components/ReportView';
 import { useAuth } from '@/context/AuthContext';
 import WelcomeOfferModal from '@/components/WelcomeOfferModal';
+import ReplayView from '@/components/ReplayView';
 
 export default function ReportPage() {
     const { user } = useAuth();
@@ -18,6 +19,9 @@ export default function ReportPage() {
     // Welcome offer state
     const [showWelcomeOffer, setShowWelcomeOffer] = useState(false);
     const [welcomeOfferData, setWelcomeOfferData] = useState<WelcomeOfferStatus | null>(null);
+
+    // Replay state
+    const [showReplay, setShowReplay] = useState(false);
 
     useEffect(() => {
         if (!sessionId) return;
@@ -58,6 +62,7 @@ export default function ReportPage() {
                 scores={session?.aggregatedScores}
                 attentionStats={session?.attentionStats}
                 onNewSession={() => window.location.href = '/interview/start'}
+                onReplay={() => setShowReplay(true)}
                 isPro={user?.planType === 'PRO'}
             />
 
@@ -87,6 +92,14 @@ export default function ReportPage() {
                             console.error('Welcome offer upgrade failed:', err);
                         }
                     }}
+                />
+            )}
+
+            {showReplay && session && (
+                <ReplayView 
+                    session={session} 
+                    isPro={user?.planType === 'PRO'} 
+                    onClose={() => setShowReplay(false)} 
                 />
             )}
         </div>

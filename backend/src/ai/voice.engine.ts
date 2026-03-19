@@ -13,7 +13,7 @@ export async function evaluateVoice(context: VoiceEvaluationContext): Promise<Vo
 
         const requiredFields: (keyof VoiceEvaluation)[] = [
             'confidenceScore', 'fluencyScore', 'structureScore',
-            'professionalismScore', 'spokenDeliveryOverall', 'feedback'
+            'professionalismScore', 'spokenDeliveryOverall', 'toneVariation', 'detectedIssues', 'feedback'
         ];
 
         for (const field of requiredFields) {

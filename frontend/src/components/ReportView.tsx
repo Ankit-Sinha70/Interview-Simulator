@@ -13,11 +13,12 @@ interface ReportViewProps {
     report: FinalReport;
     scores: AggregatedScores;
     onNewSession: () => void;
+    onReplay?: () => void;
     attentionStats?: AttentionStats;
     isPro?: boolean;
 }
 
-export default function ReportView({ report, scores, onNewSession, attentionStats, isPro = false }: ReportViewProps) {
+export default function ReportView({ report, scores, onNewSession, onReplay, attentionStats, isPro = false }: ReportViewProps) {
     const confidenceColors: Record<string, string> = {
         High: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
         Medium: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
@@ -400,12 +401,22 @@ export default function ReportView({ report, scores, onNewSession, attentionStat
                 </div>
             )}
 
-            {/* New Session Button */}
-            <div className="animate-fadeInUp" style={{ animationDelay: '500ms' }}>
+            {/* Action Buttons */}
+            <div className="animate-fadeInUp flex flex-col sm:flex-row gap-4 mb-2" style={{ animationDelay: '500ms' }}>
+                {onReplay && (
+                    <Button
+                        onClick={onReplay}
+                        size="lg"
+                        variant="outline"
+                        className="flex-1 py-6 text-base font-bold bg-zinc-900 border-zinc-700 hover:bg-zinc-800 transition-all duration-300"
+                    >
+                        ▶ Replay Interview
+                    </Button>
+                )}
                 <Button
                     onClick={onNewSession}
                     size="lg"
-                    className="w-full py-6 text-base font-bold bg-gradient-to-r from-[var(--accent-violet)] via-violet-400 to-[var(--accent-teal)] text-white hover:opacity-90 transition-all duration-300"
+                    className="flex-1 py-6 text-base font-bold bg-gradient-to-r from-[var(--accent-violet)] via-violet-400 to-[var(--accent-teal)] text-white hover:opacity-90 transition-all duration-300"
                 >
                     🔄 Start New Interview
                 </Button>
