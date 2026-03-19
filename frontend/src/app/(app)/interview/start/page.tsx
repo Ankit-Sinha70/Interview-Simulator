@@ -9,10 +9,21 @@ export default function StartInterviewPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleStart = async (role: string, level: 'Junior' | 'Mid' | 'Senior') => {
+    const handleStart = async (
+        role: string, 
+        level: 'Junior' | 'Mid' | 'Senior',
+        interviewStyle: 'friendly' | 'strict' | 'faang',
+        companyStyle: 'google' | 'startup' | 'product' | 'general'
+    ) => {
         setIsLoading(true);
         try {
-            const { sessionId } = await startInterview({ role, experienceLevel: level, mode: 'text' });
+            const { sessionId } = await startInterview({ 
+                role, 
+                experienceLevel: level, 
+                interviewStyle,
+                companyStyle,
+                mode: 'text' 
+            });
             router.push(`/interview/session/${sessionId}`);
         } catch (error) {
             console.error('Failed to start interview:', error);

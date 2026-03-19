@@ -43,6 +43,23 @@ export async function submitAnswer(req: Request, res: Response, next: NextFuncti
 }
 
 /**
+ * POST /api/interview/hint
+ */
+export async function getHint(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { sessionId, partialAnswer } = req.body;
+        const result = await interviewService.getHintForAnswer(sessionId, partialAnswer);
+
+        res.status(200).json({
+            success: true,
+            data: result,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
  * POST /api/interview/complete
  */
 export async function completeInterview(req: Request, res: Response, next: NextFunction) {

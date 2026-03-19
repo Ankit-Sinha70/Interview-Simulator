@@ -12,6 +12,8 @@ export interface VoiceMetadata {
 export interface StartInterviewRequest {
     role: string;
     experienceLevel: 'Junior' | 'Mid' | 'Senior';
+    interviewStyle?: 'friendly' | 'strict' | 'faang';
+    companyStyle?: 'google' | 'startup' | 'product' | 'general';
     mode?: 'text' | 'voice' | 'hybrid';
 }
 
@@ -22,6 +24,7 @@ export interface GeneratedQuestion {
     difficulty: 'easy' | 'medium' | 'hard';
     levelScore?: number;
     topic: string;
+    whyAsked?: string;
 }
 
 export interface StartInterviewResponse {
@@ -41,6 +44,7 @@ export interface Evaluation {
     strengths: string[];
     weaknesses: string[];
     improvements: string[];
+    idealAnswer?: string;
 }
 
 export interface AggregatedScores {
@@ -143,6 +147,18 @@ export async function submitAnswer(
             'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ sessionId, answer, voiceMeta }),
+    });
+}
+
+export async function getHint(sessionId: string, partialAnswer: string): Promise<{ hint: string | null }> {
+    const token = localStorage.getItem('token');
+    return apiCall<{ hint: string | null }>('/interview/hint', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ sessionId, partialAnswer }),
     });
 }
 

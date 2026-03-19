@@ -178,7 +178,13 @@ function SessionContent() {
     }, [router, sessionId]);
 
     if (status === 'LOADING') {
-        return <div className="flex h-[50vh] items-center justify-center">Loading session...</div>;
+        return (
+            <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6 mt-10">
+                <div className="h-20 w-full bg-zinc-900/50 animate-pulse rounded-2xl border border-zinc-800" />
+                <div className="h-48 w-full bg-zinc-900/50 animate-pulse rounded-2xl border border-zinc-800" />
+                <div className="h-32 w-full bg-zinc-900/50 animate-pulse rounded-2xl border border-zinc-800" />
+            </div>
+        );
     }
 
     if (error) {
@@ -262,12 +268,22 @@ function SessionContent() {
                         <div className="h-4 w-[1px] bg-zinc-800" />
 
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-zinc-300">
-                                <Brain className="w-4 h-4 text-primary" />
-                                <span className="text-sm font-bold">Progress</span>
-                                <Badge variant="secondary" className="font-mono text-[10px] bg-zinc-900 border-zinc-800">
-                                    {questionNumber} / 10
-                                </Badge>
+                            <div className="flex flex-col justify-center gap-1.5 min-w-[140px]">
+                                <div className="flex items-center justify-between text-zinc-300">
+                                    <div className="flex items-center gap-1.5">
+                                        <Brain className="w-3.5 h-3.5 text-primary" />
+                                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Progress</span>
+                                    </div>
+                                    <span className="font-mono text-[10px] font-bold">
+                                        {Math.min(questionNumber, maxQuestions || 10)} / {maxQuestions || 10}
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full bg-primary transition-all duration-1000 ease-out" 
+                                        style={{ width: `${(Math.min(questionNumber, maxQuestions || 10) / (maxQuestions || 10)) * 100}%` }} 
+                                    />
+                                </div>
                             </div>
 
                             <SessionTimer
@@ -337,6 +353,7 @@ function SessionContent() {
                 {!sessionEnded && (
                     <div className="space-y-4 animate-fade-in-up delay-200">
                         <AnswerInput
+                            sessionId={sessionId}
                             onSubmit={actions.submit}
                             isLoading={isSubmitting}
                         />

@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { GeneratedQuestion } from '@/services/api';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface QuestionCardProps {
     question: GeneratedQuestion;
@@ -11,6 +12,8 @@ interface QuestionCardProps {
 }
 
 export default function QuestionCard({ question, questionNumber }: QuestionCardProps) {
+    const [showWhy, setShowWhy] = useState(false);
+
     const difficultyVariant = {
         easy: 'text-emerald-400 border-emerald-400/40 bg-emerald-400/10',
         medium: 'text-amber-400 border-amber-400/40 bg-amber-400/10',
@@ -55,6 +58,24 @@ export default function QuestionCard({ question, questionNumber }: QuestionCardP
                 <p className="text-card-foreground text-[17px] leading-[1.7]">
                     {question.question}
                 </p>
+
+                {/* Why Asked Insight */}
+                {question.whyAsked && (
+                    <div className="mt-5 pt-4 border-t border-border/50">
+                        <button
+                            onClick={() => setShowWhy(!showWhy)}
+                            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            {showWhy ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            Why this was asked
+                        </button>
+                        {showWhy && (
+                            <p className="mt-3 text-[14px] text-muted-foreground/80 italic leading-relaxed animate-in fade-in slide-in-from-top-2">
+                                {question.whyAsked}
+                            </p>
+                        )}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

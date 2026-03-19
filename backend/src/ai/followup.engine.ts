@@ -32,6 +32,7 @@ export async function generateFollowUp(context: FollowUpContext): Promise<Follow
                 levelScore: result.levelScore || band.min,
                 intent: result.intent || context.followUpIntent,
                 focusArea: result.topic || context.previousTopic, // Backward compat
+                whyAsked: result.whyAsked,
             };
 
             // Validate difficulty against level constraints

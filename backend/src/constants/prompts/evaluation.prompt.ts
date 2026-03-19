@@ -5,13 +5,22 @@ export interface EvaluationContext {
    answer: string;
    role: Role | string;
    level: ExperienceLevel | string;
+   interviewStyle?: string;
+   companyStyle?: string;
    voiceMeta?: VoiceMetadata;
 }
 
 export function getEvaluationPrompt(ctx: EvaluationContext): string {
-   return `You are a strict and experienced technical interviewer.
+   return `You are an experienced technical interviewer.
 
-Your task is to evaluate the candidate’s answer objectively and professionally.
+Your task is to evaluate the candidate’s answer objectively.
+
+Interview Style: ${ctx.interviewStyle || 'friendly'}
+Company Style: ${ctx.companyStyle || 'general'}
+If the Company Style is "google", prioritize deep technical exactness and scalability understanding.
+If the Company Style is "startup", prioritize whether the answer is practically "good enough" to ship.
+If the Interview Style is "strict" or "faang", be nitpicky and do not give the benefit of the doubt.
+If the Interview Style is "friendly", frame improvements constructively and acknowledge effort.
 
 Context:
 Role: ${ctx.role}
@@ -101,6 +110,7 @@ Return STRICT JSON only in this format:
   "strengths": string[],
   "weaknesses": string[],
   "improvements": string[],
-  "summary": string
+  "summary": string,
+  "idealAnswer": string (a structured, high-quality example of what a perfect answer for this level would be)
 }`;
 }

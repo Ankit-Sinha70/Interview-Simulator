@@ -25,6 +25,7 @@ const EvaluationSchema = new Schema({
     strengths: { type: [String], default: [] },
     weaknesses: { type: [String], default: [] },
     improvements: { type: [String], default: [] },
+    idealAnswer: { type: String, default: null },
 }, { _id: false });
 
 const QuestionEntrySchema = new Schema({
@@ -35,6 +36,7 @@ const QuestionEntrySchema = new Schema({
     levelScore: { type: Number, default: 1 },
     type: { type: String, enum: ['initial', 'followup'], required: true },
     generatedFromWeakness: { type: String, default: null },
+    whyAsked: { type: String, default: null },
     answer: { type: AnswerInfoSchema, default: null },
     evaluation: { type: EvaluationSchema, default: null },
     startedAt: { type: Date, default: null },
@@ -94,6 +96,8 @@ export interface IInterviewSessionDoc extends Document {
     userId: string | null;
     role: string;
     experienceLevel: string;
+    interviewStyle: string;
+    companyStyle: string;
     difficultyBand: { min: number; max: number };
     mode: string;
     status: string;
@@ -126,6 +130,8 @@ const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
     userId: { type: String, default: null, index: true },
     role: { type: String, required: true },
     experienceLevel: { type: String, enum: ['Junior', 'Mid', 'Senior'], required: true },
+    interviewStyle: { type: String, enum: ['friendly', 'strict', 'faang'], default: 'friendly' },
+    companyStyle: { type: String, enum: ['google', 'startup', 'product', 'general'], default: 'general' },
     difficultyBand: { type: DifficultyBandSchema, default: () => ({ min: 1, max: 10 }) },
     mode: { type: String, enum: ['text', 'voice', 'hybrid'], default: 'text' },
     status: { type: String, enum: ['CREATED', 'IN_PROGRESS', 'COMPLETED', 'ABANDONED', 'TIME_EXPIRED', 'MAX_QUESTIONS_REACHED'], default: 'CREATED', index: true },

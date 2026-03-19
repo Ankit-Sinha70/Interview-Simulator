@@ -424,6 +424,7 @@ function HomeContent() {
               )}
 
               <AnswerInput
+                sessionId={sessionId || ''}
                 onSubmit={handleSubmitAnswer}
                 isLoading={isLoading}
                 voiceTranscript={voiceTranscript}

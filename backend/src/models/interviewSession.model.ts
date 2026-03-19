@@ -21,6 +21,8 @@ export type QuestionType = 'initial' | 'followup';
 export type HireRecommendation = 'Yes' | 'Maybe' | 'No';
 export type HireBand = 'Strong Hire' | 'Hire' | 'Borderline' | 'No Hire';
 export type FollowUpIntent = 'CLARIFY_TECHNICAL' | 'PROBE_DEPTH' | 'SCENARIO_BASED' | 'ESCALATE_DIFFICULTY';
+export type InterviewStyle = 'friendly' | 'strict' | 'faang';
+export type CompanyStyle = 'google' | 'startup' | 'product' | 'general';
 
 // ─── Voice Metadata ───
 
@@ -62,6 +64,7 @@ export interface Evaluation {
     weaknesses: string[];
     improvements: string[];
     majorTechnicalErrors?: string[];
+    idealAnswer?: string;
 }
 
 // ─── Question Entry ───
@@ -74,6 +77,7 @@ export interface QuestionEntry {
     levelScore: number; // 1-10 numeric difficulty score within band
     type: QuestionType;
     generatedFromWeakness?: string;
+    whyAsked?: string;
     answer: AnswerInfo | null;
     evaluation: Evaluation | null;
     startedAt: string;
@@ -111,6 +115,8 @@ export interface InterviewSession {
     userId?: string;
     role: Role | string;
     experienceLevel: ExperienceLevel;
+    interviewStyle: InterviewStyle;
+    companyStyle: CompanyStyle;
     difficultyBand: DifficultyBand;
     mode: InterviewMode;
     status: SessionStatus;
@@ -171,6 +177,7 @@ export interface GeneratedQuestion {
     difficulty: Difficulty;
     levelScore: number;
     topic: string;
+    whyAsked?: string;
 }
 
 export interface FollowUpQuestion {
@@ -180,4 +187,5 @@ export interface FollowUpQuestion {
     difficulty: Difficulty;
     levelScore: number;
     intent: FollowUpIntent;
+    whyAsked?: string;
 }

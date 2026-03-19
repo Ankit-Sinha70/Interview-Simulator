@@ -19,6 +19,7 @@ import { generateQuestion } from '../ai/question.engine';
 import { evaluateAnswer } from '../ai/evaluation.engine';
 import { generateFollowUp } from '../ai/followup.engine';
 import { evaluateVoice } from '../ai/voice.engine';
+import { generateHint } from '../ai/hint.engine';
 
 import {
     getNextDifficulty,
@@ -111,6 +112,8 @@ export async function startInterview(
     userId: string,
     role: Role | string,
     experienceLevel: ExperienceLevel,
+    interviewStyle: string = 'friendly',
+    companyStyle: string = 'general',
     mode: InterviewMode = 'text',
 ) {
     // Check usage limits
@@ -135,7 +138,7 @@ export async function startInterview(
     user.interviewsUsedThisMonth += 1;
     await user.save();
 
-    const session = await sessionService.createSession(role, experienceLevel, mode, userId);
+    const session = await sessionService.createSession(role, experienceLevel, interviewStyle, companyStyle, mode, userId);
     session.status = 'IN_PROGRESS';
 
     // Set deadline (50 minutes from now)
@@ -149,6 +152,8 @@ export async function startInterview(
     const firstQuestion: GeneratedQuestion = await generateQuestion({
         role: session.role,
         level: session.experienceLevel,
+        interviewStyle: session.interviewStyle,
+        companyStyle: session.companyStyle,
     });
 
     // Add question to session
@@ -159,6 +164,7 @@ export async function startInterview(
         difficulty: firstQuestion.difficulty,
         levelScore: firstQuestion.levelScore || 1,
         type: 'initial',
+        whyAsked: firstQuestion.whyAsked,
         answer: null,
         evaluation: null,
         startedAt: new Date().toISOString(),
@@ -216,6 +222,8 @@ export async function processAnswer(
             answer,
             role: session.role,
             level: session.experienceLevel,
+            interviewStyle: session.interviewStyle,
+            companyStyle: session.companyStyle,
             voiceMeta
         });
         const evalResult = scoringService.processEvaluation(rawEval, session.experienceLevel);
@@ -250,6 +258,8 @@ export async function processAnswer(
             answer,
             role: session.role,
             level: session.experienceLevel,
+            interviewStyle: session.interviewStyle,
+            companyStyle: session.companyStyle,
             voiceMeta,
         }),
         voiceMeta ? evaluateVoice({ transcript: answer, metadata: voiceMeta }) : Promise.resolve(undefined)
@@ -327,6 +337,8 @@ export async function processAnswer(
     const followUp = await generateFollowUp({
         role: session.role,
         experienceLevel: session.experienceLevel,
+        interviewStyle: session.interviewStyle,
+        companyStyle: session.companyStyle,
         previousQuestion: currentQuestion.questionText,
         previousTopic: topic,
         previousDifficulty: currentQuestion.difficulty,
@@ -349,6 +361,7 @@ export async function processAnswer(
         levelScore: followUp.levelScore || 1,
         type: 'followup',
         generatedFromWeakness: followUp.intent,
+        whyAsked: followUp.whyAsked,
         answer: null,
         evaluation: null,
         startedAt: new Date().toISOString(),
@@ -388,6 +401,37 @@ export async function markWarningAsShown(sessionId: string) {
 
     session.hasShownFiveMinWarning = true;
     await sessionService.updateSession(session);
+}
+
+// ─── Hint Logic ───
+
+/**
+ * Generate a real-time hint for a partial answer
+ */
+export async function getHintForAnswer(sessionId: string, partialAnswer: string): Promise<{ hint: string | null }> {
+    const session = await sessionService.getSession(sessionId);
+    if (!session) {
+        throw new Error('Session not found');
+    }
+    
+    // Don't generate hints if not in progress
+    if (session.status !== 'IN_PROGRESS' || !partialAnswer || partialAnswer.length < 20) {
+        return { hint: null };
+    }
+
+    const currentQuestion = session.questions[session.currentQuestionIndex];
+    if (!currentQuestion) {
+        return { hint: null };
+    }
+
+    const hint = await generateHint({
+        question: currentQuestion.questionText,
+        partialAnswer,
+        role: session.role,
+        level: session.experienceLevel
+    });
+
+    return { hint };
 }
 
 // ─── Helper Functions ───

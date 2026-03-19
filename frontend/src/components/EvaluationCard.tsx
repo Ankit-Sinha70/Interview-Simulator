@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import ScoreBar from './ScoreBar';
 import LockedSection from './LockedSection';
 import { Evaluation } from '@/services/api';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface EvaluationCardProps {
     evaluation: Evaluation;
@@ -15,6 +16,8 @@ interface EvaluationCardProps {
 }
 
 export default function EvaluationCard({ evaluation, questionNumber, isPro = false }: EvaluationCardProps) {
+    const [showIdeal, setShowIdeal] = useState(false);
+
     const overallColor = evaluation.overallScore >= 7
         ? 'text-emerald-400 bg-emerald-500/15'
         : evaluation.overallScore >= 4
@@ -45,6 +48,26 @@ export default function EvaluationCard({ evaluation, questionNumber, isPro = fal
                 </div>
 
                 <Separator className="bg-border" />
+
+                {/* Ideal Answer */}
+                {evaluation.idealAnswer && (
+                    <div className="bg-blue-500/[0.06] rounded-lg p-4 border border-blue-500/[0.12]">
+                        <button
+                            onClick={() => setShowIdeal(!showIdeal)}
+                            className="flex w-full items-center justify-between text-blue-400 text-xs font-bold uppercase tracking-wider"
+                        >
+                            <span className="flex items-center gap-2">💡 Ideal Answer Example</span>
+                            {showIdeal ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                        {showIdeal && (
+                            <div className="mt-4 pt-4 border-t border-blue-500/[0.12]">
+                                <p className="text-[14px] text-muted-foreground leading-relaxed animate-in fade-in slide-in-from-top-2 whitespace-pre-wrap">
+                                    {evaluation.idealAnswer}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Strengths & Weaknesses */}
                 <div className="grid grid-cols-2 gap-4">

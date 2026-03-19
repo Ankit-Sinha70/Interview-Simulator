@@ -5,7 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface SessionSetupProps {
-    onStart: (role: string, experienceLevel: 'Junior' | 'Mid' | 'Senior') => void;
+    onStart: (
+        role: string, 
+        experienceLevel: 'Junior' | 'Mid' | 'Senior',
+        interviewStyle: 'friendly' | 'strict' | 'faang',
+        companyStyle: 'google' | 'startup' | 'product' | 'general'
+    ) => void;
     isLoading: boolean;
 }
 
@@ -21,10 +26,25 @@ const LEVELS = [
     { id: 'Senior' as const, label: 'Senior', icon: '⭐', desc: '5+ years' },
 ];
 
+const INTERVIEW_STYLES = [
+    { id: 'friendly' as const, label: 'Friendly', icon: '😊', desc: 'Guiding & supportive' },
+    { id: 'strict' as const, label: 'Strict', icon: '🧐', desc: 'Professional & rigorous' },
+    { id: 'faang' as const, label: 'FAANG', icon: '🏢', desc: 'Extremely demanding' },
+];
+
+const COMPANY_STYLES = [
+    { id: 'general' as const, label: 'General', icon: '🌍', desc: 'Balanced approach' },
+    { id: 'startup' as const, label: 'Startup', icon: '🦄', desc: 'Practical, fast-paced' },
+    { id: 'google' as const, label: 'Google-style', icon: '🧠', desc: 'Deep & algorithmic' },
+    { id: 'product' as const, label: 'Product-focused', icon: '🎨', desc: 'User-centric impact' },
+];
+
 export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) {
     const [role, setRole] = useState('');
     const [level, setLevel] = useState<'Junior' | 'Mid' | 'Senior' | ''>('');
     const [customRole, setCustomRole] = useState('');
+    const [interviewStyle, setInterviewStyle] = useState<'friendly' | 'strict' | 'faang'>('friendly');
+    const [companyStyle, setCompanyStyle] = useState<'google' | 'startup' | 'product' | 'general'>('general');
 
     const selectedRole = role === 'Custom' ? customRole : role;
     const canStart = selectedRole.trim() && level;
@@ -100,6 +120,56 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         </div>
                     </div>
 
+                    {/* Interview Style Selection */}
+                    <div className="space-y-4">
+                        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
+                            Interviewer Persona
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {INTERVIEW_STYLES.map((s) => (
+                                <Card
+                                    key={s.id}
+                                    onClick={() => setInterviewStyle(s.id)}
+                                    className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${interviewStyle === s.id
+                                        ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 ring-2 ring-[var(--accent-violet)]/30'
+                                        : 'border-transparent bg-background/50 hover:bg-background/80'
+                                        }`}
+                                >
+                                    <CardContent className="p-4 text-center sm:text-left flex sm:block flex-col items-center">
+                                        <div className="text-2xl mb-2">{s.icon}</div>
+                                        <div className="font-bold text-foreground text-sm">{s.label}</div>
+                                        <div className="text-xs text-muted-foreground mt-1">{s.desc}</div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Company Style Selection */}
+                    <div className="space-y-4">
+                        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
+                            Company Focus
+                        </h2>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            {COMPANY_STYLES.map((c) => (
+                                <Card
+                                    key={c.id}
+                                    onClick={() => setCompanyStyle(c.id)}
+                                    className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${companyStyle === c.id
+                                        ? 'border-[var(--accent-teal)] bg-[var(--accent-teal)]/10 ring-2 ring-[var(--accent-teal)]/30'
+                                        : 'border-transparent bg-background/50 hover:bg-background/80'
+                                        }`}
+                                >
+                                    <CardContent className="p-4 text-center sm:text-left flex sm:block flex-col items-center">
+                                        <div className="text-2xl mb-2">{c.icon}</div>
+                                        <div className="font-bold text-foreground text-sm">{c.label}</div>
+                                        <div className="text-xs text-muted-foreground mt-1 hidden sm:block">{c.desc}</div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Level Selection */}
                     <div className="space-y-4">
                         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
@@ -128,7 +198,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                     {/* Start Button */}
                     <div className="pt-4">
                         <Button
-                            onClick={() => canStart && level && onStart(selectedRole, level)}
+                            onClick={() => canStart && level && onStart(selectedRole, level, interviewStyle, companyStyle)}
                             disabled={!canStart || isLoading}
                             size="lg"
                             className={`w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all duration-300 ${canStart

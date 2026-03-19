@@ -14,6 +14,8 @@ const memoryStore = new Map<string, InterviewSession>();
 export async function createSession(
     role: Role | string,
     experienceLevel: ExperienceLevel,
+    interviewStyle: string = 'friendly',
+    companyStyle: string = 'general',
     mode: InterviewMode = 'text',
     userId?: string,
 ): Promise<InterviewSession> {
@@ -25,6 +27,8 @@ export async function createSession(
         userId: userId || undefined,
         role,
         experienceLevel,
+        interviewStyle: interviewStyle as any,
+        companyStyle: companyStyle as any,
         difficultyBand: getDifficultyBand(experienceLevel),
         mode,
         status: 'CREATED',
@@ -105,6 +109,8 @@ function docToSession(doc: any): InterviewSession {
         userId: obj.userId,
         role: obj.role,
         experienceLevel: obj.experienceLevel,
+        interviewStyle: obj.interviewStyle || 'friendly',
+        companyStyle: obj.companyStyle || 'general',
         difficultyBand: obj.difficultyBand || { min: 1, max: 10 },
         mode: obj.mode,
         status: obj.status,

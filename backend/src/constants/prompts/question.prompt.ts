@@ -1,4 +1,4 @@
-import { ExperienceLevel, Difficulty } from '../../models/interviewSession.model';
+import { ExperienceLevel, Difficulty, Role, VoiceMetadata } from '../../models/interviewSession.model';
 import { getAllowedTopics, getForbiddenTopics, getDifficultyBand, getLevelConfig } from '../difficultyMatrix';
 
 // ─── Level Descriptions ───
@@ -46,8 +46,11 @@ const STRICT_RULES: Record<ExperienceLevel, string> = {
 };
 
 export function getQuestionPrompt(params: {
-  role: string;
-  level: string;
+  role: Role | string;
+  level: ExperienceLevel | string;
+  interviewStyle?: string;
+  companyStyle?: string;
+  voiceMeta?: VoiceMetadata;
   previousQuestion?: string;
   evaluationSummary?: string;
 }): string {
@@ -60,6 +63,13 @@ export function getQuestionPrompt(params: {
   return `You are a senior technical interviewer.
 
 Generate one interview question based on:
+
+Interview Style: ${params.interviewStyle || 'friendly'}
+Company Style: ${params.companyStyle || 'general'}
+If the Company Style is "google", focus heavily on scale, algorithms, or complex architecture.
+If the Company Style is "startup", focus on practical execution, "building from 0 to 1", and wearing multiple hats.
+If the Interview Style is "strict" or "faang", be extremely demanding and rigorous.
+If the Interview Style is "friendly", be encouraging but maintain high standards.
 
 Role: ${params.role}
 Experience Level: ${params.level}
@@ -93,6 +103,7 @@ Return STRICT JSON only, no markdown formatting, no code blocks:
   "question": string,
   "difficulty": "${levelConfig.allowedDifficulty.join('" | "')}",
   "levelScore": number (${band.min}-${band.max}),
-  "topic": string
+  "topic": string,
+  "whyAsked": string (a short 1-2 sentence explanation of what this question tests and why it matters for this role/level)
 }`;
 }

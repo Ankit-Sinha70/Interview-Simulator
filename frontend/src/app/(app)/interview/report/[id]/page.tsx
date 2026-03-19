@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { getSession, getWelcomeOfferStatus, WelcomeOfferStatus } from '@/services/api';
 import ReportView from '@/components/ReportView';
 import { useAuth } from '@/context/AuthContext';
+import WelcomeOfferModal from '@/components/WelcomeOfferModal';
 
 export default function ReportPage() {
     const { user } = useAuth();

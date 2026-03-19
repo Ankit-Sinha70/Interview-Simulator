@@ -10,6 +10,8 @@ export async function evaluateAnswer(params: {
     answer: string;
     role: string;
     level: string;
+    interviewStyle?: string;
+    companyStyle?: string;
     voiceMeta?: VoiceMetadata;
 }): Promise<Evaluation> {
     const prompt = getEvaluationPrompt(params);

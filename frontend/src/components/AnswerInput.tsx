@@ -6,15 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { VoiceMetadata } from '@/services/api';
+import RealTimeFeedback from './RealTimeFeedback';
 
 interface AnswerInputProps {
+    sessionId: string;
     onSubmit: (answer: string, voiceMeta?: VoiceMetadata) => void;
     isLoading: boolean;
     voiceTranscript?: string;
     voiceMeta?: VoiceMetadata;
 }
 
-export default function AnswerInput({ onSubmit, isLoading, voiceTranscript, voiceMeta }: AnswerInputProps) {
+export default function AnswerInput({ sessionId, onSubmit, isLoading, voiceTranscript, voiceMeta }: AnswerInputProps) {
     const [answer, setAnswer] = useState('');
 
     React.useEffect(() => {
@@ -23,10 +25,24 @@ export default function AnswerInput({ onSubmit, isLoading, voiceTranscript, voic
         }
     }, [voiceTranscript]);
 
+    React.useEffect(() => {
+        if (sessionId && !voiceTranscript && !answer) {
+            const draft = localStorage.getItem(`draft_${sessionId}`);
+            if (draft) setAnswer(draft);
+        }
+    }, [sessionId]);
+
+    React.useEffect(() => {
+        if (sessionId) {
+            localStorage.setItem(`draft_${sessionId}`, answer);
+        }
+    }, [answer, sessionId]);
+
     const handleSubmit = () => {
         if (answer.trim() && !isLoading) {
             onSubmit(answer.trim(), voiceMeta);
             setAnswer('');
+            if (sessionId) localStorage.removeItem(`draft_${sessionId}`);
         }
     };
 
@@ -52,6 +68,12 @@ export default function AnswerInput({ onSubmit, isLoading, voiceTranscript, voic
                     disabled={isLoading}
                     className="w-full bg-secondary border-2 border-border text-foreground text-[15px] leading-[1.7] resize-y min-h-[140px] focus:border-[var(--accent-violet)] transition-colors"
                 />
+
+                {sessionId && (
+                    <div className="h-10 mt-1 mb-2">
+                        <RealTimeFeedback sessionId={sessionId} partialAnswer={answer} />
+                    </div>
+                )}
 
                 <div className="flex justify-between items-center mt-4">
                     <div className="flex items-center gap-3">

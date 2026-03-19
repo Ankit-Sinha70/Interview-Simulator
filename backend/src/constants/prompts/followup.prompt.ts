@@ -4,6 +4,8 @@ import { getAllowedTopics, getForbiddenTopics, getLevelConfig } from '../difficu
 export interface FollowUpContext {
    role: Role | string;
    experienceLevel: ExperienceLevel;
+   interviewStyle?: string;
+   companyStyle?: string;
    previousQuestion: string;
    previousTopic: string;
    previousDifficulty: Difficulty;
@@ -54,6 +56,12 @@ export function getFollowUpPrompt(ctx: FollowUpContext): string {
    const band = levelConfig.difficultyBand;
 
    return `You are a senior technical interviewer conducting a realistic interview.
+Interview Style: ${ctx.interviewStyle || 'friendly'}
+Company Style: ${ctx.companyStyle || 'general'}
+If the Company Style is "google", ask deeply technical, algorithmic, or scale-focused questions.
+If the Company Style is "startup", ask practical, fast-paced, "get it done" questions.
+If the Interview Style is "strict" or "faang", be very demanding and precise.
+If the Interview Style is "friendly", use a supportive tone.
 
 Generate a follow-up question based on the candidate's previous performance.
 
@@ -131,6 +139,7 @@ Return STRICT JSON only:
   "topic": string,
   "difficulty": "${levelConfig.allowedDifficulty.join('" | "')}",
   "levelScore": number (${band.min}-${band.max}),
-  "intent": "${ctx.followUpIntent}"
+  "intent": "${ctx.followUpIntent}",
+  "whyAsked": string (a short explanation of why this specific follow-up was asked based on the previous answer)
 }`;
 }

@@ -12,6 +12,8 @@ const MAX_RETRIES = 3;
 export async function generateQuestion(params: {
     role: string;
     level: string;
+    interviewStyle?: string;
+    companyStyle?: string;
     previousQuestion?: string;
     evaluationSummary?: string;
 }): Promise<GeneratedQuestion> {
