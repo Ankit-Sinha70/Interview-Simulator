@@ -14,4 +14,7 @@ router.post('/profile-picture', userController.uploadProfilePicture);
 router.get('/welcome-offer-status', userController.getWelcomeOfferStatus);
 router.post('/dismiss-welcome-offer', userController.dismissWelcomeOffer);
 
+router.get('/goal', userController.getGoal);
+router.post('/goal', userController.setGoal);
+
 export default router;

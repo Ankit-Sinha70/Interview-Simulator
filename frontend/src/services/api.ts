@@ -436,3 +436,41 @@ export async function dismissWelcomeOffer(): Promise<void> {
         }
     });
 }
+
+// ─── Goals & Streaks ───
+
+export interface InterviewGoal {
+    title: string;
+    targetDays: number;
+    startDate: string;
+    targetInterviews: number;
+}
+
+export interface UserGoalData {
+    interviewGoal?: InterviewGoal;
+    currentStreak: number;
+    longestStreak: number;
+    lastInterviewDate?: string;
+    completedInterviews: number;
+}
+
+export async function getUserGoal(): Promise<UserGoalData> {
+    const token = localStorage.getItem('token');
+    const res = await apiCall<{ data: UserGoalData }>('/users/goal', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.data;
+}
+
+export async function setUserGoal(title: string, targetInterviews: number, targetDays: number): Promise<InterviewGoal> {
+    const token = localStorage.getItem('token');
+    const res = await apiCall<{ data: InterviewGoal }>('/users/goal', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title, targetInterviews, targetDays })
+    });
+    return res.data;
+}
