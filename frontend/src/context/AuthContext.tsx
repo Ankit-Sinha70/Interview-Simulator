@@ -17,6 +17,7 @@ export interface User {
     hasSeenWelcomeOffer?: boolean;
     hasEverSubscribed?: boolean;
     createdAt?: string;
+    parsedResume?: any;
 }
 
 interface AuthContextType {

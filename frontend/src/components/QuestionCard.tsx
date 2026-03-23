@@ -9,9 +9,10 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 interface QuestionCardProps {
     question: GeneratedQuestion;
     questionNumber: number;
+    trend?: 'up' | 'down' | 'flat';
 }
 
-export default function QuestionCard({ question, questionNumber }: QuestionCardProps) {
+export default function QuestionCard({ question, questionNumber, trend }: QuestionCardProps) {
     const [showWhy, setShowWhy] = useState(false);
 
     const difficultyVariant = {
@@ -38,11 +39,28 @@ export default function QuestionCard({ question, questionNumber }: QuestionCardP
                         <span className="text-muted-foreground text-[13px] font-medium">
                             {question.topic}
                         </span>
+                        {question.source === 'resume' && (
+                            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px] px-2 py-0">
+                                📄 Based on resume{question.relatedContext ? `: ${question.relatedContext}` : ''}
+                            </Badge>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
+                        {/* Trend Indicator */}
+                        {trend && (
+                            <span 
+                                className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${
+                                    trend === 'up' ? 'text-[var(--accent-teal)]' : 
+                                    trend === 'down' ? 'text-red-400' : 'text-zinc-500'
+                                }`}
+                                title={trend === 'up' ? 'Difficulty Increased' : trend === 'down' ? 'Difficulty Decreased' : 'Difficulty Maintained'}
+                            >
+                                {trend === 'up' ? '📈 Trending Up' : trend === 'down' ? '📉 Trending Down' : '➡️ Stable'}
+                            </span>
+                        )}
                         {/* Level Score Indicator */}
                         {question.levelScore && (
-                            <span className="text-xs text-muted-foreground font-medium tabular-nums">
+                            <span className="text-xs text-zinc-400 font-medium tabular-nums ml-2">
                                 Lv.{question.levelScore}
                             </span>
                         )}

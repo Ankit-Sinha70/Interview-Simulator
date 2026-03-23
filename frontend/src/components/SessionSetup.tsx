@@ -3,13 +3,17 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { FileText, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface SessionSetupProps {
     onStart: (
         role: string, 
         experienceLevel: 'Junior' | 'Mid' | 'Senior',
         interviewStyle: 'friendly' | 'strict' | 'faang',
-        companyStyle: 'google' | 'startup' | 'product' | 'general'
+        companyStyle: 'google' | 'startup' | 'product' | 'general',
+        resume?: File | null,
+        useResumeFlag?: boolean
     ) => void;
     isLoading: boolean;
 }
@@ -45,6 +49,10 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
     const [customRole, setCustomRole] = useState('');
     const [interviewStyle, setInterviewStyle] = useState<'friendly' | 'strict' | 'faang'>('friendly');
     const [companyStyle, setCompanyStyle] = useState<'google' | 'startup' | 'product' | 'general'>('general');
+    const [resume, setResume] = useState<File | null>(null);
+
+    const { user } = useAuth();
+    const [useResume, setUseResume] = useState<boolean>(!!user?.parsedResume);
 
     const selectedRole = role === 'Custom' ? customRole : role;
     const canStart = selectedRole.trim() && level;
@@ -195,10 +203,53 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         </div>
                     </div>
 
+                    {/* Resume Upload (Optional) */}
+                    <div className="space-y-4">
+                        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
+                            Resume Context {user?.parsedResume ? '(Active)' : '(Optional)'}
+                        </h2>
+                        
+                        {user?.parsedResume && !resume && (
+                            <div className="flex items-center justify-between p-4 border border-[var(--accent-teal)]/30 bg-[var(--accent-teal)]/5 rounded-xl mb-4">
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                                    <div>
+                                        <p className="text-sm font-bold text-foreground">Structured Resume Found</p>
+                                        <p className="text-xs text-muted-foreground">{user.parsedResume.skills?.length || 0} skills, {user.parsedResume.experience?.length || 0} roles extracted</p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={useResume} onChange={() => setUseResume(!useResume)} />
+                                    <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                </label>
+                            </div>
+                        )}
+
+                        <div className={`flex flex-col items-center justify-center border-2 border-dashed ${resume ? 'border-emerald-400/50 bg-emerald-400/5' : 'border-border/60 bg-background/30 hover:bg-background/50'} rounded-xl p-6 transition-colors`}>
+                            <input 
+                                type="file" 
+                                accept=".pdf,.txt" 
+                                id="resume-upload" 
+                                className="hidden" 
+                                onChange={(e) => setResume(e.target.files?.[0] || null)}
+                            />
+                            <label htmlFor="resume-upload" className="cursor-pointer flex flex-col items-center gap-2 text-center w-full">
+                                <FileText className={`w-8 h-8 ${resume ? 'text-emerald-400' : 'text-[var(--accent-teal)]'}`} />
+                                <span className="text-sm font-semibold max-w-[250px] truncate text-white">
+                                    {resume ? resume.name : (user?.parsedResume ? 'Upload a new resume to replace' : 'Click to upload your resume (PDF/TXT)')}
+                                </span>
+                                {!resume && !user?.parsedResume && <span className="text-xs text-muted-foreground">Tailor your interview strictly to your background</span>}
+                            </label>
+                            {resume && (
+                                <button className="text-xs text-red-400 mt-2 hover:underline" onClick={() => setResume(null)}>Remove File</button>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Start Button */}
                     <div className="pt-4">
                         <Button
-                            onClick={() => canStart && level && onStart(selectedRole, level, interviewStyle, companyStyle)}
+                            onClick={() => canStart && level && onStart(selectedRole, level, interviewStyle, companyStyle, resume, useResume)}
                             disabled={!canStart || isLoading}
                             size="lg"
                             className={`w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all duration-300 ${canStart

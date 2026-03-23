@@ -132,12 +132,45 @@ function HomeContent() {
   }, [user, authLoading, appState]);
 
   // ─── Start Interview ───
-  const handleStart = useCallback(async (role: string, experienceLevel: 'Junior' | 'Mid' | 'Senior') => {
+  const handleStart = useCallback(async (
+      role: string, 
+      experienceLevel: 'Junior' | 'Mid' | 'Senior', 
+      interviewStyle?: string, 
+      companyStyle?: string, 
+      resumeFile?: File | null,
+      useResumeFlag?: boolean
+  ) => {
     setIsLoading(true);
     setError(null);
     try {
       setExperienceLevel(experienceLevel);
-      const result = await startInterview({ role, experienceLevel, mode: 'text' });
+      
+      let finalUseResume = useResumeFlag;
+
+      // If user uploaded a new file, upload it first
+      if (resumeFile) {
+        const formData = new FormData();
+        formData.append('resume', resumeFile);
+        
+        const { uploadResume } = await import('@/services/api');
+        await uploadResume(formData);
+        
+        // Refresh AuthContext to get the new parsedResume
+        if (refreshUser) await refreshUser();
+        
+        // Since they just uploaded it, they definitely want to use it
+        finalUseResume = true;
+      }
+
+      const result = await startInterview({ 
+          role, 
+          experienceLevel, 
+          mode: 'text',
+          interviewStyle: interviewStyle as any,
+          companyStyle: companyStyle as any,
+          useResume: finalUseResume
+      });
+
       setSessionId(result.sessionId);
       setCurrentQuestion(result.question);
       setQuestionNumber(1);
@@ -159,7 +192,7 @@ function HomeContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, refreshUser]);
 
   // ─── Submit Answer ───
   const handleSubmitAnswer = useCallback(async (answer: string, meta?: VoiceMetadata) => {
@@ -411,7 +444,19 @@ function HomeContent() {
             {/* Current Question */}
             {currentQuestion && (
               <div className="animate-fade-in-up delay-100">
-                <QuestionCard question={currentQuestion} questionNumber={questionNumber} />
+                <QuestionCard 
+                    question={currentQuestion} 
+                    questionNumber={questionNumber} 
+                    trend={
+                        history.length > 0 && currentQuestion.levelScore !== undefined && history[history.length - 1].question.levelScore !== undefined
+                        ? currentQuestion.levelScore > history[history.length - 1].question.levelScore!
+                            ? 'up'
+                            : currentQuestion.levelScore < history[history.length - 1].question.levelScore!
+                            ? 'down'
+                            : 'flat'
+                        : undefined
+                    }
+                />
               </div>
             )}
 

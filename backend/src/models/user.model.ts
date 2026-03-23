@@ -53,6 +53,15 @@ export interface IUser extends Document {
     longestStreak: number;
     lastInterviewDate?: Date;
 
+    parsedResume?: {
+        skills: string[];
+        technologies: string[];
+        projects: { name: string; description: string; techStack: string[] }[];
+        experience: { role: string; company: string; duration: string; responsibilities: string[] }[];
+        rawText?: string;
+        updatedAt?: Date;
+    };
+
     checkReset(): boolean;
 }
 
@@ -104,6 +113,24 @@ const UserSchema: Schema = new Schema({
     currentStreak: { type: Number, default: 0 },
     longestStreak: { type: Number, default: 0 },
     lastInterviewDate: { type: Date },
+
+    parsedResume: {
+        skills: [{ type: String }],
+        technologies: [{ type: String }],
+        projects: [{
+            name: { type: String },
+            description: { type: String },
+            techStack: [{ type: String }]
+        }],
+        experience: [{
+            role: { type: String },
+            company: { type: String },
+            duration: { type: String },
+            responsibilities: [{ type: String }]
+        }],
+        rawText: { type: String },
+        updatedAt: { type: Date }
+    }
 }, {
     timestamps: true
 });

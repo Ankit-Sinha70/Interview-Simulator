@@ -35,6 +35,8 @@ const QuestionEntrySchema = new Schema({
     difficulty: { type: String, enum: ['easy', 'medium', 'hard'], required: true },
     levelScore: { type: Number, default: 1 },
     type: { type: String, enum: ['initial', 'followup'], required: true },
+    source: { type: String, enum: ['general', 'resume'], default: 'general' },
+    relatedContext: { type: String, default: null },
     generatedFromWeakness: { type: String, default: null },
     whyAsked: { type: String, default: null },
     answer: { type: AnswerInfoSchema, default: null },
@@ -123,6 +125,7 @@ export interface IInterviewSessionDoc extends Document {
         distractionEvents: number;
         focusCategory: string;
     } | null;
+    useResumeData: boolean;
 }
 
 const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
@@ -157,6 +160,7 @@ const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
             focusCategory: { type: String, required: true },
         }, default: null
     },
+    useResumeData: { type: Boolean, default: false },
 }, {
     timestamps: true, // auto createdAt + updatedAt
 });

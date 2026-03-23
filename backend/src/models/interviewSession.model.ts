@@ -78,6 +78,8 @@ export interface QuestionEntry {
     difficulty: Difficulty;
     levelScore: number; // 1-10 numeric difficulty score within band
     type: QuestionType;
+    source?: 'general' | 'resume';
+    relatedContext?: string;
     generatedFromWeakness?: string;
     whyAsked?: string;
     answer: AnswerInfo | null;
@@ -138,6 +140,7 @@ export interface InterviewSession {
     updatedAt: string;
     completedAt: string | null;
     attentionStats: AttentionStats | null;
+    useResumeData?: boolean;
 }
 
 export interface AttentionStats {
@@ -179,6 +182,8 @@ export interface GeneratedQuestion {
     difficulty: Difficulty;
     levelScore: number;
     topic: string;
+    source?: 'general' | 'resume';
+    relatedContext?: string;
     whyAsked?: string;
 }
 
@@ -189,5 +194,7 @@ export interface FollowUpQuestion {
     difficulty: Difficulty;
     levelScore: number;
     intent: FollowUpIntent;
+    source?: 'general' | 'resume';
+    relatedContext?: string;
     whyAsked?: string;
 }

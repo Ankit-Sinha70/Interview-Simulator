@@ -13,6 +13,7 @@ export async function evaluateAnswer(params: {
     interviewStyle?: string;
     companyStyle?: string;
     voiceMeta?: VoiceMetadata;
+    parsedResume?: any;
 }): Promise<Evaluation> {
     const prompt = getEvaluationPrompt(params);
     const result = await callAI<Evaluation>(prompt);

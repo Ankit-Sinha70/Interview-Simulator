@@ -8,6 +8,7 @@ export interface EvaluationContext {
    interviewStyle?: string;
    companyStyle?: string;
    voiceMeta?: VoiceMetadata;
+   parsedResume?: any;
 }
 
 export function getEvaluationPrompt(ctx: EvaluationContext): string {
@@ -58,6 +59,14 @@ Evaluation Guidelines:
    - Professional tone?
    - Concise but complete?
    - Clear articulation of ideas?
+
+${ctx.parsedResume ? `6. Resume Gap Detection (CRITICAL for Resume Interviews):
+   CANDIDATE'S RESUME DATA:
+   ${JSON.stringify(ctx.parsedResume, null, 2)}
+   - Verify if their answer demonstrates the expertise they claim in their resume.
+   - If they claim Senior/Expert level in a technology but give a Junior-level answer, heavily penalize.
+   - Explicitly mention in "weaknesses" or "improvements" if there is a gap between their stated experience and their actual answer (e.g. "You claimed extensive Node.js experience at ABC Corp, but your answer lacked basic understanding of event loops.").
+   - If their answer strongly validates their resume claims, commend them in "strengths".` : ''}
 
 Experience-Level Adjustment:
 - Junior (0-2 years):

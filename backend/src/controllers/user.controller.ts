@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { User } from '../models/user.model';
 import { SubscriptionPlan } from '../models/subscriptionPlan.model';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
+import { parseResumeText } from '../ai/resume.engine';
+const pdfParse = require('pdf-parse');
 
 /**
  * GET /api/users/me
@@ -280,6 +282,57 @@ export async function setGoal(req: Request, res: Response, next: NextFunction) {
 
         res.status(200).json({ success: true, data: user.interviewGoal });
     } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * POST /api/users/resume
+ * Uploads, parses, and structures a resume
+ */
+export async function uploadResume(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        const file = req.file;
+
+        if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+        if (!file) return res.status(400).json({ success: false, error: 'Resume file is required' });
+
+        let rawText = '';
+        if (file.mimetype === 'application/pdf') {
+            const pdfData = await pdfParse(file.buffer);
+            rawText = pdfData.text;
+        } else if (file.mimetype === 'text/plain') {
+            rawText = file.buffer.toString('utf-8');
+        } else {
+            return res.status(400).json({ success: false, error: 'Only PDF and TXT files are supported' });
+        }
+
+        if (!rawText || rawText.trim().length === 0) {
+            return res.status(400).json({ success: false, error: 'Could not extract text from the file' });
+        }
+
+        // Call the AI engine to structure the data
+        const parsedData = await parseResumeText(rawText);
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+        user.parsedResume = {
+            ...parsedData,
+            rawText,
+            updatedAt: new Date()
+        };
+
+        await user.save();
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Resume parsed successfully',
+            data: user.parsedResume 
+        });
+    } catch (error) {
+        console.error('[uploadResume Error]', error);
         next(error);
     }
 }

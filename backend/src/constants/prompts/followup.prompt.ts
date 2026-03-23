@@ -18,6 +18,7 @@ export interface FollowUpContext {
    followUpIntent: FollowUpIntent;
    targetDifficulty: Difficulty;
    questionHistory: string[];
+   parsedResume?: any;
 }
 
 // ─── Level-Specific Follow-Up Rules ───
@@ -82,6 +83,14 @@ Communication Score: ${ctx.communicationScore}
 Identified Weaknesses:
 ${ctx.weaknesses.join(', ')}
 
+${ctx.parsedResume ? `CANDIDATE'S RESUME CONTEXT (Use this to strongly tailor your follow-up if applicable to their answers):
+${JSON.stringify(ctx.parsedResume, null, 2)}
+
+CRITICAL INSTRUCTION FOR RESUME: 
+If the follow-up asks about something from their resume (like a specific project or role), set "source" to "resume", and "relatedContext" to the project/company name.
+Otherwise, set "source" to "general" and "relatedContext" to null.
+` : ''}
+
 Follow-up Intent:
 ${ctx.followUpIntent}
 
@@ -140,6 +149,8 @@ Return STRICT JSON only:
   "difficulty": "${levelConfig.allowedDifficulty.join('" | "')}",
   "levelScore": number (${band.min}-${band.max}),
   "intent": "${ctx.followUpIntent}",
+  "source": "general" | "resume",
+  "relatedContext": string | null,
   "whyAsked": string (a short explanation of why this specific follow-up was asked based on the previous answer)
 }`;
 }

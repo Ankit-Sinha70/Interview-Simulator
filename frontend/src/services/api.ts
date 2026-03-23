@@ -11,10 +11,11 @@ export interface VoiceMetadata {
 
 export interface StartInterviewRequest {
     role: string;
-    experienceLevel: 'Junior' | 'Mid' | 'Senior';
-    interviewStyle?: 'friendly' | 'strict' | 'faang';
-    companyStyle?: 'google' | 'startup' | 'product' | 'general';
-    mode?: 'text' | 'voice' | 'hybrid';
+    experienceLevel: string;
+    interviewStyle?: string;
+    companyStyle?: string;
+    mode: 'text' | 'voice' | 'hybrid';
+    useResume?: boolean;
 }
 
 import { User } from '../context/AuthContext';
@@ -25,6 +26,8 @@ export interface GeneratedQuestion {
     levelScore?: number;
     topic: string;
     whyAsked?: string;
+    source?: string;
+    relatedContext?: string | null;
 }
 
 export interface StartInterviewResponse {
@@ -132,6 +135,32 @@ export async function startInterview(data: StartInterviewRequest): Promise<Start
         },
         body: JSON.stringify(data),
     });
+}
+
+export async function uploadResume(formData: FormData): Promise<any> {
+    const token = localStorage.getItem('token');
+    const url = `${API_BASE}/users/resume`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        body: formData,
+    });
+
+    if (!res.ok) {
+        let errorMessage = `API Request failed: ${res.status} ${res.statusText}`;
+        try {
+            const errorJson = await res.json();
+            errorMessage = errorJson.error?.message || errorMessage;
+        } catch (e) {
+            console.error('[API] uploadResume error:', e);
+        }
+        throw new Error(errorMessage);
+    }
+
+    const json = await res.json();
+    return json.data;
 }
 
 export async function submitAnswer(
