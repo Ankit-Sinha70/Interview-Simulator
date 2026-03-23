@@ -115,6 +115,7 @@ export async function startInterview(
     interviewStyle: string = 'friendly',
     companyStyle: string = 'general',
     mode: InterviewMode = 'text',
+    useResume: boolean = false
 ) {
     // Check usage limits
     const user = await User.findById(userId);
@@ -138,7 +139,15 @@ export async function startInterview(
     user.interviewsUsedThisMonth += 1;
     await user.save();
 
-    const session = await sessionService.createSession(role, experienceLevel, interviewStyle, companyStyle, mode, userId);
+    const session = await sessionService.createSession(
+        role, 
+        experienceLevel, 
+        interviewStyle, 
+        companyStyle, 
+        mode, 
+        userId, 
+        useResume
+    );
     session.status = 'IN_PROGRESS';
 
     // Set deadline (50 minutes from now)
@@ -154,6 +163,7 @@ export async function startInterview(
         level: session.experienceLevel,
         interviewStyle: session.interviewStyle,
         companyStyle: session.companyStyle,
+        parsedResume: useResume ? user.parsedResume : undefined
     });
 
     // Add question to session
@@ -290,6 +300,17 @@ export async function processAnswer(
 
     const currentQuestion = session.questions[currentQuestionIndex];
 
+    let parsedResume: any = undefined;
+    if (session.useResumeData && session.userId) {
+        try {
+            const { User } = await import('../models/user.model');
+            const user = await User.findById(session.userId);
+            if (user) parsedResume = user.parsedResume;
+        } catch (e) {
+            console.error('[Interview] Failed to fetch resume for context:', e);
+        }
+    }
+
     // ─── STEP 2: Evaluate Answer ───
     const [rawEvaluation, voiceEval] = await Promise.all([
         evaluateAnswer({
@@ -300,6 +321,7 @@ export async function processAnswer(
             interviewStyle: session.interviewStyle,
             companyStyle: session.companyStyle,
             voiceMeta,
+            parsedResume
         }),
         voiceMeta ? evaluateVoice({ transcript: answer, metadata: voiceMeta }) : Promise.resolve(undefined)
     ]);
@@ -428,7 +450,8 @@ export async function processAnswer(
         weaknesses: evaluation.weaknesses,
         followUpIntent,
         targetDifficulty,
-        questionHistory
+        questionHistory,
+        parsedResume
     });
 
     const nextEntry: QuestionEntry = {
@@ -440,6 +463,8 @@ export async function processAnswer(
         type: 'followup',
         generatedFromWeakness: followUp.intent,
         whyAsked: followUp.whyAsked,
+        source: followUp.source || 'general',
+        relatedContext: followUp.relatedContext || undefined,
         answer: null,
         evaluation: null,
         startedAt: new Date().toISOString(),

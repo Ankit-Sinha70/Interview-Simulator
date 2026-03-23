@@ -18,6 +18,7 @@ export async function createSession(
     companyStyle: string = 'general',
     mode: InterviewMode = 'text',
     userId?: string,
+    useResumeData: boolean = false
 ): Promise<InterviewSession> {
     const promptVersion = await getCurrentPromptVersion();
     const now = new Date().toISOString();
@@ -54,6 +55,7 @@ export async function createSession(
         updatedAt: now,
         completedAt: null,
         attentionStats: null,
+        useResumeData,
     };
 
     if (isDbConnected()) {

@@ -11,10 +11,11 @@ export interface VoiceMetadata {
 
 export interface StartInterviewRequest {
     role: string;
-    experienceLevel: 'Junior' | 'Mid' | 'Senior';
-    interviewStyle?: 'friendly' | 'strict' | 'faang';
-    companyStyle?: 'google' | 'startup' | 'product' | 'general';
-    mode?: 'text' | 'voice' | 'hybrid';
+    experienceLevel: string;
+    interviewStyle?: string;
+    companyStyle?: string;
+    mode: 'text' | 'voice' | 'hybrid';
+    useResume?: boolean;
 }
 
 import { User } from '../context/AuthContext';
@@ -25,6 +26,8 @@ export interface GeneratedQuestion {
     levelScore?: number;
     topic: string;
     whyAsked?: string;
+    source?: string;
+    relatedContext?: string | null;
 }
 
 export interface StartInterviewResponse {
@@ -134,9 +137,9 @@ export async function startInterview(data: StartInterviewRequest): Promise<Start
     });
 }
 
-export async function startResumeInterview(formData: FormData): Promise<StartInterviewResponse> {
+export async function uploadResume(formData: FormData): Promise<any> {
     const token = localStorage.getItem('token');
-    const url = `${API_BASE}/interview/start-resume`;
+    const url = `${API_BASE}/users/resume`;
     const res = await fetch(url, {
         method: 'POST',
         headers: {
@@ -151,7 +154,7 @@ export async function startResumeInterview(formData: FormData): Promise<StartInt
             const errorJson = await res.json();
             errorMessage = errorJson.error?.message || errorMessage;
         } catch (e) {
-            console.error('[API] startResumeInterview error:', e);
+            console.error('[API] uploadResume error:', e);
         }
         throw new Error(errorMessage);
     }

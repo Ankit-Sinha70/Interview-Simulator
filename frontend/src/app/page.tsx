@@ -137,34 +137,39 @@ function HomeContent() {
       experienceLevel: 'Junior' | 'Mid' | 'Senior', 
       interviewStyle?: string, 
       companyStyle?: string, 
-      resume?: File | null
+      resumeFile?: File | null,
+      useResumeFlag?: boolean
   ) => {
     setIsLoading(true);
     setError(null);
     try {
       setExperienceLevel(experienceLevel);
       
-      let result;
-      if (resume) {
+      let finalUseResume = useResumeFlag;
+
+      // If user uploaded a new file, upload it first
+      if (resumeFile) {
         const formData = new FormData();
-        formData.append('role', role);
-        formData.append('experienceLevel', experienceLevel);
-        formData.append('mode', 'text');
-        if (interviewStyle) formData.append('interviewStyle', interviewStyle);
-        if (companyStyle) formData.append('companyStyle', companyStyle);
-        formData.append('resume', resume);
+        formData.append('resume', resumeFile);
         
-        const { startResumeInterview } = await import('@/services/api');
-        result = await startResumeInterview(formData);
-      } else {
-        result = await startInterview({ 
-            role, 
-            experienceLevel, 
-            mode: 'text',
-            interviewStyle: interviewStyle as any,
-            companyStyle: companyStyle as any
-        });
+        const { uploadResume } = await import('@/services/api');
+        await uploadResume(formData);
+        
+        // Refresh AuthContext to get the new parsedResume
+        if (refreshUser) await refreshUser();
+        
+        // Since they just uploaded it, they definitely want to use it
+        finalUseResume = true;
       }
+
+      const result = await startInterview({ 
+          role, 
+          experienceLevel, 
+          mode: 'text',
+          interviewStyle: interviewStyle as any,
+          companyStyle: companyStyle as any,
+          useResume: finalUseResume
+      });
 
       setSessionId(result.sessionId);
       setCurrentQuestion(result.question);
@@ -187,7 +192,7 @@ function HomeContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, refreshUser]);
 
   // ─── Submit Answer ───
   const handleSubmitAnswer = useCallback(async (answer: string, meta?: VoiceMetadata) => {

@@ -39,6 +39,11 @@ export default function QuestionCard({ question, questionNumber, trend }: Questi
                         <span className="text-muted-foreground text-[13px] font-medium">
                             {question.topic}
                         </span>
+                        {question.source === 'resume' && (
+                            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px] px-2 py-0">
+                                📄 Based on resume{question.relatedContext ? `: ${question.relatedContext}` : ''}
+                            </Badge>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         {/* Trend Indicator */}

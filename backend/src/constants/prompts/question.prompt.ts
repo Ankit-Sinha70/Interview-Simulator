@@ -53,7 +53,7 @@ export function getQuestionPrompt(params: {
   voiceMeta?: VoiceMetadata;
   previousQuestion?: string;
   evaluationSummary?: string;
-  resumeText?: string;
+  parsedResume?: any;
 }): string {
   const level = params.level as ExperienceLevel;
   const allowedTopics = getAllowedTopics(params.role, level);
@@ -79,8 +79,13 @@ ${LEVEL_DESCRIPTIONS[level]}
 Previous Question: ${params.previousQuestion || 'None (this is the first question)'}
 Previous Answer Evaluation: ${params.evaluationSummary || 'None (this is the first question)'}
 
-${params.resumeText ? `RESUME CONTEXT (Use this to strongly tailor the question to the candidate's actual background):
-${params.resumeText}
+${params.parsedResume ? `RESUME CONTEXT (Use this structured data to strongly tailor the question to the candidate's actual background):
+${JSON.stringify(params.parsedResume, null, 2)}
+
+CRITICAL INSTRUCTION FOR RESUME: 
+When generating a question based on this resume, set "source" to "resume". 
+And set "relatedContext" to the specific project name, company name, or technology you are asking about (e.g. "E-commerce React App" or "Frontend Developer at ABC Corp").
+If you are NOT using the resume, set "source" to "general" and "relatedContext" to null.
 ` : ''}
 
 ${STRICT_RULES[level]}
@@ -109,6 +114,8 @@ Return STRICT JSON only, no markdown formatting, no code blocks:
   "difficulty": "${levelConfig.allowedDifficulty.join('" | "')}",
   "levelScore": number (${band.min}-${band.max}),
   "topic": string,
+  "source": "general" | "resume",
+  "relatedContext": string | null,
   "whyAsked": string (a short 1-2 sentence explanation of what this question tests and why it matters for this role/level)
 }`;
 }
