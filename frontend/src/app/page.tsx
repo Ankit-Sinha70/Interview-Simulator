@@ -132,12 +132,40 @@ function HomeContent() {
   }, [user, authLoading, appState]);
 
   // ─── Start Interview ───
-  const handleStart = useCallback(async (role: string, experienceLevel: 'Junior' | 'Mid' | 'Senior') => {
+  const handleStart = useCallback(async (
+      role: string, 
+      experienceLevel: 'Junior' | 'Mid' | 'Senior', 
+      interviewStyle?: string, 
+      companyStyle?: string, 
+      resume?: File | null
+  ) => {
     setIsLoading(true);
     setError(null);
     try {
       setExperienceLevel(experienceLevel);
-      const result = await startInterview({ role, experienceLevel, mode: 'text' });
+      
+      let result;
+      if (resume) {
+        const formData = new FormData();
+        formData.append('role', role);
+        formData.append('experienceLevel', experienceLevel);
+        formData.append('mode', 'text');
+        if (interviewStyle) formData.append('interviewStyle', interviewStyle);
+        if (companyStyle) formData.append('companyStyle', companyStyle);
+        formData.append('resume', resume);
+        
+        const { startResumeInterview } = await import('@/services/api');
+        result = await startResumeInterview(formData);
+      } else {
+        result = await startInterview({ 
+            role, 
+            experienceLevel, 
+            mode: 'text',
+            interviewStyle: interviewStyle as any,
+            companyStyle: companyStyle as any
+        });
+      }
+
       setSessionId(result.sessionId);
       setCurrentQuestion(result.question);
       setQuestionNumber(1);
@@ -411,7 +439,19 @@ function HomeContent() {
             {/* Current Question */}
             {currentQuestion && (
               <div className="animate-fade-in-up delay-100">
-                <QuestionCard question={currentQuestion} questionNumber={questionNumber} />
+                <QuestionCard 
+                    question={currentQuestion} 
+                    questionNumber={questionNumber} 
+                    trend={
+                        history.length > 0 && currentQuestion.levelScore !== undefined && history[history.length - 1].question.levelScore !== undefined
+                        ? currentQuestion.levelScore > history[history.length - 1].question.levelScore!
+                            ? 'up'
+                            : currentQuestion.levelScore < history[history.length - 1].question.levelScore!
+                            ? 'down'
+                            : 'flat'
+                        : undefined
+                    }
+                />
               </div>
             )}
 

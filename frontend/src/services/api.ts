@@ -134,6 +134,32 @@ export async function startInterview(data: StartInterviewRequest): Promise<Start
     });
 }
 
+export async function startResumeInterview(formData: FormData): Promise<StartInterviewResponse> {
+    const token = localStorage.getItem('token');
+    const url = `${API_BASE}/interview/start-resume`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        body: formData,
+    });
+
+    if (!res.ok) {
+        let errorMessage = `API Request failed: ${res.status} ${res.statusText}`;
+        try {
+            const errorJson = await res.json();
+            errorMessage = errorJson.error?.message || errorMessage;
+        } catch (e) {
+            console.error('[API] startResumeInterview error:', e);
+        }
+        throw new Error(errorMessage);
+    }
+
+    const json = await res.json();
+    return json.data;
+}
+
 export async function submitAnswer(
     sessionId: string,
     answer: string,

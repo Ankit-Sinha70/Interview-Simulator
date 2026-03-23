@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { FileText } from 'lucide-react';
 
 interface SessionSetupProps {
     onStart: (
         role: string, 
         experienceLevel: 'Junior' | 'Mid' | 'Senior',
         interviewStyle: 'friendly' | 'strict' | 'faang',
-        companyStyle: 'google' | 'startup' | 'product' | 'general'
+        companyStyle: 'google' | 'startup' | 'product' | 'general',
+        resume?: File | null
     ) => void;
     isLoading: boolean;
 }
@@ -45,6 +47,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
     const [customRole, setCustomRole] = useState('');
     const [interviewStyle, setInterviewStyle] = useState<'friendly' | 'strict' | 'faang'>('friendly');
     const [companyStyle, setCompanyStyle] = useState<'google' | 'startup' | 'product' | 'general'>('general');
+    const [resume, setResume] = useState<File | null>(null);
 
     const selectedRole = role === 'Custom' ? customRole : role;
     const canStart = selectedRole.trim() && level;
@@ -195,10 +198,36 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         </div>
                     </div>
 
+                    {/* Resume Upload (Optional) */}
+                    <div className="space-y-4">
+                        <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
+                            Upload Resume (Optional)
+                        </h2>
+                        <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/60 rounded-xl p-6 bg-background/30 hover:bg-background/50 transition-colors">
+                            <input 
+                                type="file" 
+                                accept=".pdf,.txt" 
+                                id="resume-upload" 
+                                className="hidden" 
+                                onChange={(e) => setResume(e.target.files?.[0] || null)}
+                            />
+                            <label htmlFor="resume-upload" className="cursor-pointer flex flex-col items-center gap-2 text-center w-full">
+                                <FileText className={`w-8 h-8 ${resume ? 'text-emerald-400' : 'text-[var(--accent-teal)]'}`} />
+                                <span className="text-sm font-semibold max-w-[250px] truncate text-white">
+                                    {resume ? resume.name : 'Click to upload your resume (PDF/TXT)'}
+                                </span>
+                                {!resume && <span className="text-xs text-muted-foreground">Tailor your interview strictly to your background</span>}
+                            </label>
+                            {resume && (
+                                <button className="text-xs text-red-400 mt-2 hover:underline" onClick={() => setResume(null)}>Remove</button>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Start Button */}
                     <div className="pt-4">
                         <Button
-                            onClick={() => canStart && level && onStart(selectedRole, level, interviewStyle, companyStyle)}
+                            onClick={() => canStart && level && onStart(selectedRole, level, interviewStyle, companyStyle, resume)}
                             disabled={!canStart || isLoading}
                             size="lg"
                             className={`w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all duration-300 ${canStart

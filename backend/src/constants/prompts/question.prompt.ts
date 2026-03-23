@@ -53,6 +53,7 @@ export function getQuestionPrompt(params: {
   voiceMeta?: VoiceMetadata;
   previousQuestion?: string;
   evaluationSummary?: string;
+  resumeText?: string;
 }): string {
   const level = params.level as ExperienceLevel;
   const allowedTopics = getAllowedTopics(params.role, level);
@@ -77,6 +78,10 @@ ${LEVEL_DESCRIPTIONS[level]}
 
 Previous Question: ${params.previousQuestion || 'None (this is the first question)'}
 Previous Answer Evaluation: ${params.evaluationSummary || 'None (this is the first question)'}
+
+${params.resumeText ? `RESUME CONTEXT (Use this to strongly tailor the question to the candidate's actual background):
+${params.resumeText}
+` : ''}
 
 ${STRICT_RULES[level]}
 
