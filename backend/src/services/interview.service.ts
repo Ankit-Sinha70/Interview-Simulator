@@ -237,6 +237,45 @@ export async function processAnswer(
 
         await sessionService.updateSession(session);
 
+        // Update User Streaks & Completion Count
+        if (session.userId) {
+            try {
+                const { User } = await import('../models/user.model');
+                const user = await User.findById(session.userId);
+                if (user) {
+                    user.completedInterviews = (user.completedInterviews || 0) + 1;
+                    
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    if (!user.lastInterviewDate) {
+                        user.currentStreak = 1;
+                        user.longestStreak = 1;
+                        user.lastInterviewDate = today;
+                    } else {
+                        const lastDate = new Date(user.lastInterviewDate);
+                        lastDate.setHours(0, 0, 0, 0);
+                        const msInDay = 24 * 60 * 60 * 1000;
+                        const diffDays = Math.round((today.getTime() - lastDate.getTime()) / msInDay);
+                        
+                        if (diffDays === 1) {
+                            user.currentStreak += 1;
+                            if (user.currentStreak > user.longestStreak) {
+                                user.longestStreak = user.currentStreak;
+                            }
+                            user.lastInterviewDate = today;
+                        } else if (diffDays > 1) {
+                            user.currentStreak = 1;
+                            user.lastInterviewDate = today;
+                        }
+                    }
+                    await user.save();
+                }
+            } catch (e) {
+                console.error('[Interview] Error updating streaks time_expired:', e);
+            }
+        }
+
         // Import report service dynamically to avoid circular dependencies if any
         const { generateFinalReport } = await import('./report.service');
         await generateFinalReport(session.sessionId);
@@ -313,6 +352,45 @@ export async function processAnswer(
         session.completedAt = now.toISOString();
 
         await sessionService.updateSession(session);
+
+        // Update User Streaks & Completion Count
+        if (session.userId) {
+            try {
+                const { User } = await import('../models/user.model');
+                const user = await User.findById(session.userId);
+                if (user) {
+                    user.completedInterviews = (user.completedInterviews || 0) + 1;
+                    
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    if (!user.lastInterviewDate) {
+                        user.currentStreak = 1;
+                        user.longestStreak = 1;
+                        user.lastInterviewDate = today;
+                    } else {
+                        const lastDate = new Date(user.lastInterviewDate);
+                        lastDate.setHours(0, 0, 0, 0);
+                        const msInDay = 24 * 60 * 60 * 1000;
+                        const diffDays = Math.round((today.getTime() - lastDate.getTime()) / msInDay);
+                        
+                        if (diffDays === 1) {
+                            user.currentStreak += 1;
+                            if (user.currentStreak > user.longestStreak) {
+                                user.longestStreak = user.currentStreak;
+                            }
+                            user.lastInterviewDate = today;
+                        } else if (diffDays > 1) {
+                            user.currentStreak = 1;
+                            user.lastInterviewDate = today;
+                        }
+                    }
+                    await user.save();
+                }
+            } catch (e) {
+                console.error('[Interview] Error updating streaks:', e);
+            }
+        }
 
         const { generateFinalReport } = await import('./report.service');
         const finalReport = await generateFinalReport(session.sessionId);

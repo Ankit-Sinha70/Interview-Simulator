@@ -228,3 +228,58 @@ export async function dismissWelcomeOffer(req: Request, res: Response, next: Nex
         next(error);
     }
 }
+
+/**
+ * GET /api/users/goal
+ * Returns current user's goal and streak info
+ */
+export async function getGoal(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                interviewGoal: user.interviewGoal,
+                currentStreak: user.currentStreak || 0,
+                longestStreak: user.longestStreak || 0,
+                lastInterviewDate: user.lastInterviewDate,
+                completedInterviews: user.completedInterviews || 0,
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * POST /api/users/goal
+ * Sets a new interview goal
+ */
+export async function setGoal(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        const { title, targetInterviews, targetDays } = req.body;
+
+        if (!title || !targetInterviews || !targetDays) {
+            return res.status(400).json({ success: false, error: 'Title, targetInterviews, and targetDays are required' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+        user.interviewGoal = {
+            title,
+            targetInterviews: Number(targetInterviews),
+            targetDays: Number(targetDays),
+            startDate: new Date()
+        };
+        await user.save();
+
+        res.status(200).json({ success: true, data: user.interviewGoal });
+    } catch (error) {
+        next(error);
+    }
+}

@@ -43,6 +43,16 @@ export interface IUser extends Document {
     createdAt: Date;
     updatedAt: Date;
 
+    interviewGoal?: {
+        title: string;
+        targetDays: number;
+        startDate: Date;
+        targetInterviews: number;
+    };
+    currentStreak: number;
+    longestStreak: number;
+    lastInterviewDate?: Date;
+
     checkReset(): boolean;
 }
 
@@ -84,6 +94,16 @@ const UserSchema: Schema = new Schema({
     hasEverSubscribed: { type: Boolean, default: false },
     welcomeOfferExpiresAt: { type: Date },
     welcomeOfferShownAt: { type: Date },
+
+    interviewGoal: {
+        title: { type: String },
+        targetDays: { type: Number },
+        startDate: { type: Date },
+        targetInterviews: { type: Number }
+    },
+    currentStreak: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    lastInterviewDate: { type: Date },
 }, {
     timestamps: true
 });
