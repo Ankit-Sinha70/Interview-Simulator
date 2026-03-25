@@ -11,7 +11,7 @@ import {
     VoiceMetadata,
 } from '@/services/api';
 
-export interface InterviewHistoryEntry {
+interface InterviewHistoryEntry {
     question: GeneratedQuestion;
     evaluation: Evaluation;
     questionNumber: number;

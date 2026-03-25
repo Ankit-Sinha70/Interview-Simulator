@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Mic, Activity, Clock, MessageSquare, AlertTriangle, CheckCircle } from 'lucide-react';
 
-export interface VoiceEvaluation {
+interface VoiceEvaluation {
     confidenceScore: number;
     fluencyScore: number;
     structureScore: number;
@@ -16,7 +16,7 @@ export interface VoiceEvaluation {
     feedback: string[];
 }
 
-export interface VoiceMetadata {
+interface VoiceMetadata {
     durationSeconds: number;
     fillerWordCount: number;
     pauseCount: number;
