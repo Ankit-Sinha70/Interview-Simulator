@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, CheckCircle2 } from 'lucide-react';
+import { FileText, CheckCircle2, Code, Server, Layers, Leaf, Rocket, Star, Smile, UserCheck, Briefcase, Globe, Zap, Brain, Target } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface SessionSetupProps {
@@ -19,28 +19,28 @@ interface SessionSetupProps {
 }
 
 const ROLES = [
-    { id: 'Frontend Developer', label: 'Frontend', icon: '🎨', desc: 'React, CSS, DOM' },
-    { id: 'Backend Developer', label: 'Backend', icon: '⚙️', desc: 'APIs, DBs, Auth' },
-    { id: 'Fullstack Developer', label: 'Fullstack', icon: '🔗', desc: 'End-to-End Dev' },
+    { id: 'Frontend Developer', label: 'Frontend', icon: <Code className="w-8 h-8 text-[var(--accent-violet)]" />, desc: 'React, CSS, DOM' },
+    { id: 'Backend Developer', label: 'Backend', icon: <Server className="w-8 h-8 text-[var(--accent-teal)]" />, desc: 'APIs, DBs, Auth' },
+    { id: 'Fullstack Developer', label: 'Fullstack', icon: <Layers className="w-8 h-8 text-[var(--accent-yellow)]" />, desc: 'End-to-End Dev' },
 ];
 
 const LEVELS = [
-    { id: 'Junior' as const, label: 'Junior', icon: '🌱', desc: '0-2 years' },
-    { id: 'Mid' as const, label: 'Mid', icon: '🚀', desc: '2-5 years' },
-    { id: 'Senior' as const, label: 'Senior', icon: '⭐', desc: '5+ years' },
+    { id: 'Junior' as const, label: 'Junior', icon: <Leaf className="w-8 h-8 text-emerald-400" />, desc: '0-2 years' },
+    { id: 'Mid' as const, label: 'Mid', icon: <Rocket className="w-8 h-8 text-sky-400" />, desc: '2-5 years' },
+    { id: 'Senior' as const, label: 'Senior', icon: <Star className="w-8 h-8 text-yellow-400" />, desc: '5+ years' },
 ];
 
 const INTERVIEW_STYLES = [
-    { id: 'friendly' as const, label: 'Friendly', icon: '😊', desc: 'Guiding & supportive' },
-    { id: 'strict' as const, label: 'Strict', icon: '🧐', desc: 'Professional & rigorous' },
-    { id: 'faang' as const, label: 'FAANG', icon: '🏢', desc: 'Extremely demanding' },
+    { id: 'friendly' as const, label: 'Friendly', icon: <Smile className="w-7 h-7 text-amber-300" />, desc: 'Guiding & supportive' },
+    { id: 'strict' as const, label: 'Strict', icon: <UserCheck className="w-7 h-7 text-slate-300" />, desc: 'Professional & rigorous' },
+    { id: 'faang' as const, label: 'FAANG', icon: <Briefcase className="w-7 h-7 text-purple-300" />, desc: 'Extremely demanding' },
 ];
 
 const COMPANY_STYLES = [
-    { id: 'general' as const, label: 'General', icon: '🌍', desc: 'Balanced approach' },
-    { id: 'startup' as const, label: 'Startup', icon: '🦄', desc: 'Practical, fast-paced' },
-    { id: 'google' as const, label: 'Google-style', icon: '🧠', desc: 'Deep & algorithmic' },
-    { id: 'product' as const, label: 'Product-focused', icon: '🎯', desc: 'User-centric impact' },
+    { id: 'general' as const, label: 'General', icon: <Globe className="w-6 h-6 text-sky-300" />, desc: 'Balanced approach' },
+    { id: 'startup' as const, label: 'Startup', icon: <Zap className="w-6 h-6 text-pink-300" />, desc: 'Practical, fast-paced' },
+    { id: 'google' as const, label: 'Google-style', icon: <Brain className="w-6 h-6 text-indigo-300" />, desc: 'Deep & algorithmic' },
+    { id: 'product' as const, label: 'Product-focused', icon: <Target className="w-6 h-6 text-rose-300" />, desc: 'User-centric impact' },
 ];
 
 export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { updateProfile, changePassword, uploadProfilePicture } from '@/services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Loader2, User as UserIcon, Mail, ShieldCheck, CreditCard, Lock, CheckCircle2, AlertCircle, Camera, Eye, EyeOff } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
@@ -32,6 +33,9 @@ export default function ProfilePage() {
         new: false,
         confirm: false,
     });
+    const [showViewer, setShowViewer] = useState(false);
+    const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     // Guard clause - if not logged in
     if (!user) {
@@ -154,32 +158,69 @@ export default function ProfilePage() {
                         <Card className="animate-fadeInUp bg-card/70 backdrop-blur-xl border-border/60 shadow-2xl" style={{ animationDelay: '100ms' }}>
                             <CardHeader className="flex flex-col sm:flex-row sm:items-center gap-6 pb-2">
                                 {/* Interactive Avatar */}
-                                <div className="relative group cursor-pointer">
-                                    <div className="w-28 h-28 rounded-xl bg-muted border-2 border-border flex items-center justify-center overflow-hidden relative">
-                                        {user.profilePicture ? (
-                                            <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <UserIcon className="h-8 w-8 text-muted-foreground" />
-                                        )}
-                                        {/* Hover Overlay */}
-                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {isUploadingImage ? (
-                                                <Loader2 className="h-5 w-5 animate-spin text-white" />
-                                            ) : (
-                                                <Camera className="h-6 w-6 text-white" />
-                                            )}
-                                        </div>
-                                    </div>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        id="profileImageInput"
-                                        onChange={handleImageUpload}
-                                        disabled={isUploadingImage}
-                                    />
-                                    <label htmlFor="profileImageInput" className="absolute inset-0 cursor-pointer rounded-full" />
-                                </div>
+                                                        <div className="relative">
+                                                            <div
+                                                                role="button"
+                                                                tabIndex={0}
+                                                                onClick={() => setShowAvatarMenu(!showAvatarMenu)}
+                                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowAvatarMenu(!showAvatarMenu); }}
+                                                                className="w-28 h-28 rounded-xl bg-muted border-2 border-border flex items-center justify-center overflow-hidden relative cursor-pointer"
+                                                            >
+                                                                {user.profilePicture ? (
+                                                                    <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <UserIcon className="h-8 w-8 text-muted-foreground" />
+                                                                )}
+                                                            </div>
+
+                                                            {/* Small action menu */}
+                                                            {showAvatarMenu && (
+                                                                <div className="absolute left-0 mt-2 w-44 bg-card/90 backdrop-blur-md border border-border rounded-lg shadow-lg z-50">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => { setShowViewer(true); setShowAvatarMenu(false); }}
+                                                                        className="w-full text-left px-3 py-2 hover:bg-background/50 flex items-center gap-2"
+                                                                    >
+                                                                        <Eye className="w-4 h-4 text-muted-foreground" />
+                                                                        <span className="text-sm">View image</span>
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            // open native file picker and then close the menu
+                                                                            if (fileInputRef.current) fileInputRef.current.click();
+                                                                            setShowAvatarMenu(false);
+                                                                        }}
+                                                                        className="w-full text-left px-3 py-2 hover:bg-background/50 flex items-center gap-2"
+                                                                    >
+                                                                        {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4 text-muted-foreground" />}
+                                                                        <span className="text-sm">Change image</span>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="hidden"
+                                                                id="profileImageInput"
+                                                                ref={(el) => (fileInputRef.current = el)}
+                                                                onChange={handleImageUpload}
+                                                                disabled={isUploadingImage}
+                                                            />
+                                                        </div>
+
+                                                        {/* Image viewer dialog */}
+                                                        <Dialog open={showViewer} onOpenChange={(open) => setShowViewer(open)}>
+                                                            <DialogContent className="w-full max-w-5xl p-4 sm:p-6 bg-transparent shadow-none">
+                                                                    <DialogTitle className="sr-only">Profile image viewer</DialogTitle>
+                                                                    <div className="flex items-center justify-center w-full">
+                                                                        <div className="bg-black/80 p-4 rounded-lg shadow-2xl max-h-[90vh] max-w-[90vw]">
+                                                                            <img src={user.profilePicture} alt={user.name} className="max-h-[80vh] max-w-[88vw] object-contain rounded-md" />
+                                                                        </div>
+                                                                    </div>
+                                                                </DialogContent>
+                                                        </Dialog>
 
                                 <div className="text-center sm:text-left">
                                     <CardTitle>Profile Information</CardTitle>
