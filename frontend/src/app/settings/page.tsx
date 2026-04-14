@@ -13,9 +13,9 @@ export default function SettingsPage() {
     if (!user) return null;
 
     return (
-        <div className="container mx-auto p-6 max-w-2xl space-y-8 animate-fade-in">
+        <div className="container mx-auto max-w-2xl px-4 py-6 sm:px-6 space-y-8 animate-fade-in">
             <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight text-white">Settings</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Settings</h1>
                 <p className="text-sm text-muted-foreground">Manage your account and subscription.</p>
             </div>
 
@@ -46,7 +46,7 @@ export default function SettingsPage() {
                 <SubscriptionCard />
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-stretch sm:justify-end pt-2">
                 <ConfirmDialog
                     title="Sign Out"
                     description="Are you sure you want to sign out from your account?"
@@ -54,7 +54,7 @@ export default function SettingsPage() {
                     onConfirm={logout}
                     destructive
                 >
-                    <Button variant="destructive" className="text-sm">
+                    <Button variant="destructive" className="text-sm w-full sm:w-auto">
                         Sign Out
                     </Button>
                 </ConfirmDialog>

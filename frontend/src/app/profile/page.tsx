@@ -134,7 +134,7 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="min-h-screen pt-24 pb-12 px-4 relative overflow-hidden">
+        <div className="min-h-screen pt-8 md:pt-24 pb-12 px-4 sm:px-6 relative overflow-hidden">
             {/* Background elements */}
             <div className="absolute top-0 left-0 w-full h-[500px] bg-violet-500/10 rounded-full blur-[120px] -translate-y-1/2 opacity-50 pointer-events-none" />
             <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[150px] translate-y-1/3 opacity-30 pointer-events-none" />
@@ -142,7 +142,7 @@ export default function ProfilePage() {
             <div className="max-w-4xl mx-auto space-y-8 relative z-10">
 
                 <div className="animate-fadeInUp" style={{ animationDelay: '0ms' }}>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-100">Account Settings</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-100">Account Settings</h1>
                     <p className="text-slate-400 mt-2">Manage your profile, password, and subscription details.</p>
                 </div>
 
@@ -152,7 +152,7 @@ export default function ProfilePage() {
                     <div className="md:col-span-2 space-y-8">
                         {/* Profile Info Card */}
                         <Card className="animate-fadeInUp bg-card/60 backdrop-blur-xl border-slate-700/50 shadow-2xl" style={{ animationDelay: '100ms' }}>
-                            <CardHeader className="flex flex-row items-center gap-6 pb-2">
+                            <CardHeader className="flex flex-col sm:flex-row sm:items-center gap-6 pb-2">
                                 {/* Interactive Avatar */}
                                 <div className="relative group cursor-pointer">
                                     <div className="w-28 h-28 rounded-xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center overflow-hidden relative">
@@ -181,7 +181,7 @@ export default function ProfilePage() {
                                     <label htmlFor="profileImageInput" className="absolute inset-0 cursor-pointer rounded-full" />
                                 </div>
 
-                                <div>
+                                <div className="text-center sm:text-left">
                                     <CardTitle>Profile Information</CardTitle>
                                     <CardDescription>Update your personal details and avatar.</CardDescription>
                                 </div>
@@ -211,7 +211,7 @@ export default function ProfilePage() {
                                     </div>
                                 </CardContent>
                                 <CardFooter className="bg-slate-900/20 border-t border-slate-800 p-4">
-                                    <Button type="submit" disabled={isUpdatingProfile || name === user.name} className="bg-violet-600 hover:bg-violet-700 text-white ml-auto">
+                                    <Button type="submit" disabled={isUpdatingProfile || name === user.name} className="bg-violet-600 hover:bg-violet-700 text-white w-full sm:w-auto sm:ml-auto">
                                         {isUpdatingProfile ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Changes'}
                                     </Button>
                                 </CardFooter>
@@ -297,7 +297,7 @@ export default function ProfilePage() {
                                         </div>
                                     </CardContent>
                                     <CardFooter className="bg-slate-900/20 border-t border-slate-800 p-4">
-                                        <Button type="submit" disabled={isChangingPassword || !passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword} className="bg-emerald-600 hover:bg-emerald-700 text-white ml-auto">
+                                        <Button type="submit" disabled={isChangingPassword || !passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword} className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto sm:ml-auto">
                                             {isChangingPassword ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</> : 'Update Password'}
                                         </Button>
                                     </CardFooter>

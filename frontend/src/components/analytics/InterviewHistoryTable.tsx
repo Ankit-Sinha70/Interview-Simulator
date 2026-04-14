@@ -50,7 +50,7 @@ export default function InterviewHistoryTable({ interviews, limitedHistory }: In
                 <p className="text-[10px] text-muted-foreground mt-0.5">{limitedHistory ? 'Showing last 2 sessions' : `${interviews.length} completed sessions`}</p>
             </div>
             <CardContent className="p-0 flex-1 flex flex-col">
-                <div className="overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-border/50 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -100,6 +100,45 @@ export default function InterviewHistoryTable({ interviews, limitedHistory }: In
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                <div className="md:hidden divide-y divide-border/30">
+                    {interviews.map((interview) => (
+                        <div key={interview.sessionId} className="p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-white truncate">{interview.role}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {new Date(interview.date).toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                        })}
+                                    </p>
+                                </div>
+                                {getStatusBadge(interview.status)}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div className="rounded-xl border border-border/50 bg-background/30 p-3">
+                                    <p className="text-muted-foreground">Score</p>
+                                    <p className={`mt-1 text-base font-bold ${getScoreColor(interview.score)}`}>{interview.score}</p>
+                                </div>
+                                <div className="rounded-xl border border-border/50 bg-background/30 p-3">
+                                    <p className="text-muted-foreground">Questions</p>
+                                    <p className="mt-1 text-base font-bold text-white">{interview.questionsCount}</p>
+                                </div>
+                                <div className="rounded-xl border border-border/50 bg-background/30 p-3">
+                                    <p className="text-muted-foreground">Time</p>
+                                    <p className="mt-1 text-base font-bold text-white">{interview.timeMinutes > 0 ? `${interview.timeMinutes}m` : '—'}</p>
+                                </div>
+                                <div className="rounded-xl border border-border/50 bg-background/30 p-3">
+                                    <p className="text-muted-foreground">Focus</p>
+                                    <p className="mt-1 text-base font-bold text-white">{interview.focusScore > 0 ? `${interview.focusScore}%` : '—'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
                 {interviews.length === 0 && !limitedHistory && (
