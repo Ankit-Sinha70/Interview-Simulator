@@ -8,7 +8,9 @@ import {
     GeneratedQuestion,
     Evaluation,
     FinalReport,
+    AttentionStats,
     VoiceMetadata,
+    AggregatedScores,
 } from '@/services/api';
 
 interface InterviewHistoryEntry {
@@ -32,7 +34,7 @@ interface ActiveSessionState {
     maxQuestions: number;
     sessionEnded: boolean;
     endReason: string | null;
-    aggregatedScores: any | null;
+    aggregatedScores: AggregatedScores | null;
 }
 
 export function useActiveSession(sessionId: string) {
@@ -59,21 +61,35 @@ export function useActiveSession(sessionId: string) {
 
         const load = async () => {
             try {
-                const session = await getSession(sessionId);
+                const session = await getSession(sessionId) as {
+                    questions: Array<{
+                        questionText: string;
+                        topic: string;
+                        difficulty: 'easy' | 'medium' | 'hard';
+                        answer?: string;
+                        evaluation?: Evaluation;
+                    }>;
+                    status: string;
+                    finalReport?: FinalReport;
+                    endsAt?: string;
+                    hasShownFiveMinWarning?: boolean;
+                    maxQuestions?: number;
+                    aggregatedScores?: AggregatedScores;
+                };
 
                 const history: InterviewHistoryEntry[] = session.questions
-                    .filter((q: any) => q.answer && q.evaluation)
-                    .map((q: any, index: number) => ({
+                    .filter((q) => q.answer && q.evaluation)
+                    .map((q, index: number) => ({
                         question: {
                             question: q.questionText,
                             topic: q.topic,
-                            difficulty: q.difficulty
+                            difficulty: q.difficulty as 'easy' | 'medium' | 'hard'
                         },
-                        evaluation: q.evaluation,
+                        evaluation: q.evaluation as Evaluation,
                         questionNumber: index + 1
                     }));
 
-                const currentQ = session.questions.find((q: any) => !q.answer);
+                const currentQ = session.questions.find((q) => !q.answer);
 
                 const isCompleted = ['COMPLETED', 'TIME_EXPIRED', 'MAX_QUESTIONS_REACHED'].includes(session.status);
 
@@ -84,11 +100,11 @@ export function useActiveSession(sessionId: string) {
                     currentQuestion: currentQ ? {
                         question: currentQ.questionText,
                         topic: currentQ.topic,
-                        difficulty: currentQ.difficulty
+                        difficulty: currentQ.difficulty as 'easy' | 'medium' | 'hard'
                     } : null,
                     questionNumber: currentQ ? (history.length + 1) : history.length,
                     latestEvaluation: history.length > 0 ? history[history.length - 1].evaluation : null,
-                    finalReport: session.finalReport,
+                    finalReport: session.finalReport || null,
                     endsAt: session.endsAt || null,
                     hasShownFiveMinWarning: session.hasShownFiveMinWarning || false,
                     maxQuestions: session.maxQuestions || 10,
@@ -97,15 +113,16 @@ export function useActiveSession(sessionId: string) {
                     aggregatedScores: session.aggregatedScores || null,
                 }));
 
-            } catch (err: any) {
-                setState(s => ({ ...s, status: 'ERROR', error: err.message }));
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                setState(s => ({ ...s, status: 'ERROR', error: msg }));
             }
         };
         load();
     }, [sessionId]);
 
     // ─── Actions ───
-    const complete = useCallback(async (attentionStats?: any) => {
+    const complete = useCallback(async (attentionStats?: AttentionStats) => {
         setState(s => ({ ...s, isSubmitting: true }));
         try {
             const report = await completeInterview(sessionId, attentionStats);
@@ -116,8 +133,9 @@ export function useActiveSession(sessionId: string) {
                 finalReport: report,
                 sessionEnded: true,
             }));
-        } catch (err: any) {
-            setState(s => ({ ...s, isSubmitting: false, error: err.message }));
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            setState(s => ({ ...s, isSubmitting: false, error: msg }));
         }
     }, [sessionId]);
 
@@ -164,8 +182,9 @@ export function useActiveSession(sessionId: string) {
                 ],
                 aggregatedScores: result.scoringSummary || s.aggregatedScores
             }));
-        } catch (err: any) {
-            setState(s => ({ ...s, isSubmitting: false, error: err.message }));
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            setState(s => ({ ...s, isSubmitting: false, error: msg }));
         }
     };
 

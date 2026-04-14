@@ -4,6 +4,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { VoiceMetadata } from '@/services/api';
 
+type SpeechRecognitionLike = {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    start: () => void;
+    stop: () => void;
+    onresult?: (event: { results?: Array<{ isFinal?: boolean; 0?: { transcript?: string } }> }) => void;
+    onerror?: (e?: unknown) => void;
+    onend?: () => void;
+};
+
 // ─── Filler Word Dictionary (matches backend) ───
 const FILLER_WORDS = [
     'um', 'uh', 'uhh', 'umm', 'erm',
@@ -34,33 +45,45 @@ interface VoiceInputProps {
 export default function VoiceInput({ onTranscript }: VoiceInputProps) {
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
-    const [isSupported, setIsSupported] = useState(true);
+    const [isSupported, setIsSupported] = useState<boolean>(() => {
+        if (typeof window === 'undefined') return false;
+        const w = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+        return Boolean(w.SpeechRecognition || w.webkitSpeechRecognition);
+    });
     const [duration, setDuration] = useState(0);
-    const recognitionRef = useRef<any>(null);
+    const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
     const startTimeRef = useRef<number>(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            setIsSupported(false);
+        const win = window as unknown as {
+            SpeechRecognition?: new () => SpeechRecognitionLike;
+            webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+        };
+
+        const SpeechRecognitionCtor = win.SpeechRecognition || win.webkitSpeechRecognition;
+        if (!SpeechRecognitionCtor) {
             return;
         }
 
-        const recognition = new SpeechRecognition();
+        const recognition = new SpeechRecognitionCtor();
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
-        recognition.onresult = (event: any) => {
+        recognition.onresult = (event) => {
+            const results = event.results;
             let finalTranscript = '';
             let interimTranscript = '';
-            for (let i = 0; i < event.results.length; i++) {
-                const result = event.results[i];
-                if (result.isFinal) {
-                    finalTranscript += result[0].transcript + ' ';
-                } else {
-                    interimTranscript += result[0].transcript;
+            if (results) {
+                for (let i = 0; i < results.length; i++) {
+                    const result = results[i];
+                    const transcript = (result && result[0] && result[0].transcript) || '';
+                    if (result && result.isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
                 }
             }
             setTranscript(finalTranscript + interimTranscript);

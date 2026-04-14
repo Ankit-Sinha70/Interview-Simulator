@@ -112,16 +112,7 @@ export default function SessionIntegrity({ sessionIntegrity }: SessionIntegrityP
                                         <Cell key={idx} fill={entry.color} />
                                     ))}
                                 </Pie>
-                                <Tooltip
-                                    contentStyle={{
-                                        background: '#18181b',
-                                        border: '1px solid #27272a',
-                                        borderRadius: '12px',
-                                        fontSize: '12px',
-                                        color: '#fff',
-                                    }}
-                                    formatter={((value: number, name: string) => [`${value} sessions`, name]) as any}
-                                />
+                                <Tooltip content={<CustomTooltip />} />
                             </PieChart>
                         </ResponsiveContainer>
                         {/* Center Label */}
@@ -223,6 +214,21 @@ export default function SessionIntegrity({ sessionIntegrity }: SessionIntegrityP
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<Record<string, unknown>>; label?: string | number; }) {
+    if (!active || !payload || payload.length === 0) return null;
+    const raw = ((payload[0] as Record<string, unknown>)['payload'] as Record<string, unknown> | undefined) ?? (payload[0] as Record<string, unknown>);
+    const item = raw as Record<string, unknown>;
+    const name = (item.name as string) ?? ((payload[0] as Record<string, unknown>).name as string) ?? String(label ?? '');
+    const value = (item.value as number) ?? ((payload[0] as Record<string, unknown>).value as number) ?? 0;
+
+    return (
+        <div className="bg-card/90 border border-border rounded-lg text-sm text-foreground p-3 shadow-xl">
+            <div className="text-xs text-muted-foreground font-semibold">{name}</div>
+            <div className="mt-1 font-bold">{value} sessions</div>
         </div>
     );
 }

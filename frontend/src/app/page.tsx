@@ -162,12 +162,12 @@ function HomeContent() {
         finalUseResume = true;
       }
 
-      const result = await startInterview({ 
+        const result = await startInterview({ 
           role, 
           experienceLevel, 
           mode: 'text',
-          interviewStyle: interviewStyle as any,
-          companyStyle: companyStyle as any,
+          interviewStyle,
+          companyStyle,
           useResume: finalUseResume
       });
 
@@ -175,11 +175,12 @@ function HomeContent() {
       setCurrentQuestion(result.question);
       setQuestionNumber(1);
       setAppState('interview');
-    } catch (err: any) {
-      console.error('Error starting interview:', err);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Error starting interview:', msg);
 
       // Check if it's the specific limit error from the backend
-      if (err.message && err.message.includes('Limit reached')) {
+      if (msg.includes('Limit reached')) {
         // Determine limits based on plan type (though usually only FREE hits this)
         const limit = user?.planType === 'PRO' ? Infinity : 3;
         const used = user?.interviewsUsedThisMonth || 3;
@@ -187,7 +188,7 @@ function HomeContent() {
         setLimitData({ used, max: limit });
         setShowLimitModal(true);
       } else {
-        setError(err.message || 'Failed to start interview.');
+        setError(msg || 'Failed to start interview.');
       }
     } finally {
       setIsLoading(false);
@@ -232,8 +233,9 @@ function HomeContent() {
 
       setCurrentQuestion(result.nextQuestion);
       setQuestionNumber(result.questionNumber + 1);
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit answer');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || 'Failed to submit answer');
     } finally {
       setIsLoading(false);
     }
@@ -248,8 +250,9 @@ function HomeContent() {
       const finalReport = await completeInterview(sessionId);
       setReport(finalReport);
       setAppState('report');
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate report');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || 'Failed to generate report');
     } finally {
       setIsLoading(false);
     }
