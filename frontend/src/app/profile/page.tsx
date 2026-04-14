@@ -59,8 +59,9 @@ export default function ProfilePage() {
             await updateProfile(name);
             await refreshUser();
             toast.success('Profile updated successfully');
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to update profile');
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            toast.error(msg || 'Failed to update profile');
         } finally {
             setIsUpdatingProfile(false);
         }
@@ -92,8 +93,9 @@ export default function ProfilePage() {
                 toast.error('Failed to read image file');
                 setIsUploadingImage(false);
             };
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to upload image');
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            toast.error(msg || 'Failed to upload image');
             setIsUploadingImage(false);
         }
     };
@@ -122,8 +124,9 @@ export default function ProfilePage() {
             await changePassword(currentPassword, newPassword);
             toast.success('Password changed successfully');
             setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to change password');
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            toast.error(msg || 'Failed to change password');
         } finally {
             setIsChangingPassword(false);
         }
@@ -204,7 +207,7 @@ export default function ProfilePage() {
                                                                 accept="image/*"
                                                                 className="hidden"
                                                                 id="profileImageInput"
-                                                                ref={(el) => (fileInputRef.current = el)}
+                                                                ref={(el) => { fileInputRef.current = el; }}
                                                                 onChange={handleImageUpload}
                                                                 disabled={isUploadingImage}
                                                             />
