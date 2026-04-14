@@ -29,7 +29,7 @@ export default function RadarBreakdown({ skills, strongestDimension, weakestDime
     return (
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border/50">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-slate-200">Skill Breakdown</h3>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-foreground">Skill Breakdown</h3>
                 <p className="text-[10px] text-muted-foreground mt-0.5">5-dimension competency radar</p>
             </div>
             <CardContent className="p-4">
@@ -43,7 +43,7 @@ export default function RadarBreakdown({ skills, strongestDimension, weakestDime
                                 </linearGradient>
                             </defs>
                             <PolarGrid stroke="#444" strokeDasharray="3 3" />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'white', fontSize: 11, fontWeight: 600 }} />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 600 }} />
                             <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} stroke="#444" />
                             <Radar
                                 name="Score"
@@ -73,14 +73,14 @@ export default function RadarBreakdown({ skills, strongestDimension, weakestDime
                             <ArrowUpRight className="w-3.5 h-3.5" />
                             Strongest
                         </div>
-                        <div className="text-sm font-bold text-white">{strongestDimension}</div>
+                        <div className="text-sm font-bold text-foreground">{strongestDimension}</div>
                     </div>
                     <div className="flex-1 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
                         <div className="flex items-center gap-1.5 text-orange-400 text-[11px] font-bold uppercase tracking-wider mb-1">
                             <ArrowDownRight className="w-3.5 h-3.5" />
                             Weakest
                         </div>
-                        <div className="text-sm font-bold text-white">{weakestDimension}</div>
+                        <div className="text-sm font-bold text-foreground">{weakestDimension}</div>
                     </div>
                 </div>
             </CardContent>

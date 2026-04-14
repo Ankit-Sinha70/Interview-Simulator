@@ -134,7 +134,7 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="min-h-screen pt-24 pb-12 px-4 relative overflow-hidden">
+        <div className="min-h-screen pt-8 md:pt-24 pb-12 px-4 sm:px-6 relative overflow-hidden">
             {/* Background elements */}
             <div className="absolute top-0 left-0 w-full h-[500px] bg-violet-500/10 rounded-full blur-[120px] -translate-y-1/2 opacity-50 pointer-events-none" />
             <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[150px] translate-y-1/3 opacity-30 pointer-events-none" />
@@ -142,8 +142,8 @@ export default function ProfilePage() {
             <div className="max-w-4xl mx-auto space-y-8 relative z-10">
 
                 <div className="animate-fadeInUp" style={{ animationDelay: '0ms' }}>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-100">Account Settings</h1>
-                    <p className="text-slate-400 mt-2">Manage your profile, password, and subscription details.</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Account Settings</h1>
+                    <p className="text-muted-foreground mt-2">Manage your profile, password, and subscription details.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -151,15 +151,15 @@ export default function ProfilePage() {
                     {/* Left Column - Main Info */}
                     <div className="md:col-span-2 space-y-8">
                         {/* Profile Info Card */}
-                        <Card className="animate-fadeInUp bg-card/60 backdrop-blur-xl border-slate-700/50 shadow-2xl" style={{ animationDelay: '100ms' }}>
-                            <CardHeader className="flex flex-row items-center gap-6 pb-2">
+                        <Card className="animate-fadeInUp bg-card/70 backdrop-blur-xl border-border/60 shadow-2xl" style={{ animationDelay: '100ms' }}>
+                            <CardHeader className="flex flex-col sm:flex-row sm:items-center gap-6 pb-2">
                                 {/* Interactive Avatar */}
                                 <div className="relative group cursor-pointer">
-                                    <div className="w-28 h-28 rounded-xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center overflow-hidden relative">
+                                    <div className="w-28 h-28 rounded-xl bg-muted border-2 border-border flex items-center justify-center overflow-hidden relative">
                                         {user.profilePicture ? (
                                             <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
                                         ) : (
-                                            <UserIcon className="h-8 w-8 text-slate-400" />
+                                            <UserIcon className="h-8 w-8 text-muted-foreground" />
                                         )}
                                         {/* Hover Overlay */}
                                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -181,7 +181,7 @@ export default function ProfilePage() {
                                     <label htmlFor="profileImageInput" className="absolute inset-0 cursor-pointer rounded-full" />
                                 </div>
 
-                                <div>
+                                <div className="text-center sm:text-left">
                                     <CardTitle>Profile Information</CardTitle>
                                     <CardDescription>Update your personal details and avatar.</CardDescription>
                                 </div>
@@ -194,24 +194,24 @@ export default function ProfilePage() {
                                             id="name"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
-                                            className="bg-slate-900/50 border-slate-700 focus-visible:ring-violet-500"
+                                            className="bg-background/70 border-border focus-visible:ring-violet-500"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="email">Email Address <span className="text-xs text-muted-foreground ml-2">(Read-only)</span></Label>
                                         <div className="relative">
-                                            <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                             <Input
                                                 id="email"
                                                 value={user.email}
                                                 readOnly
-                                                className="pl-9 bg-slate-900/50 border-slate-700 opacity-70 cursor-not-allowed"
+                                                className="pl-9 bg-background/70 border-border opacity-70 cursor-not-allowed"
                                             />
                                         </div>
                                     </div>
                                 </CardContent>
-                                <CardFooter className="bg-slate-900/20 border-t border-slate-800 p-4">
-                                    <Button type="submit" disabled={isUpdatingProfile || name === user.name} className="bg-violet-600 hover:bg-violet-700 text-white ml-auto">
+                                <CardFooter className="bg-muted/30 border-t border-border p-4">
+                                    <Button type="submit" disabled={isUpdatingProfile || name === user.name} className="bg-violet-600 hover:bg-violet-700 text-white w-full sm:w-auto sm:ml-auto">
                                         {isUpdatingProfile ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Changes'}
                                     </Button>
                                 </CardFooter>
@@ -220,7 +220,7 @@ export default function ProfilePage() {
 
                         {/* Change Password Card - ONLY LOCAL USERS */}
                         {user.provider === 'local' && (
-                            <Card className="animate-fadeInUp bg-card/60 backdrop-blur-xl border-slate-700/50 shadow-2xl" style={{ animationDelay: '200ms' }}>
+                            <Card className="animate-fadeInUp bg-card/70 backdrop-blur-xl border-border/60 shadow-2xl" style={{ animationDelay: '200ms' }}>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Lock className="h-5 w-5 text-emerald-400" />
@@ -239,19 +239,19 @@ export default function ProfilePage() {
                                                     autoComplete="current-password"
                                                     value={passwords.currentPassword}
                                                     onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-                                                    className="bg-slate-900/50 border-slate-700 focus-visible:ring-emerald-500 pr-10"
+                                                    className="bg-background/70 border-border focus-visible:ring-emerald-500 pr-10"
                                                 />
                                                 <button
                                                     type="button"
                                                     disabled={!passwords.currentPassword}
                                                     onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${!passwords.currentPassword ? 'text-slate-600 cursor-not-allowed' : 'text-slate-400 hover:text-slate-300'}`}
+                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${!passwords.currentPassword ? 'text-muted-foreground/50 cursor-not-allowed' : 'text-muted-foreground hover:text-foreground'}`}
                                                 >
                                                     {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                                 </button>
                                             </div>
                                         </div>
-                                        <Separator className="my-4 border-slate-800" />
+                                        <Separator className="my-4 border-border" />
                                         <div className="space-y-2">
                                             <Label htmlFor="newPassword">New Password</Label>
                                             <div className="relative">
@@ -261,18 +261,18 @@ export default function ProfilePage() {
                                                     autoComplete="new-password"
                                                     value={passwords.newPassword}
                                                     onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                                                    className="bg-slate-900/50 border-slate-700 focus-visible:ring-emerald-500 pr-10"
+                                                    className="bg-background/70 border-border focus-visible:ring-emerald-500 pr-10"
                                                 />
                                                 <button
                                                     type="button"
                                                     disabled={!passwords.newPassword}
                                                     onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${!passwords.newPassword ? 'text-slate-600 cursor-not-allowed' : 'text-slate-400 hover:text-slate-300'}`}
+                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${!passwords.newPassword ? 'text-muted-foreground/50 cursor-not-allowed' : 'text-muted-foreground hover:text-foreground'}`}
                                                 >
                                                     {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-slate-500">Must be at least 8 characters, containing uppercase, lowercase, numbers, and symbols.</p>
+                                            <p className="text-xs text-muted-foreground">Must be at least 8 characters, containing uppercase, lowercase, and numbers.</p>
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="confirmPassword">Confirm New Password</Label>
@@ -283,21 +283,21 @@ export default function ProfilePage() {
                                                     autoComplete="new-password"
                                                     value={passwords.confirmPassword}
                                                     onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                                                    className="bg-slate-900/50 border-slate-700 focus-visible:ring-emerald-500 pr-10"
+                                                    className="bg-background/70 border-border focus-visible:ring-emerald-500 pr-10"
                                                 />
                                                 <button
                                                     type="button"
                                                     disabled={!passwords.confirmPassword}
                                                     onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${!passwords.confirmPassword ? 'text-slate-600 cursor-not-allowed' : 'text-slate-400 hover:text-slate-300'}`}
+                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${!passwords.confirmPassword ? 'text-muted-foreground/50 cursor-not-allowed' : 'text-muted-foreground hover:text-foreground'}`}
                                                 >
                                                     {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                                 </button>
                                             </div>
                                         </div>
                                     </CardContent>
-                                    <CardFooter className="bg-slate-900/20 border-t border-slate-800 p-4">
-                                        <Button type="submit" disabled={isChangingPassword || !passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword} className="bg-emerald-600 hover:bg-emerald-700 text-white ml-auto">
+                                    <CardFooter className="bg-muted/30 border-t border-border p-4">
+                                        <Button type="submit" disabled={isChangingPassword || !passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword} className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto sm:ml-auto">
                                             {isChangingPassword ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...</> : 'Update Password'}
                                         </Button>
                                     </CardFooter>
@@ -307,12 +307,12 @@ export default function ProfilePage() {
 
                         {/* Notice for OAuth Users */}
                         {user.provider !== 'local' && (
-                            <Card className="animate-fadeInUp bg-slate-900/40 border-slate-800 shadow-none border-dashed" style={{ animationDelay: '200ms' }}>
+                            <Card className="animate-fadeInUp bg-muted/30 border-border shadow-none border-dashed" style={{ animationDelay: '200ms' }}>
                                 <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
                                     <ShieldCheck className="h-8 w-8 text-blue-400" />
                                     <div>
-                                        <h3 className="font-semibold text-slate-200">Account Managed Securely</h3>
-                                        <p className="text-sm text-slate-400 max-w-sm mt-1">Your account uses {user.provider === 'google' ? 'Google' : 'Meta'} authentication. Password management is handled by your provider.</p>
+                                        <h3 className="font-semibold text-foreground">Account Managed Securely</h3>
+                                        <p className="text-sm text-muted-foreground max-w-sm mt-1">Your account uses {user.provider === 'google' ? 'Google' : 'Meta'} authentication. Password management is handled by your provider.</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -323,7 +323,7 @@ export default function ProfilePage() {
                     <div className="space-y-8">
 
                         {/* Connected Accounts */}
-                        <Card className="animate-fadeInUp bg-card/60 backdrop-blur-xl border-slate-700/50 shadow-xl" style={{ animationDelay: '150ms' }}>
+                        <Card className="animate-fadeInUp bg-card/70 backdrop-blur-xl border-border/60 shadow-xl" style={{ animationDelay: '150ms' }}>
                             <CardHeader>
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <ShieldCheck className="h-4 w-4 text-blue-400" />
@@ -332,7 +332,7 @@ export default function ProfilePage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    <div className={`flex items-center justify-between p-3 rounded-lg border ${user.provider === 'google' ? 'bg-blue-500/10 border-blue-500/30' : 'bg-slate-900/50 border-slate-800'}`}>
+                                    <div className={`flex items-center justify-between p-3 rounded-lg border ${user.provider === 'google' ? 'bg-blue-500/10 border-blue-500/30' : 'bg-muted/40 border-border'}`}>
                                         <div className="flex items-center gap-3">
                                             <div className="bg-white p-1 rounded-full">
                                                 <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -352,10 +352,10 @@ export default function ProfilePage() {
                                         )}
                                     </div>
 
-                                    <div className={`flex items-center justify-between p-3 rounded-lg border ${user.provider === 'local' ? 'bg-violet-500/10 border-violet-500/30' : 'bg-slate-900/50 border-slate-800'}`}>
+                                    <div className={`flex items-center justify-between p-3 rounded-lg border ${user.provider === 'local' ? 'bg-violet-500/10 border-violet-500/30' : 'bg-muted/40 border-border'}`}>
                                         <div className="flex items-center gap-3">
-                                            <div className="bg-slate-800 p-1 rounded-full">
-                                                <Mail className="w-4 h-4 text-slate-300" />
+                                            <div className="bg-muted p-1 rounded-full">
+                                                <Mail className="w-4 h-4 text-muted-foreground" />
                                             </div>
                                             <span className="text-sm font-medium">Email / Password</span>
                                         </div>
@@ -370,7 +370,7 @@ export default function ProfilePage() {
                         </Card>
 
                         {/* Subscription Summary */}
-                        <Card className="animate-fadeInUp bg-card/60 backdrop-blur-xl border-slate-700/50 shadow-xl" style={{ animationDelay: '250ms' }}>
+                        <Card className="animate-fadeInUp bg-card/70 backdrop-blur-xl border-border/60 shadow-xl" style={{ animationDelay: '250ms' }}>
                             <CardHeader>
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <CreditCard className="h-4 w-4 text-amber-400" />
@@ -378,22 +378,22 @@ export default function ProfilePage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="p-4 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700">
+                                <div className="p-4 rounded-xl bg-gradient-to-br from-background to-muted/70 border border-border">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm text-slate-400">Current Plan</span>
+                                        <span className="text-sm text-muted-foreground">Current Plan</span>
                                         <Badge variant={user.planType === 'PRO' ? 'default' : 'secondary'} className={user.planType === 'PRO' ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border-amber-500/30' : ''}>
                                             {user.planType}
                                         </Badge>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-slate-400">Status</span>
+                                        <span className="text-sm text-muted-foreground">Status</span>
                                         <div className="flex items-center gap-1.5 text-sm">
                                             {user.subscriptionStatus === 'ACTIVE' ? (
                                                 <><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> <span className="text-emerald-400">Active</span></>
                                             ) : user.subscriptionStatus === 'CANCELED' ? (
                                                 <><AlertCircle className="h-3.5 w-3.5 text-amber-400" /> <span className="text-amber-400">Canceled</span></>
                                             ) : user.planType === 'FREE' ? (
-                                                <span className="text-slate-300">Active (Free)</span>
+                                                <span className="text-foreground">Active (Free)</span>
                                             ) : (
                                                 <><AlertCircle className="h-3.5 w-3.5 text-red-400" /> <span className="text-red-400">{user.subscriptionStatus}</span></>
                                             )}
@@ -401,12 +401,12 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                <div className="text-xs text-center text-slate-500 space-y-1">
+                                <div className="text-xs text-center text-muted-foreground space-y-1">
                                     <p>Member since {formatDate(user.createdAt)}</p>
                                 </div>
                             </CardContent>
                             <CardFooter className="pt-0">
-                                <Button variant="outline" className="w-full border-slate-700 hover:bg-slate-800" onClick={() => router.push('/settings')}>
+                                <Button variant="outline" className="w-full border-border hover:bg-accent" onClick={() => router.push('/settings')}>
                                     Manage Subscription
                                 </Button>
                             </CardFooter>

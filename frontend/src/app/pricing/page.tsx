@@ -59,7 +59,7 @@ export default function PricingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#030014] text-white pt-24 pb-12 px-4 relative overflow-hidden">
+        <div className="min-h-screen bg-background text-foreground pt-24 pb-12 px-4 relative overflow-hidden">
             {/* Background elements */}
             <div className="fixed top-0 inset-x-0 h-[500px] bg-gradient-to-b from-violet-500/10 via-transparent to-transparent -z-10" />
             <div className="fixed top-[-20%] right-[-10%] w-[50%] h-[50%] bg-violet-500/10 blur-[120px] rounded-full -z-10 mix-blend-screen" />
@@ -70,7 +70,7 @@ export default function PricingPage() {
                     <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] bg-clip-text text-transparent mb-4">
                         Choose Your Plan
                     </h1>
-                    <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
+                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                         Take your interview prep to the next level. Save more by committing longer.
                     </p>
                 </div>
@@ -79,7 +79,7 @@ export default function PricingPage() {
                     {fetching ? (
                         <div className="flex flex-col items-center justify-center py-24 gap-4">
                             <Loader2 className="h-10 w-10 animate-spin text-[var(--accent-violet)]" />
-                            <p className="text-zinc-400 animate-pulse">Loading pricing options...</p>
+                            <p className="text-muted-foreground animate-pulse">Loading pricing options...</p>
                         </div>
                     ) : (
                         <>
@@ -105,18 +105,18 @@ export default function PricingPage() {
                                         <div
                                             key={plan._id}
                                             onClick={() => setSelectedCycle(plan.billingCycle)}
-                                            className={`cursor-pointer rounded-2xl p-6 border relative overflow-hidden transition-all duration-300 ${isSelected ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 ring-2 ring-[var(--accent-violet)]/50 transform scale-[1.02]' : 'border-border/50 hover:border-border hover:bg-white/5 bg-zinc-900/50'}`}
+                                            className={`cursor-pointer rounded-2xl p-6 border relative overflow-hidden transition-all duration-300 ${isSelected ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 ring-2 ring-[var(--accent-violet)]/50 transform scale-[1.02]' : 'border-border/50 hover:border-border hover:bg-accent/60 bg-background/70'}`}
                                         >
                                             {plan.billingCycle === 'QUARTERLY' && <div className="absolute top-0 right-0 bg-[var(--accent-violet)] text-white text-[11px] uppercase font-bold px-3 py-1.5 rounded-bl-2xl tracking-wider shadow-lg">Popular</div>}
                                             {plan.billingCycle === 'YEARLY' && <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[11px] uppercase font-bold px-3 py-1.5 rounded-bl-2xl tracking-wider shadow-lg">Best Value</div>}
 
-                                            <h4 className="font-semibold text-zinc-100 mb-1 text-xl">
+                                            <h4 className="font-semibold text-foreground mb-1 text-xl">
                                                 {titleRecord[plan.billingCycle]}
                                             </h4>
 
                                             <div className="flex items-baseline gap-1 mt-3">
-                                                <span className="text-4xl font-extrabold text-white">${plan.price}</span>
-                                                <span className="text-sm font-medium text-zinc-400">/{plan.durationMonths === 1 ? 'mo' : plan.durationMonths === 12 ? 'yr' : `${plan.durationMonths} mo`}</span>
+                                                <span className="text-4xl font-extrabold text-foreground">${plan.price}</span>
+                                                <span className="text-sm font-medium text-muted-foreground">/{plan.durationMonths === 1 ? 'mo' : plan.durationMonths === 12 ? 'yr' : `${plan.durationMonths} mo`}</span>
                                             </div>
 
                                             <div className="h-14 mt-4 flex flex-col justify-center border-t border-border/50 pt-3">
@@ -126,13 +126,13 @@ export default function PricingPage() {
                                                             Equivalent to ${monthlyEquivalent}/mo
                                                         </div>
                                                         {annualSavings > 0 && (
-                                                            <div className="text-sm text-zinc-400 mt-1">
+                                                            <div className="text-sm text-muted-foreground mt-1">
                                                                 You save <span className="text-emerald-400 font-bold">${Math.round(annualSavings)}</span> annually
                                                             </div>
                                                         )}
                                                     </>
                                                 ) : (
-                                                    <div className="text-sm text-zinc-400">
+                                                    <div className="text-sm text-muted-foreground">
                                                         Flexible month-to-month
                                                     </div>
                                                 )}
@@ -155,7 +155,7 @@ export default function PricingPage() {
                                         </>
                                     ) : 'Continue to Payment'}
                                 </Button>
-                                <p className="text-xs text-zinc-500 mt-4 flex items-center justify-center gap-1.5">
+                                <p className="text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1.5">
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" /></svg>
                                     Payments are securely processed by Stripe.
                                 </p>

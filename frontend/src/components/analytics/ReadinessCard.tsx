@@ -60,7 +60,7 @@ export default function ReadinessCard({
             <CardContent className="p-6 md:p-8 relative z-10 flex flex-col gap-6">
                 {/* Headline Section */}
                 <div>
-                    <h3 className="text-2xl font-bold text-white">
+                    <h3 className="text-2xl font-bold text-foreground">
                         You are <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-500">{readinessScore}%</span> ready
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">Based on your recent interview performance metrics.</p>
@@ -91,16 +91,16 @@ export default function ReadinessCard({
                                     style={{ filter: `drop-shadow(0 0 8px ${gaugeColor}40)` }}
                                 />
                                 {/* Score text */}
-                                <text x="100" y="90" textAnchor="middle" className="fill-white text-3xl font-black" fontSize="36">
+                                <text x="100" y="90" textAnchor="middle" className="fill-[hsl(var(--foreground))] text-3xl font-black" fontSize="36">
                                     {readinessScore}
                                 </text>
-                                <text x="100" y="105" textAnchor="middle" className="fill-slate-400" fontSize="11">
+                                <text x="100" y="105" textAnchor="middle" className="fill-[hsl(var(--muted-foreground))]" fontSize="11">
                                     / 100
                                 </text>
                             </svg>
                         </div>
                         <div className="text-center">
-                            <h2 className="text-lg font-bold text-white mb-2">Overall Score</h2>
+                            <h2 className="text-lg font-bold text-foreground mb-2">Overall Score</h2>
                             <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${trendColor}`}>
                                 {trendIcon}
                                 {trend}
@@ -111,7 +111,7 @@ export default function ReadinessCard({
                     {/* Breakdown Bars */}
                     <div className="flex flex-col gap-4 w-full lg:w-1/3">
                         <div className="space-y-1.5">
-                            <div className="flex justify-between text-xs font-semibold text-slate-300">
+                            <div className="flex justify-between text-xs font-semibold text-foreground/80">
                                 <span>Technical Mastery</span>
                                 <span>{skills?.technical || 0}/10</span>
                             </div>
@@ -120,7 +120,7 @@ export default function ReadinessCard({
                             </div>
                         </div>
                         <div className="space-y-1.5">
-                            <div className="flex justify-between text-xs font-semibold text-slate-300">
+                            <div className="flex justify-between text-xs font-semibold text-foreground/80">
                                 <span>Problem Solving</span>
                                 <span>{skills?.problemSolving || 0}/10</span>
                             </div>
@@ -129,7 +129,7 @@ export default function ReadinessCard({
                             </div>
                         </div>
                         <div className="space-y-1.5">
-                            <div className="flex justify-between text-xs font-semibold text-slate-300">
+                            <div className="flex justify-between text-xs font-semibold text-foreground/80">
                                 <span>Communication</span>
                                 <span>{skills?.communication || 0}/10</span>
                             </div>
@@ -144,12 +144,12 @@ export default function ReadinessCard({
                         {subMetrics.map((metric) => (
                             <div
                                 key={metric.label}
-                                className="group p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-all duration-300"
+                                className="group p-4 rounded-xl bg-background/70 border border-border/60 hover:bg-accent/60 transition-all duration-300"
                             >
                                 <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${metric.color} flex items-center justify-center mb-2.5 shadow-lg group-hover:scale-110 transition-transform`}>
                                     <metric.icon className="w-4 h-4 text-white" />
                                 </div>
-                                <div className="text-2xl font-black text-white">{metric.value}</div>
+                                <div className="text-2xl font-black text-foreground">{metric.value}</div>
                                 <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">{metric.label}</div>
                             </div>
                         ))}

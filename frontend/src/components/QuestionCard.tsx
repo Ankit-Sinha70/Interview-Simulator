@@ -51,7 +51,7 @@ export default function QuestionCard({ question, questionNumber, trend }: Questi
                             <span 
                                 className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${
                                     trend === 'up' ? 'text-[var(--accent-teal)]' : 
-                                    trend === 'down' ? 'text-red-400' : 'text-zinc-500'
+                                    trend === 'down' ? 'text-red-400' : 'text-muted-foreground'
                                 }`}
                                 title={trend === 'up' ? 'Difficulty Increased' : trend === 'down' ? 'Difficulty Decreased' : 'Difficulty Maintained'}
                             >
@@ -60,7 +60,7 @@ export default function QuestionCard({ question, questionNumber, trend }: Questi
                         )}
                         {/* Level Score Indicator */}
                         {question.levelScore && (
-                            <span className="text-xs text-zinc-400 font-medium tabular-nums ml-2">
+                            <span className="text-xs text-muted-foreground font-medium tabular-nums ml-2">
                                 Lv.{question.levelScore}
                             </span>
                         )}

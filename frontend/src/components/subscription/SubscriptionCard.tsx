@@ -25,9 +25,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
     },
     CANCELED: {
         label: 'Canceled',
-        color: 'text-zinc-400',
-        bg: 'bg-zinc-700/30',
-        border: 'border-zinc-600/25',
+        color: 'text-muted-foreground',
+        bg: 'bg-muted/50',
+        border: 'border-border/60',
         icon: <XCircle className="w-3.5 h-3.5" />,
     },
     REFUNDED: {
@@ -182,14 +182,14 @@ export default function SubscriptionCard() {
     return (
         <div className="rounded-2xl bg-card/50 border border-border/50 overflow-hidden">
             {/* Header */}
-            <div className={`px-6 py-4 flex items-center justify-between bg-gradient-to-r ${isPro ? 'from-violet-500/10 to-indigo-500/5' : 'from-zinc-800/50 to-zinc-900/30'} border-b border-border/50`}>
+            <div className={`px-6 py-4 flex items-center justify-between bg-gradient-to-r ${isPro ? 'from-violet-500/10 to-indigo-500/5' : 'from-muted/70 to-background/70'} border-b border-border/50`}>
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isPro ? 'bg-violet-500/15' : 'bg-zinc-700/40'}`}>
-                        <CreditCard className={`w-5 h-5 ${isPro ? 'text-violet-400' : 'text-zinc-400'}`} />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isPro ? 'bg-violet-500/15' : 'bg-muted'}`}>
+                        <CreditCard className={`w-5 h-5 ${isPro ? 'text-violet-400' : 'text-muted-foreground'}`} />
                     </div>
                     <div>
                         <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Current Plan</p>
-                        <h3 className={`text-xl font-black ${isPro ? 'text-violet-300' : 'text-zinc-300'}`}>
+                        <h3 className={`text-xl font-black ${isPro ? 'text-violet-300' : 'text-foreground'}`}>
                             {isPro ? (sub.billingCycle ? `✦ Pro (${getPlanLabel(sub.billingCycle)})` : '✦ Pro') : 'Free'}
                         </h3>
                     </div>
@@ -225,16 +225,16 @@ export default function SubscriptionCard() {
                 {isPro && sub.currentPeriodStart && sub.currentPeriodEnd ? (
                     <div className="space-y-4">
                         {/* Date grid */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-zinc-800/40 rounded-xl p-3.5 border border-zinc-700/40 space-y-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="bg-background/70 rounded-xl p-3.5 border border-border/60 space-y-1">
                                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Started On</p>
-                                <p className="text-sm font-bold text-white">{formatDate(sub.currentPeriodStart)}</p>
+                                <p className="text-sm font-bold text-foreground">{formatDate(sub.currentPeriodStart)}</p>
                             </div>
-                            <div className="bg-zinc-800/40 rounded-xl p-3.5 border border-zinc-700/40 space-y-1">
+                            <div className="bg-background/70 rounded-xl p-3.5 border border-border/60 space-y-1">
                                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
                                     {sub.cancelAtPeriodEnd ? 'Ends On' : 'Renews On'}
                                 </p>
-                                <p className="text-sm font-bold text-white">{formatDate(sub.currentPeriodEnd)}</p>
+                                <p className="text-sm font-bold text-foreground">{formatDate(sub.currentPeriodEnd)}</p>
                             </div>
                         </div>
 
@@ -246,9 +246,9 @@ export default function SubscriptionCard() {
                                         <Clock className="w-3 h-3" />
                                         <span>Billing Period</span>
                                     </div>
-                                    <span className="font-bold text-white">{sub.daysRemaining} days remaining</span>
+                                    <span className="font-bold text-foreground">{sub.daysRemaining} days remaining</span>
                                 </div>
-                                <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
+                                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                                     <div
                                         className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-700"
                                         style={{ width: `${progressPct}%` }}
@@ -264,17 +264,17 @@ export default function SubscriptionCard() {
                         {/* Billing timeline */}
                         <div className="space-y-2">
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Billing Timeline</p>
-                            <div className="flex items-center gap-3 relative">
+                            <div className="flex items-center gap-3 relative overflow-x-auto pb-1">
                                 <div className="flex flex-col items-center gap-1 text-center min-w-[80px]">
                                     <div className="w-2.5 h-2.5 rounded-full bg-violet-500" />
-                                    <p className="text-[10px] text-zinc-400">{formatDate(sub.currentPeriodStart)}</p>
-                                    <p className="text-[10px] text-zinc-500">Started</p>
+                                    <p className="text-[10px] text-muted-foreground">{formatDate(sub.currentPeriodStart)}</p>
+                                    <p className="text-[10px] text-muted-foreground">Started</p>
                                 </div>
                                 <div className="flex-1 h-px bg-gradient-to-r from-violet-500/50 to-indigo-500/50" />
                                 <div className="flex flex-col items-center gap-1 text-center min-w-[80px]">
                                     <div className={`w-2.5 h-2.5 rounded-full ${sub.cancelAtPeriodEnd ? 'bg-amber-400' : 'bg-indigo-400'}`} />
-                                    <p className="text-[10px] text-zinc-400">{formatDate(sub.currentPeriodEnd)}</p>
-                                    <p className="text-[10px] text-zinc-500">{sub.cancelAtPeriodEnd ? 'Ends' : 'Renews'}</p>
+                                    <p className="text-[10px] text-muted-foreground">{formatDate(sub.currentPeriodEnd)}</p>
+                                    <p className="text-[10px] text-muted-foreground">{sub.cancelAtPeriodEnd ? 'Ends' : 'Renews'}</p>
                                 </div>
                             </div>
                         </div>
@@ -293,20 +293,20 @@ export default function SubscriptionCard() {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1.5">
                         <TrendingUp className="w-3 h-3" /> Usage This Month
                     </p>
-                    <div className="bg-zinc-800/40 rounded-xl p-4 border border-zinc-700/40">
+                    <div className="bg-background/70 rounded-xl p-4 border border-border/60">
                         {sub.usage.interviewsLimit === 'UNLIMITED' ? (
                             <div className="flex items-center gap-2">
                                 <Zap className="w-4 h-4 text-violet-400" />
-                                <span className="text-sm font-bold text-white">Unlimited Interviews</span>
-                                <span className="text-xs text-zinc-500">({sub.usage.interviewsUsed} completed this month)</span>
+                                <span className="text-sm font-bold text-foreground">Unlimited Interviews</span>
+                                <span className="text-xs text-muted-foreground">({sub.usage.interviewsUsed} completed this month)</span>
                             </div>
                         ) : (
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-zinc-400">Interviews Used</span>
-                                    <span className="font-bold text-white">{sub.usage.interviewsUsed} / {sub.usage.interviewsLimit}</span>
+                                    <span className="text-muted-foreground">Interviews Used</span>
+                                    <span className="font-bold text-foreground">{sub.usage.interviewsUsed} / {sub.usage.interviewsLimit}</span>
                                 </div>
-                                <div className="h-1.5 w-full rounded-full bg-zinc-700 overflow-hidden">
+                                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                                     <div
                                         className={`h-full rounded-full transition-all duration-700 ${sub.usage.interviewsUsed >= (sub.usage.interviewsLimit as number) ? 'bg-red-500' : 'bg-emerald-500'}`}
                                         style={{ width: `${Math.min(100, (sub.usage.interviewsUsed / (sub.usage.interviewsLimit as number)) * 100)}%` }}
@@ -317,7 +317,7 @@ export default function SubscriptionCard() {
 
                         {/* Upgrade Nudge Banner for Monthly Users */}
                         {isPro && sub.billingCycle === 'MONTHLY' && !sub.cancelAtPeriodEnd && sub.status === 'ACTIVE' && (
-                            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-500/10 to-indigo-500/10 border border-violet-500/20">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-500/10 to-indigo-500/10 border border-violet-500/20">
                                 <div className="flex items-center gap-3">
                                     <ArrowUpCircle className="w-5 h-5 text-violet-400 shrink-0" />
                                     <div>
@@ -325,8 +325,8 @@ export default function SubscriptionCard() {
                                         <p className="text-xs text-violet-300/80">Upgrade to a Yearly plan today.</p>
                                     </div>
                                 </div>
-                                <Link href="/pricing">
-                                    <button className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-lg shadow-violet-500/20 transition-all">
+                                <Link href="/pricing" className="w-full sm:w-auto">
+                                    <button className="w-full px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-lg shadow-violet-500/20 transition-all">
                                         Upgrade
                                     </button>
                                 </Link>
@@ -340,7 +340,7 @@ export default function SubscriptionCard() {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Your Plan Includes</p>
                     <div className="space-y-1.5">
                         {benefits.map((b, i) => (
-                            <div key={i} className={`flex items-center gap-2.5 text-sm ${b.included ? 'text-zinc-300' : 'text-zinc-600'}`}>
+                            <div key={i} className={`flex items-center gap-2.5 text-sm ${b.included ? 'text-foreground/80' : 'text-muted-foreground/60'}`}>
                                 {b.included
                                     ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                                     : <Lock className="w-3.5 h-3.5 shrink-0" />
@@ -352,7 +352,7 @@ export default function SubscriptionCard() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3 pt-2 border-t border-border/50">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 pt-2 border-t border-border/50">
                     {isPro ? (
                         sub.hasStripeId || sub.currentPeriodStart ? (
                             <>
@@ -360,7 +360,7 @@ export default function SubscriptionCard() {
                                     <button
                                         onClick={handleManageBilling}
                                         disabled={portalLoading}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 text-violet-300 text-sm font-semibold transition-all disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 text-violet-300 text-sm font-semibold transition-all disabled:opacity-50"
                                     >
                                         {portalLoading
                                             ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -373,7 +373,7 @@ export default function SubscriptionCard() {
                                     <button
                                         onClick={handleResume}
                                         disabled={resumeLoading}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-sm font-semibold transition-all disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-sm font-semibold transition-all disabled:opacity-50"
                                     >
                                         {resumeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
                                         Resume Subscription
@@ -382,7 +382,7 @@ export default function SubscriptionCard() {
                                 <button
                                     onClick={handleManageBilling}
                                     disabled={portalLoading}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-700/30 hover:bg-zinc-700/50 border border-zinc-600/30 text-zinc-400 text-sm font-semibold transition-all disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-muted/60 hover:bg-accent border border-border/60 text-muted-foreground text-sm font-semibold transition-all disabled:opacity-50"
                                 >
                                     {!sub.cancelAtPeriodEnd && 'Cancel Subscription'}
                                     {sub.cancelAtPeriodEnd && 'Billing Portal'}
@@ -399,7 +399,7 @@ export default function SubscriptionCard() {
                                         <button
                                             onClick={handleRefundClick}
                                             disabled={refundLoading}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-semibold transition-all disabled:opacity-50"
+                                            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-semibold transition-all disabled:opacity-50"
                                         >
                                             {refundLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Undo2 className="w-3.5 h-3.5" />}
                                             Request Refund
@@ -412,7 +412,7 @@ export default function SubscriptionCard() {
                         )
                     ) : (
                         <Link href="/pricing">
-                            <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-violet-500/20 transition-all">
+                            <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-violet-500/20 transition-all">
                                 <Zap className="w-4 h-4" />
                                 Upgrade to Pro
                             </button>

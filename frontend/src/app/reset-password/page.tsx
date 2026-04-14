@@ -242,12 +242,12 @@ function ResetPasswordContent() {
 
                         {/* Password Strength Checklist */}
                         {password.length > 0 && (
-                            <div className="space-y-1.5 p-3 rounded-xl bg-zinc-800/40 border border-zinc-700/40">
+                            <div className="space-y-1.5 p-3 rounded-xl bg-background/70 border border-border/60">
                                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">Password Requirements</p>
                                 {PASSWORD_RULES.map((rule, i) => {
                                     const passes = rule.test(password);
                                     return (
-                                        <div key={i} className={`flex items-center gap-2 text-xs ${passes ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                                        <div key={i} className={`flex items-center gap-2 text-xs ${passes ? 'text-emerald-400' : 'text-muted-foreground'}`}>
                                             {passes
                                                 ? <CheckCircle className="w-3.5 h-3.5 shrink-0" />
                                                 : <XCircle className="w-3.5 h-3.5 shrink-0" />

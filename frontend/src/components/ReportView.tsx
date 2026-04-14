@@ -123,7 +123,7 @@ export default function ReportView({ report, scores, onNewSession, onReplay, att
                             </CardHeader>
                             <CardContent className="h-[300px] w-full flex items-center justify-center">
                                 {/* Static placeholder for blur */}
-                                <div className="w-full h-full bg-slate-800/20 rounded-full border border-slate-700/30 flex items-center justify-center opacity-50">
+                                <div className="w-full h-full bg-muted/40 rounded-full border border-border/50 flex items-center justify-center opacity-50">
                                     <div className="w-3/4 h-3/4 bg-violet-500/10 rounded-full border border-violet-500/20" />
                                 </div>
                             </CardContent>
@@ -230,8 +230,8 @@ export default function ReportView({ report, scores, onNewSession, onReplay, att
                                                     if (active && payload && payload.length) {
                                                         const data = payload[0].payload;
                                                         return (
-                                                            <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-                                                                <p className="font-bold text-slate-200 mb-1">Question {data.questionIndex}</p>
+                                                            <div className="bg-card border border-border p-3 rounded-lg shadow-xl">
+                                                                <p className="font-bold text-foreground mb-1">Question {data.questionIndex}</p>
                                                                 <p className="text-violet-400 text-sm">Time: <span className="font-bold">{data.timeSeconds}s</span></p>
                                                                 <p className="text-emerald-400 text-sm">Score: <span className="font-bold">{data.score}/10</span></p>
                                                             </div>
@@ -247,11 +247,11 @@ export default function ReportView({ report, scores, onNewSession, onReplay, att
 
                                 {/* Insights */}
                                 {report.timeAnalysis.insights && report.timeAnalysis.insights.length > 0 && (
-                                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
-                                        <h4 className="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">💡 Efficiency Insights</h4>
+                                    <div className="bg-background/70 rounded-lg p-4 border border-border/60">
+                                        <h4 className="text-sm font-bold text-foreground/80 mb-3 uppercase tracking-wider">💡 Efficiency Insights</h4>
                                         <ul className="space-y-2">
                                             {report.timeAnalysis.insights.map((insight, i) => (
-                                                <li key={i} className="flex gap-2 text-sm text-slate-400">
+                                                <li key={i} className="flex gap-2 text-sm text-muted-foreground">
                                                     <span className="text-violet-400">•</span> {insight}
                                                 </li>
                                             ))}
@@ -273,7 +273,7 @@ export default function ReportView({ report, scores, onNewSession, onReplay, att
                                         <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10 h-[72px]" />
                                         <div className="p-3 bg-[var(--accent-violet)]/5 rounded-lg border border-[var(--accent-violet)]/10 h-[72px]" />
                                     </div>
-                                    <div className="h-[250px] w-full bg-slate-800/20 rounded-lg border border-slate-700/30" />
+                                    <div className="h-[250px] w-full bg-muted/40 rounded-lg border border-border/50" />
                                 </CardContent>
                             </Card>
                         </LockedSection>
@@ -351,8 +351,8 @@ export default function ReportView({ report, scores, onNewSession, onReplay, att
                                                 {i + 1}
                                             </div>
                                             <div className="space-y-2 flex-1 pt-1">
-                                                <div className="h-4 w-full bg-slate-800/50 rounded" />
-                                                <div className="h-4 w-3/4 bg-slate-800/50 rounded" />
+                                                <div className="h-4 w-full bg-muted/60 rounded" />
+                                                <div className="h-4 w-3/4 bg-muted/60 rounded" />
                                             </div>
                                         </div>
                                         {i < 2 && <Separator className="bg-border" />}
@@ -408,7 +408,7 @@ export default function ReportView({ report, scores, onNewSession, onReplay, att
                         onClick={onReplay}
                         size="lg"
                         variant="outline"
-                        className="flex-1 py-6 text-base font-bold bg-zinc-900 border-zinc-700 hover:bg-zinc-800 transition-all duration-300"
+                        className="flex-1 py-6 text-base font-bold bg-card border-border hover:bg-accent transition-all duration-300"
                     >
                         ▶ Replay Interview
                     </Button>

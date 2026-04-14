@@ -33,10 +33,10 @@ export function SuccessDialog({
     return (
         <div
             className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${isOpen ? 'opacity-100 backdrop-blur-sm' : 'opacity-0 backdrop-blur-none'}`}
-            style={{ backgroundColor: 'rgba(11, 8, 22, 0.8)' }}
+            style={{ backgroundColor: 'hsl(var(--background) / 0.8)' }}
         >
             <div
-                className={`relative w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#120f22] p-8 text-center shadow-2xl transition-all duration-300 ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}
+                className={`relative w-full max-w-md overflow-hidden rounded-3xl border border-border/70 bg-card p-8 text-center shadow-2xl transition-all duration-300 ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}
             >
                 {/* Decorative elements */}
                 <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-[#6d5ae6]/20 blur-[50px]" />
@@ -66,11 +66,11 @@ export function SuccessDialog({
                     </svg>
                 </div>
 
-                <h2 className="mb-3 text-2xl font-bold text-white tracking-tight">
+                <h2 className="mb-3 text-2xl font-bold text-foreground tracking-tight">
                     {title}
                 </h2>
 
-                <p className="mb-8 text-slate-400 text-[15px] leading-relaxed">
+                <p className="mb-8 text-muted-foreground text-[15px] leading-relaxed">
                     {description}
                 </p>
 

@@ -81,7 +81,7 @@ export default function SessionIntegrity({ sessionIntegrity }: SessionIntegrityP
                         <Shield className="w-5 h-5 text-violet-400" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-white tracking-tight">Session Integrity</h3>
+                        <h3 className="text-lg font-bold text-foreground tracking-tight">Session Integrity</h3>
                         <p className="text-xs text-muted-foreground">Completion behavior & patterns</p>
                     </div>
                 </div>
@@ -126,7 +126,7 @@ export default function SessionIntegrity({ sessionIntegrity }: SessionIntegrityP
                         </ResponsiveContainer>
                         {/* Center Label */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-3xl font-black text-white">{100 - abandonRate}%</span>
+                            <span className="text-3xl font-black text-foreground">{100 - abandonRate}%</span>
                             <span className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase">Complete</span>
                         </div>
                     </div>
@@ -135,11 +135,11 @@ export default function SessionIntegrity({ sessionIntegrity }: SessionIntegrityP
                     <div className="flex gap-6 mt-3">
                         <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                            <span className="text-xs text-zinc-400">Completed ({completedSessions})</span>
+                            <span className="text-xs text-muted-foreground">Completed ({completedSessions})</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-red-500" />
-                            <span className="text-xs text-zinc-400">Abandoned ({abandonedSessions})</span>
+                            <span className="text-xs text-muted-foreground">Abandoned ({abandonedSessions})</span>
                         </div>
                     </div>
                 </div>
@@ -177,17 +177,17 @@ export default function SessionIntegrity({ sessionIntegrity }: SessionIntegrityP
             {abandonedSessions > 0 && (
                 <div className="flex flex-wrap gap-3">
                     {avgScoreBeforeAbandon > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-800/50 border border-zinc-700/50 text-xs">
-                            <ArrowRight className="w-3.5 h-3.5 text-zinc-500" />
-                            <span className="text-zinc-400">Avg score before abandon:</span>
-                            <span className="text-white font-bold">{avgScoreBeforeAbandon}/10</span>
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-background/70 border border-border/60 text-xs">
+                            <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span className="text-muted-foreground">Avg score before abandon:</span>
+                            <span className="text-foreground font-bold">{avgScoreBeforeAbandon}/10</span>
                         </div>
                     )}
                     {avgFocusBeforeAbandon > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-800/50 border border-zinc-700/50 text-xs">
-                            <ArrowRight className="w-3.5 h-3.5 text-zinc-500" />
-                            <span className="text-zinc-400">Avg focus before abandon:</span>
-                            <span className="text-white font-bold">{avgFocusBeforeAbandon}%</span>
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-background/70 border border-border/60 text-xs">
+                            <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span className="text-muted-foreground">Avg focus before abandon:</span>
+                            <span className="text-foreground font-bold">{avgFocusBeforeAbandon}%</span>
                         </div>
                     )}
                 </div>
@@ -198,7 +198,7 @@ export default function SessionIntegrity({ sessionIntegrity }: SessionIntegrityP
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
                     <Trophy className="w-5 h-5 text-amber-400" />
                     <div>
-                        <p className="text-sm font-bold text-white">
+                        <p className="text-sm font-bold text-foreground">
                             🏅 {completionStreak} Interviews Completed Without Abandoning
                         </p>
                         <p className="text-[11px] text-amber-400/70">Keep up the discipline for better analytics!</p>
@@ -215,9 +215,9 @@ export default function SessionIntegrity({ sessionIntegrity }: SessionIntegrityP
                     </div>
                     <div className="space-y-1.5">
                         {insights.map((insight, i) => (
-                            <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-zinc-800/30 border border-zinc-800/50">
+                            <div key={i} className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-background/60 border border-border/50">
                                 <span className="text-violet-400 mt-0.5 text-xs">●</span>
-                                <p className="text-sm text-zinc-300 leading-relaxed">{insight}</p>
+                                <p className="text-sm text-foreground/80 leading-relaxed">{insight}</p>
                             </div>
                         ))}
                     </div>
@@ -229,7 +229,7 @@ export default function SessionIntegrity({ sessionIntegrity }: SessionIntegrityP
 
 function StatCard({ label, value, color, bg }: { label: string; value: string; color: string; bg: string }) {
     return (
-        <div className={`${bg} rounded-xl p-3.5 border border-zinc-800/50 space-y-1`}>
+        <div className={`${bg} rounded-xl p-3.5 border border-border/50 space-y-1`}>
             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{label}</p>
             <p className={`text-xl font-black ${color}`}>{value}</p>
         </div>

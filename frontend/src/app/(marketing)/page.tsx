@@ -10,82 +10,75 @@ import { Check, ArrowRight, Play } from 'lucide-react';
 export default function LandingPage() {
     return (
         <div className="min-h-screen bg-background text-foreground font-sans">
-
-            {/* Navbar */}
             <nav className="border-b border-border/40 backdrop-blur-md sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="text-xl font-bold bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] bg-clip-text text-transparent">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+                    <div className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] bg-clip-text text-transparent">
                         Interview AI
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
                         <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">Sign In</Link>
                         <Link href="/interview/start">
-                            <Button size="sm" className="rounded-full px-6">Get Started</Button>
+                            <Button size="sm" className="rounded-full px-4 sm:px-6">Get Started</Button>
                         </Link>
                     </div>
                 </div>
             </nav>
 
-            {/* Hero */}
-            <section className="relative pt-20 pb-32 px-6 overflow-hidden">
+            <section className="relative pt-16 sm:pt-20 pb-20 sm:pb-32 px-4 sm:px-6 overflow-hidden">
                 <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in-up">
                     <Badge variant="outline" className="px-4 py-1 rounded-full border-[var(--accent-violet)]/30 bg-[var(--accent-violet)]/5 text-[var(--accent-violet)] mb-4 animate-float">
-                        🚀 Now with Voice Analysis
+                        Now with Voice Analysis
                     </Badge>
-                    <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight">
-                        Master Your Next <br />
+                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight leading-tight">
+                        Master Your Next <br className="hidden sm:block" />
                         <span className="text-gradient-hero">Technical Interview</span>
                     </h1>
-                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                         Practice with an adaptive AI that challenges you with real-world scenarios, analyzes your voice, and gives strict, actionable feedback.
                     </p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                        <Link href="/interview/start">
-                            <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-xl shadow-[var(--accent-violet)]/20 hover:scale-105 transition-transform bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)]">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 pt-2 sm:pt-4">
+                        <Link href="/interview/start" className="w-full sm:w-auto">
+                            <Button size="lg" className="w-full h-13 sm:h-14 px-6 sm:px-8 text-base sm:text-lg rounded-full shadow-xl shadow-[var(--accent-violet)]/20 hover:scale-105 transition-transform bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)]">
                                 Start Free Interview <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
                         </Link>
-                        <Button variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full border-2 hover:bg-muted/50">
+                        <Button variant="outline" size="lg" className="w-full sm:w-auto h-13 sm:h-14 px-6 sm:px-8 text-base sm:text-lg rounded-full border-2 hover:bg-muted/50">
                             <Play className="mr-2 h-4 w-4" /> Watch Demo
                         </Button>
                     </div>
                 </div>
 
-                {/* Background Gradients */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[var(--accent-violet)]/10 rounded-full blur-[120px] -z-10" />
             </section>
 
-            {/* Features Grid */}
             <section className="py-24 bg-muted/20">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="bg-background/50 backdrop-blur-sm border border-border/50 rounded-3xl p-8 md:p-12 shadow-2xl">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                    <div className="bg-background/50 backdrop-blur-sm border border-border/50 rounded-3xl p-6 sm:p-8 md:p-12 shadow-2xl">
                         <div className="grid md:grid-cols-3 gap-12">
                             <Feature
-                                icon="🎯"
+                                icon="Target"
                                 title="Adaptive Questioning"
                                 desc="The AI adjusts difficulty in real-time based on the quality of your answers."
                             />
                             <Feature
-                                icon="🎤"
+                                icon="Voice"
                                 title="Voice Confidence"
                                 desc="Get feedback on your tone, pacing, filler words, and communication clarity."
                             />
                             <Feature
-                                icon="📊"
+                                icon="Insights"
                                 title="Strict Scoring"
                                 desc="No sugar-coating. Get a brutal, realistic assessment against senior standards."
                             />
                         </div>
-                        {/* Visual Demo Placeholder */}
-                        <div className="mt-16 rounded-2xl overflow-hidden border border-border/50 shadow-lg bg-card/50 aspect-video flex items-center justify-center text-muted-foreground">
+                        <div className="mt-16 rounded-2xl overflow-hidden border border-border/50 shadow-lg bg-card/50 aspect-video flex items-center justify-center text-muted-foreground text-center px-6">
                             [App Interface Preview Image]
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Pricing Teaser */}
-            <section className="py-24 px-6">
+            <section className="py-24 px-4 sm:px-6">
                 <div className="max-w-3xl mx-auto text-center space-y-12">
                     <h2 className="text-3xl font-bold">Simple, transparent pricing</h2>
                     <div className="grid md:grid-cols-2 gap-8 text-left">
@@ -118,7 +111,6 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Footer */}
             <footer className="py-12 border-t border-border/40 text-center text-muted-foreground text-sm">
                 © 2026 Interview Simulator AI. All rights reserved.
             </footer>
@@ -128,8 +120,8 @@ export default function LandingPage() {
 
 function Feature({ icon, title, desc }: { icon: string, title: string, desc: string }) {
     return (
-        <div className="space-y-4">
-            <div className="text-4xl bg-background w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm">{icon}</div>
+        <div className="space-y-4 text-center md:text-left">
+            <div className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--accent-teal)] bg-background w-fit min-w-16 h-16 px-4 rounded-2xl flex items-center justify-center shadow-sm mx-auto md:mx-0">{icon}</div>
             <h3 className="text-xl font-bold">{title}</h3>
             <p className="text-muted-foreground leading-relaxed">{desc}</p>
         </div>

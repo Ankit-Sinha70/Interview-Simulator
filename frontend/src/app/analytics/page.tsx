@@ -29,7 +29,7 @@ function SkeletonCard({ className = '', height = 'h-40' }: { className?: string;
 
 function AnalyticsSkeleton() {
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto px-4 py-6 sm:px-6 space-y-6">
             <div className="space-y-2">
                 <div className="h-8 w-64 bg-white/[0.06] rounded-lg animate-pulse" />
                 <div className="h-4 w-96 bg-white/[0.03] rounded-lg animate-pulse" />
@@ -100,7 +100,7 @@ function AnalyticsContent() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-4">
                 <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-2xl">⚠️</div>
-                <h2 className="text-xl font-bold text-white">Something Went Wrong</h2>
+                <h2 className="text-xl font-bold text-foreground">Something Went Wrong</h2>
                 <p className="text-muted-foreground max-w-md">{error}</p>
             </div>
         );
@@ -110,7 +110,7 @@ function AnalyticsContent() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-4">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center text-2xl animate-bounce">📊</div>
-                <h2 className="text-xl font-bold text-white">No Analytics Data Yet</h2>
+                <h2 className="text-xl font-bold text-foreground">No Analytics Data Yet</h2>
                 <p className="text-muted-foreground max-w-md">
                     Complete your first interview to see detailed performance trends, skill breakdowns, and AI-driven insights.
                 </p>
@@ -119,11 +119,11 @@ function AnalyticsContent() {
     }
 
     return (
-        <div className="container mx-auto p-6 space-y-6 animate-fade-in relative">
+        <div className="container mx-auto px-4 py-6 sm:px-6 space-y-6 animate-fade-in relative">
             {/* Celebration Toast */}
             {showCelebration && (
-                <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 border border-violet-400/30 shadow-2xl flex items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4 fade-in duration-500">
-                    <div className="flex items-center gap-4">
+                <div className="mb-8 p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 border border-violet-400/30 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4 fade-in duration-500">
+                    <div className="flex items-start sm:items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                             <Sparkles className="w-6 h-6 text-white animate-pulse" />
                         </div>
@@ -145,9 +145,9 @@ function AnalyticsContent() {
 
             {/* Header */}
             <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-bold tracking-tight text-white">Analytics Hub</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Analytics Hub</h1>
                 <p className="text-muted-foreground text-sm">
-                    Comprehensive overview of your interview performance. <span className="text-white font-medium">{data.totalSessions}</span> sessions analyzed.
+                    Comprehensive overview of your interview performance. <span className="text-foreground font-medium">{data.totalSessions}</span> sessions analyzed.
                 </p>
             </div>
 

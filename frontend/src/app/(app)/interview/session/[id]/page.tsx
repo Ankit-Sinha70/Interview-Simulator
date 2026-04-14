@@ -100,7 +100,7 @@ function SessionTimer({
             "flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-500",
             isUrgent
                 ? "bg-red-500/10 border-red-500 text-red-500 animate-pulse animate-shake shadow-[0_0_15px_rgba(239,68,68,0.2)]"
-                : "bg-zinc-900/50 border-zinc-800 text-zinc-400"
+                : "bg-card/80 border-border text-muted-foreground"
         )}>
             <style>{shakeKeyframes}</style>
             <Clock className={cn("w-3.5 h-3.5", isUrgent && "animate-bounce")} />
@@ -180,9 +180,9 @@ function SessionContent() {
     if (status === 'LOADING') {
         return (
             <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6 mt-10">
-                <div className="h-20 w-full bg-zinc-900/50 animate-pulse rounded-2xl border border-zinc-800" />
-                <div className="h-48 w-full bg-zinc-900/50 animate-pulse rounded-2xl border border-zinc-800" />
-                <div className="h-32 w-full bg-zinc-900/50 animate-pulse rounded-2xl border border-zinc-800" />
+                <div className="h-20 w-full bg-card/70 animate-pulse rounded-2xl border border-border" />
+                <div className="h-48 w-full bg-card/70 animate-pulse rounded-2xl border border-border" />
+                <div className="h-32 w-full bg-card/70 animate-pulse rounded-2xl border border-border" />
             </div>
         );
     }
@@ -200,17 +200,17 @@ function SessionContent() {
             {/* 5-MINUTE WARNING MODAL */}
             {showWarningModal && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                    <Card className="max-w-md w-full p-8 border-2 border-red-600 shadow-2xl text-center space-y-6 bg-zinc-950">
+                    <Card className="max-w-md w-full p-8 border-2 border-red-600 shadow-2xl text-center space-y-6 bg-card">
                         <div className="w-20 h-20 bg-red-600/10 rounded-full flex items-center justify-center mx-auto">
                             <AlertTriangle className="w-10 h-10 text-red-600 animate-bounce" />
                         </div>
                         <div className="space-y-2">
-                            <h2 className="text-2xl font-black tracking-tight text-white">5 Minutes Remaining</h2>
+                            <h2 className="text-2xl font-black tracking-tight text-foreground">5 Minutes Remaining</h2>
                             <p className="text-red-500 uppercase text-[10px] font-black tracking-widest bg-red-500/10 py-1 px-3 rounded-full inline-block">
                                 Final Warning
                             </p>
                         </div>
-                        <p className="text-zinc-400 text-sm leading-relaxed">
+                        <p className="text-muted-foreground text-sm leading-relaxed">
                             Your interview session is nearly over. Please wrap up your current thoughts and prepare for final questions.
                         </p>
                         <Button
@@ -258,18 +258,18 @@ function SessionContent() {
 
             <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6 pb-24">
                 {/* Header */}
-                <header className="sticky top-4 z-40 bg-zinc-950/80 backdrop-blur-md border border-zinc-800 rounded-2xl shadow-xl px-6 py-4 flex items-center justify-between">
+                <header className="sticky top-4 z-40 bg-card/85 backdrop-blur-md border border-border rounded-2xl shadow-xl px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-3">
                             <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                            <h1 className="text-xs font-black tracking-[0.2em] text-zinc-500 uppercase">Live Session</h1>
+                            <h1 className="text-xs font-black tracking-[0.2em] text-muted-foreground uppercase">Live Session</h1>
                         </div>
 
-                        <div className="h-4 w-[1px] bg-zinc-800" />
+                        <div className="h-4 w-[1px] bg-border" />
 
                         <div className="flex items-center gap-4">
                             <div className="flex flex-col justify-center gap-1.5 min-w-[140px]">
-                                <div className="flex items-center justify-between text-zinc-300">
+                                <div className="flex items-center justify-between text-foreground/80">
                                     <div className="flex items-center gap-1.5">
                                         <Brain className="w-3.5 h-3.5 text-primary" />
                                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Progress</span>
@@ -278,7 +278,7 @@ function SessionContent() {
                                         {Math.min(questionNumber, maxQuestions || 10)} / {maxQuestions || 10}
                                     </span>
                                 </div>
-                                <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                                     <div 
                                         className="h-full bg-primary transition-all duration-1000 ease-out" 
                                         style={{ width: `${(Math.min(questionNumber, maxQuestions || 10) / (maxQuestions || 10)) * 100}%` }} 
@@ -299,7 +299,7 @@ function SessionContent() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="text-[10px] text-zinc-500 font-mono mr-2">
+                        <div className="text-[10px] text-muted-foreground font-mono mr-2">
                             {status}
                         </div>
                     </div>
@@ -307,7 +307,7 @@ function SessionContent() {
 
                 {/* DEBUG STATUS BANNER */}
                 {process.env.NODE_ENV === 'development' && (
-                    <div className="fixed bottom-4 left-4 right-4 flex justify-between items-center bg-black/95 backdrop-blur-xl text-[10px] p-3 rounded-lg border border-red-900/30 z-[99999] text-zinc-400 font-mono shadow-2xl animate-in slide-in-from-bottom-5 duration-500">
+                    <div className="fixed bottom-4 left-4 right-4 flex justify-between items-center bg-card/95 backdrop-blur-xl text-[10px] p-3 rounded-lg border border-red-900/30 z-[99999] text-muted-foreground font-mono shadow-2xl animate-in slide-in-from-bottom-5 duration-500">
                         <div className="flex gap-4">
                             <span>Status: <b className="text-primary">{status}</b></span>
                             <span>Guard: <b className={isInterviewActive ? "text-green-500" : "text-red-500"}>{String(isInterviewActive)}</b></span>
@@ -316,7 +316,7 @@ function SessionContent() {
                         <div className="flex gap-2">
                             <button
                                 onClick={() => window.location.reload()}
-                                className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 rounded text-white border border-zinc-800 text-[9px]"
+                                className="px-2 py-1 bg-muted hover:bg-accent rounded text-foreground border border-border text-[9px]"
                             >
                                 RELOAD
                             </button>

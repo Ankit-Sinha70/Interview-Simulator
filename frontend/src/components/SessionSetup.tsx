@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 
 interface SessionSetupProps {
     onStart: (
-        role: string, 
+        role: string,
         experienceLevel: 'Junior' | 'Mid' | 'Senior',
         interviewStyle: 'friendly' | 'strict' | 'faang',
         companyStyle: 'google' | 'startup' | 'product' | 'general',
@@ -40,7 +40,7 @@ const COMPANY_STYLES = [
     { id: 'general' as const, label: 'General', icon: '🌍', desc: 'Balanced approach' },
     { id: 'startup' as const, label: 'Startup', icon: '🦄', desc: 'Practical, fast-paced' },
     { id: 'google' as const, label: 'Google-style', icon: '🧠', desc: 'Deep & algorithmic' },
-    { id: 'product' as const, label: 'Product-focused', icon: '🎨', desc: 'User-centric impact' },
+    { id: 'product' as const, label: 'Product-focused', icon: '🎯', desc: 'User-centric impact' },
 ];
 
 export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) {
@@ -58,25 +58,21 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
     const canStart = selectedRole.trim() && level;
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[85vh] w-full px-4 sm:px-6">
-            <div className="w-full max-w-6xl space-y-8 animate-fade-in-up">
-
-                {/* Header */}
+        <div className="flex flex-col items-center justify-center min-h-[85vh] w-full px-4 sm:px-6 py-8 sm:py-10">
+            <div className="w-full max-w-6xl space-y-6 sm:space-y-8 animate-fade-in-up">
                 <div className="text-center space-y-4">
                     <div className="inline-block p-3 rounded-2xl bg-primary/10 mb-2 animate-float">
-                        <span className="text-4xl">🎯</span>
+                        <span className="text-4xl">AI</span>
                     </div>
-                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
+                    <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
                         <span className="text-gradient-hero">AI Interview Simulator</span>
                     </h1>
-                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
                         Master your tech interview skills with an adaptive AI that challenges you in real-time.
                     </p>
                 </div>
 
-                <div className="grid gap-8 p-6 sm:p-8 rounded-3xl bg-secondary/30 border border-border/50 backdrop-blur-sm shadow-xl">
-
-                    {/* Role Selection */}
+                <div className="grid gap-6 sm:gap-8 p-4 sm:p-8 rounded-3xl bg-secondary/30 border border-border/50 backdrop-blur-sm shadow-xl">
                     <div className="space-y-4">
                         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
                             Select Role
@@ -91,7 +87,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                         : 'border-transparent bg-background/50 hover:bg-background/80'
                                         }`}
                                 >
-                                    <CardContent className="p-5 text-center sm:text-left flex sm:block flex-col items-center">
+                                    <CardContent className="p-4 sm:p-5 text-center sm:text-left flex sm:block flex-col items-center">
                                         <div className="text-3xl mb-3">{r.icon}</div>
                                         <div className="font-bold text-foreground">{r.label}</div>
                                         <div className="text-xs text-muted-foreground mt-1">{r.desc}</div>
@@ -100,7 +96,6 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             ))}
                         </div>
 
-                        {/* Custom Role Input */}
                         <div className={`transition-all duration-300 overflow-hidden ${role === 'Custom' ? 'h-auto opacity-100' : 'h-12 opacity-70'}`}>
                             {role !== 'Custom' ? (
                                 <button
@@ -128,7 +123,6 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         </div>
                     </div>
 
-                    {/* Interview Style Selection */}
                     <div className="space-y-4">
                         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
                             Interviewer Persona
@@ -143,7 +137,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                         : 'border-transparent bg-background/50 hover:bg-background/80'
                                         }`}
                                 >
-                                    <CardContent className="p-4 text-center sm:text-left flex sm:block flex-col items-center">
+                                    <CardContent className="p-4 text-center sm:text-left flex sm:block flex-col items-center min-h-[120px] justify-center">
                                         <div className="text-2xl mb-2">{s.icon}</div>
                                         <div className="font-bold text-foreground text-sm">{s.label}</div>
                                         <div className="text-xs text-muted-foreground mt-1">{s.desc}</div>
@@ -153,12 +147,11 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         </div>
                     </div>
 
-                    {/* Company Style Selection */}
                     <div className="space-y-4">
                         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
                             Company Focus
                         </h2>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                             {COMPANY_STYLES.map((c) => (
                                 <Card
                                     key={c.id}
@@ -168,17 +161,16 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                         : 'border-transparent bg-background/50 hover:bg-background/80'
                                         }`}
                                 >
-                                    <CardContent className="p-4 text-center sm:text-left flex sm:block flex-col items-center">
+                                    <CardContent className="p-3 sm:p-4 text-center sm:text-left flex sm:block flex-col items-center min-h-[112px] justify-center">
                                         <div className="text-2xl mb-2">{c.icon}</div>
                                         <div className="font-bold text-foreground text-sm">{c.label}</div>
-                                        <div className="text-xs text-muted-foreground mt-1 hidden sm:block">{c.desc}</div>
+                                        <div className="text-xs text-muted-foreground mt-1">{c.desc}</div>
                                     </CardContent>
                                 </Card>
                             ))}
                         </div>
                     </div>
 
-                    {/* Level Selection */}
                     <div className="space-y-4">
                         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
                             Experience Level
@@ -193,7 +185,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                         : 'border-transparent bg-background/50 hover:bg-background/80'
                                         }`}
                                 >
-                                    <CardContent className="p-5 text-center sm:text-left flex sm:block flex-col items-center">
+                                    <CardContent className="p-4 sm:p-5 text-center sm:text-left flex sm:block flex-col items-center">
                                         <div className="text-3xl mb-3">{l.icon}</div>
                                         <div className="font-bold text-foreground">{l.label}</div>
                                         <div className="text-xs text-muted-foreground mt-1">{l.desc}</div>
@@ -203,15 +195,14 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         </div>
                     </div>
 
-                    {/* Resume Upload (Optional) */}
                     <div className="space-y-4">
                         <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest text-center sm:text-left">
                             Resume Context {user?.parsedResume ? '(Active)' : '(Optional)'}
                         </h2>
-                        
+
                         {user?.parsedResume && !resume && (
-                            <div className="flex items-center justify-between p-4 border border-[var(--accent-teal)]/30 bg-[var(--accent-teal)]/5 rounded-xl mb-4">
-                                <div className="flex items-center gap-3">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-4 border border-[var(--accent-teal)]/30 bg-[var(--accent-teal)]/5 rounded-xl mb-4">
+                                <div className="flex items-start gap-3">
                                     <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                                     <div>
                                         <p className="text-sm font-bold text-foreground">Structured Resume Found</p>
@@ -225,12 +216,12 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             </div>
                         )}
 
-                        <div className={`flex flex-col items-center justify-center border-2 border-dashed ${resume ? 'border-emerald-400/50 bg-emerald-400/5' : 'border-border/60 bg-background/30 hover:bg-background/50'} rounded-xl p-6 transition-colors`}>
-                            <input 
-                                type="file" 
-                                accept=".pdf,.txt" 
-                                id="resume-upload" 
-                                className="hidden" 
+                        <div className={`flex flex-col items-center justify-center border-2 border-dashed ${resume ? 'border-emerald-400/50 bg-emerald-400/5' : 'border-border/60 bg-background/30 hover:bg-background/50'} rounded-xl p-5 sm:p-6 transition-colors`}>
+                            <input
+                                type="file"
+                                accept=".pdf,.txt"
+                                id="resume-upload"
+                                className="hidden"
                                 onChange={(e) => setResume(e.target.files?.[0] || null)}
                             />
                             <label htmlFor="resume-upload" className="cursor-pointer flex flex-col items-center gap-2 text-center w-full">
@@ -246,13 +237,12 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         </div>
                     </div>
 
-                    {/* Start Button */}
                     <div className="pt-4">
                         <Button
                             onClick={() => canStart && level && onStart(selectedRole, level, interviewStyle, companyStyle, resume, useResume)}
                             disabled={!canStart || isLoading}
                             size="lg"
-                            className={`w-full h-14 text-lg font-bold rounded-xl shadow-lg transition-all duration-300 ${canStart
+                            className={`w-full h-13 sm:h-14 text-base sm:text-lg font-bold rounded-xl shadow-lg transition-all duration-300 ${canStart
                                 ? 'bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] text-white hover:shadow-[0_0_30px_rgba(108,92,231,0.4)] hover:scale-[1.01]'
                                 : 'bg-muted text-muted-foreground opacity-50 cursor-not-allowed'
                                 }`}
@@ -263,7 +253,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                     Generating Interview...
                                 </span>
                             ) : (
-                                '🚀 Start Interview Session'
+                                'Start Interview Session'
                             )}
                         </Button>
                     </div>

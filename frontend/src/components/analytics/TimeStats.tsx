@@ -33,7 +33,7 @@ export default function TimeStats({ timeStats }: TimeStatsProps) {
     return (
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border/50">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-slate-200">Time Analytics</h3>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-foreground">Time Analytics</h3>
                 <p className="text-[10px] text-muted-foreground mt-0.5">Response speed and efficiency</p>
             </div>
             <CardContent className="p-4 space-y-4">
@@ -42,12 +42,12 @@ export default function TimeStats({ timeStats }: TimeStatsProps) {
                     {statCards.map((stat) => (
                         <div
                             key={stat.label}
-                            className="group p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-all duration-300"
+                            className="group p-3 rounded-xl bg-background/70 border border-border/60 hover:bg-accent/60 transition-all duration-300"
                         >
                             <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
                                 <stat.icon className="w-3.5 h-3.5 text-white" />
                             </div>
-                            <div className="text-lg font-black text-white">{stat.value}</div>
+                            <div className="text-lg font-black text-foreground">{stat.value}</div>
                             <div className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">{stat.label}</div>
                         </div>
                     ))}

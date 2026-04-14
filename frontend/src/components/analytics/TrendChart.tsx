@@ -38,17 +38,17 @@ export default function TrendChart({ data }: TrendChartProps) {
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border/50 flex justify-between items-center">
                 <div>
-                    <h3 className="font-bold text-sm uppercase tracking-wider text-slate-200">Performance Trend</h3>
+                    <h3 className="font-bold text-sm uppercase tracking-wider text-foreground">Performance Trend</h3>
                     <p className="text-[10px] text-muted-foreground mt-0.5">Score progression across sessions</p>
                 </div>
-                <div className="flex gap-1 bg-white/[0.04] rounded-lg p-0.5">
+                <div className="flex gap-1 bg-background/70 rounded-lg p-0.5 border border-border/50">
                     {filterOptions.map(opt => (
                         <button
                             key={opt.key}
                             onClick={() => setFilter(opt.key)}
                             className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all duration-200 ${filter === opt.key
                                 ? 'bg-[var(--accent-violet)] text-white shadow-lg shadow-[var(--accent-violet)]/20'
-                                : 'text-muted-foreground hover:text-white'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             {opt.label}
