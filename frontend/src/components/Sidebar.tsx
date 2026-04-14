@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -10,17 +11,32 @@ import {
     Settings,
     LogOut,
     Zap,
-    Crown,
-    User as UserIcon
+    User as UserIcon,
+    X,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
-export default function Sidebar() {
+interface SidebarProps {
+    mobileOpen?: boolean;
+    onClose?: () => void;
+}
+
+export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { user, logout } = useAuth();
 
-    // Don't show if no user (though layout might protect it, safer here)
     if (!user) return null;
+
+    useEffect(() => {
+        if (!mobileOpen) return;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [mobileOpen]);
 
     const isActive = (path: string) => pathname === path;
 
@@ -29,6 +45,7 @@ export default function Sidebar() {
         return (
             <Link
                 href={href}
+                onClick={onClose}
                 className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${active
                     ? 'bg-[var(--accent-violet)] text-white shadow-lg shadow-[var(--accent-violet)]/20'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -43,11 +60,10 @@ export default function Sidebar() {
         );
     };
 
-    return (
-        <aside className="hidden md:flex flex-col w-72 fixed inset-y-0 left-0 z-50 bg-background/80 backdrop-blur-xl border-r border-border/50">
-            {/* Logo Section */}
-            <div className="p-6 pb-8">
-                <Link href="/" className="flex items-center gap-2 group">
+    const content = (
+        <div className="flex h-full flex-col bg-background/95 backdrop-blur-xl border-r border-border/50">
+            <div className="flex items-center justify-between p-5 pb-6 md:p-6 md:pb-8">
+                <Link href="/" className="flex items-center gap-2 group" onClick={onClose}>
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent-violet)] to-[var(--accent-teal)] flex items-center justify-center text-white font-bold shadow-lg shadow-[var(--accent-violet)]/20 group-hover:scale-105 transition-transform">
                         IS
                     </div>
@@ -56,10 +72,22 @@ export default function Sidebar() {
                         <span className="text-[10px] font-bold text-[var(--accent-teal)] uppercase tracking-wider">Simulator</span>
                     </div>
                 </Link>
+
+                {onClose && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="md:hidden"
+                        onClick={onClose}
+                        aria-label="Close navigation menu"
+                    >
+                        <X className="w-5 h-5" />
+                    </Button>
+                )}
             </div>
 
-            {/* Navigation */}
-            <div className="flex-1 px-4 space-y-2">
+            <div className="flex-1 overflow-y-auto px-4 space-y-2">
                 <div className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-widest px-3 mb-2">Menu</div>
                 <NavItem href="/" icon={LayoutDashboard} label="Dashboard" />
                 <NavItem href="/profile" icon={UserIcon} label="Profile" />
@@ -78,14 +106,14 @@ export default function Sidebar() {
                             Unlock unlimited interviews and advanced analytics.
                         </p>
                         <Button size="sm" className="w-full text-xs h-8 bg-[var(--accent-violet)] hover:bg-[var(--accent-violet)]/90" asChild>
-                            <Link href="/settings">Upgrade</Link>
+                            <Link href="/settings" onClick={onClose}>Upgrade</Link>
                         </Button>
                     </div>
                 ) : (
                     <div className="mt-8 p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
                         <div className="flex items-center gap-2 mb-1">
                             <div className="p-1.5 rounded-md bg-amber-500/20 text-amber-500">
-                                <span className="text-lg leading-none">👑</span>
+                                <span className="text-xs font-bold uppercase tracking-wide">Pro</span>
                             </div>
                             <div>
                                 <span className="font-bold text-sm text-foreground">Pro Member</span>
@@ -96,7 +124,6 @@ export default function Sidebar() {
                 )}
             </div>
 
-            {/* User Profile / Logout */}
             <div className="p-4 border-t border-border/50">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 shadow-sm">
                     {user.profilePicture ? (
@@ -116,7 +143,10 @@ export default function Sidebar() {
                         title="Sign Out"
                         description="Are you sure you want to sign out?"
                         confirmText="Sign Out"
-                        onConfirm={logout}
+                        onConfirm={() => {
+                            onClose?.();
+                            logout();
+                        }}
                         destructive
                     >
                         <Button
@@ -130,6 +160,28 @@ export default function Sidebar() {
                     </ConfirmDialog>
                 </div>
             </div>
-        </aside>
+        </div>
+    );
+
+    return (
+        <>
+            <aside className="hidden md:flex flex-col w-72 fixed inset-y-0 left-0 z-50">
+                {content}
+            </aside>
+
+            {mobileOpen && onClose && (
+                <div className="md:hidden fixed inset-0 z-50">
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={onClose}
+                        aria-label="Close navigation menu"
+                    />
+                    <aside className="relative z-10 h-full w-[min(88vw,20rem)] shadow-2xl">
+                        {content}
+                    </aside>
+                </div>
+            )}
+        </>
     );
 }

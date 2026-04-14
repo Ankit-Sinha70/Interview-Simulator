@@ -225,7 +225,7 @@ export default function SubscriptionCard() {
                 {isPro && sub.currentPeriodStart && sub.currentPeriodEnd ? (
                     <div className="space-y-4">
                         {/* Date grid */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="bg-zinc-800/40 rounded-xl p-3.5 border border-zinc-700/40 space-y-1">
                                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Started On</p>
                                 <p className="text-sm font-bold text-white">{formatDate(sub.currentPeriodStart)}</p>
@@ -264,7 +264,7 @@ export default function SubscriptionCard() {
                         {/* Billing timeline */}
                         <div className="space-y-2">
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Billing Timeline</p>
-                            <div className="flex items-center gap-3 relative">
+                            <div className="flex items-center gap-3 relative overflow-x-auto pb-1">
                                 <div className="flex flex-col items-center gap-1 text-center min-w-[80px]">
                                     <div className="w-2.5 h-2.5 rounded-full bg-violet-500" />
                                     <p className="text-[10px] text-zinc-400">{formatDate(sub.currentPeriodStart)}</p>
@@ -317,7 +317,7 @@ export default function SubscriptionCard() {
 
                         {/* Upgrade Nudge Banner for Monthly Users */}
                         {isPro && sub.billingCycle === 'MONTHLY' && !sub.cancelAtPeriodEnd && sub.status === 'ACTIVE' && (
-                            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-500/10 to-indigo-500/10 border border-violet-500/20">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-500/10 to-indigo-500/10 border border-violet-500/20">
                                 <div className="flex items-center gap-3">
                                     <ArrowUpCircle className="w-5 h-5 text-violet-400 shrink-0" />
                                     <div>
@@ -325,8 +325,8 @@ export default function SubscriptionCard() {
                                         <p className="text-xs text-violet-300/80">Upgrade to a Yearly plan today.</p>
                                     </div>
                                 </div>
-                                <Link href="/pricing">
-                                    <button className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-lg shadow-violet-500/20 transition-all">
+                                <Link href="/pricing" className="w-full sm:w-auto">
+                                    <button className="w-full px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-lg shadow-violet-500/20 transition-all">
                                         Upgrade
                                     </button>
                                 </Link>
@@ -352,7 +352,7 @@ export default function SubscriptionCard() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3 pt-2 border-t border-border/50">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 pt-2 border-t border-border/50">
                     {isPro ? (
                         sub.hasStripeId || sub.currentPeriodStart ? (
                             <>
@@ -360,7 +360,7 @@ export default function SubscriptionCard() {
                                     <button
                                         onClick={handleManageBilling}
                                         disabled={portalLoading}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 text-violet-300 text-sm font-semibold transition-all disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 text-violet-300 text-sm font-semibold transition-all disabled:opacity-50"
                                     >
                                         {portalLoading
                                             ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -373,7 +373,7 @@ export default function SubscriptionCard() {
                                     <button
                                         onClick={handleResume}
                                         disabled={resumeLoading}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-sm font-semibold transition-all disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-sm font-semibold transition-all disabled:opacity-50"
                                     >
                                         {resumeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
                                         Resume Subscription
@@ -382,7 +382,7 @@ export default function SubscriptionCard() {
                                 <button
                                     onClick={handleManageBilling}
                                     disabled={portalLoading}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-700/30 hover:bg-zinc-700/50 border border-zinc-600/30 text-zinc-400 text-sm font-semibold transition-all disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-zinc-700/30 hover:bg-zinc-700/50 border border-zinc-600/30 text-zinc-400 text-sm font-semibold transition-all disabled:opacity-50"
                                 >
                                     {!sub.cancelAtPeriodEnd && 'Cancel Subscription'}
                                     {sub.cancelAtPeriodEnd && 'Billing Portal'}
@@ -399,7 +399,7 @@ export default function SubscriptionCard() {
                                         <button
                                             onClick={handleRefundClick}
                                             disabled={refundLoading}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-semibold transition-all disabled:opacity-50"
+                                            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-semibold transition-all disabled:opacity-50"
                                         >
                                             {refundLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Undo2 className="w-3.5 h-3.5" />}
                                             Request Refund
@@ -412,7 +412,7 @@ export default function SubscriptionCard() {
                         )
                     ) : (
                         <Link href="/pricing">
-                            <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-violet-500/20 transition-all">
+                            <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-violet-500/20 transition-all">
                                 <Zap className="w-4 h-4" />
                                 Upgrade to Pro
                             </button>
