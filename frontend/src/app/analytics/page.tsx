@@ -100,7 +100,7 @@ function AnalyticsContent() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-4">
                 <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-2xl">⚠️</div>
-                <h2 className="text-xl font-bold text-white">Something Went Wrong</h2>
+                <h2 className="text-xl font-bold text-foreground">Something Went Wrong</h2>
                 <p className="text-muted-foreground max-w-md">{error}</p>
             </div>
         );
@@ -110,7 +110,7 @@ function AnalyticsContent() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-4">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center text-2xl animate-bounce">📊</div>
-                <h2 className="text-xl font-bold text-white">No Analytics Data Yet</h2>
+                <h2 className="text-xl font-bold text-foreground">No Analytics Data Yet</h2>
                 <p className="text-muted-foreground max-w-md">
                     Complete your first interview to see detailed performance trends, skill breakdowns, and AI-driven insights.
                 </p>
@@ -145,9 +145,9 @@ function AnalyticsContent() {
 
             {/* Header */}
             <div className="flex flex-col gap-1">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Analytics Hub</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Analytics Hub</h1>
                 <p className="text-muted-foreground text-sm">
-                    Comprehensive overview of your interview performance. <span className="text-white font-medium">{data.totalSessions}</span> sessions analyzed.
+                    Comprehensive overview of your interview performance. <span className="text-foreground font-medium">{data.totalSessions}</span> sessions analyzed.
                 </p>
             </div>
 

@@ -81,7 +81,7 @@ export default function WelcomeOfferModal({ isOpen, onClose, expiresAt, savings,
     return (
         <div
             className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-500 ${show ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            style={{ backgroundColor: 'rgba(5, 3, 15, 0.85)', backdropFilter: 'blur(12px)' }}
+            style={{ backgroundColor: 'hsl(var(--background) / 0.85)', backdropFilter: 'blur(12px)' }}
         >
             {/* Animated background particles */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -91,9 +91,9 @@ export default function WelcomeOfferModal({ isOpen, onClose, expiresAt, savings,
             </div>
 
             <div
-                className={`relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 shadow-2xl transition-all duration-500 ${show ? 'scale-100 translate-y-0' : 'scale-90 translate-y-8'}`}
+                className={`relative w-full max-w-lg overflow-hidden rounded-3xl border border-border/70 shadow-2xl transition-all duration-500 ${show ? 'scale-100 translate-y-0' : 'scale-90 translate-y-8'}`}
                 style={{
-                    background: 'linear-gradient(180deg, rgba(24, 18, 50, 0.98) 0%, rgba(12, 10, 28, 0.99) 100%)',
+                    background: 'linear-gradient(180deg, hsl(var(--card) / 0.98) 0%, hsl(var(--background) / 0.99) 100%)',
                     boxShadow: '0 0 80px rgba(109, 90, 230, 0.15), 0 0 40px rgba(109, 90, 230, 0.1), 0 25px 50px rgba(0,0,0,0.5)',
                 }}
             >
@@ -122,7 +122,7 @@ export default function WelcomeOfferModal({ isOpen, onClose, expiresAt, savings,
                     <h2 className="text-center text-2xl sm:text-3xl font-bold text-white mb-2 tracking-tight">
                         Welcome to AI Interview Simulator!
                     </h2>
-                    <p className="text-center text-slate-400 text-sm mb-6">
+                    <p className="text-center text-muted-foreground text-sm mb-6">
                         You&apos;ve unlocked an exclusive new-member discount
                     </p>
 
@@ -157,12 +157,12 @@ export default function WelcomeOfferModal({ isOpen, onClose, expiresAt, savings,
                         {features.map((f, i) => (
                             <div
                                 key={i}
-                                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/10 hover:bg-white/[0.05] transition-all"
+                            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-background/60 border border-border/50 hover:border-border hover:bg-accent/60 transition-all"
                             >
                                 <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${f.color}15` }}>
                                     <f.icon className="h-4 w-4" style={{ color: f.color }} />
                                 </div>
-                                <span className="text-xs font-medium text-slate-300 leading-tight">{f.label}</span>
+                                <span className="text-xs font-medium text-foreground/80 leading-tight">{f.label}</span>
                             </div>
                         ))}
                     </div>
@@ -195,7 +195,7 @@ export default function WelcomeOfferModal({ isOpen, onClose, expiresAt, savings,
                     <button
                         onClick={handleDismiss}
                         disabled={dismissing}
-                        className="w-full mt-3 py-2.5 text-sm text-slate-500 hover:text-slate-300 font-medium transition-colors"
+                        className="w-full mt-3 py-2.5 text-sm text-muted-foreground hover:text-foreground font-medium transition-colors"
                     >
                         {dismissing ? 'Closing...' : 'Maybe Later'}
                     </button>

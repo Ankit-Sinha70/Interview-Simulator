@@ -8,6 +8,7 @@ import { getActiveSession, ActiveSessionResponse } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -48,19 +49,22 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                 {!isInterviewPage && (
                     <div className="sticky top-0 z-30 border-b border-border/50 bg-background/80 px-4 py-3 backdrop-blur-xl md:hidden">
                         <div className="flex items-center justify-between gap-3">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-10 rounded-xl border-border/70 bg-card/70 px-3"
-                                onClick={() => setMobileNavOpen(true)}
-                            >
-                                <Menu className="mr-2 h-4 w-4" />
-                                Menu
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-10 rounded-xl border-border/70 bg-card/70 px-3"
+                                    onClick={() => setMobileNavOpen(true)}
+                                >
+                                    <Menu className="mr-2 h-4 w-4" />
+                                    Menu
+                                </Button>
+                                <ThemeToggle compact />
+                            </div>
                             {user && (
                                 <div className="min-w-0 text-right">
-                                    <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+                                    <p className="truncate text-sm font-semibold text-foreground">{user.name}</p>
                                     <p className="truncate text-xs text-muted-foreground">{user.planType} plan</p>
                                 </div>
                             )}

@@ -21,13 +21,13 @@ interface QuitConfirmationModalProps {
 export function QuitConfirmationModal({ isOpen, onClose, onConfirm }: QuitConfirmationModalProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-800 text-white">
+            <DialogContent className="sm:max-w-md bg-card border-border text-foreground">
                 <DialogHeader>
                     <div className="mx-auto w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
                         <AlertTriangle className="w-6 h-6 text-red-500" />
                     </div>
                     <DialogTitle className="text-center text-xl">Quit Interview?</DialogTitle>
-                    <DialogDescription className="text-center text-zinc-400">
+                    <DialogDescription className="text-center text-muted-foreground">
                         You are in the middle of your interview. Leaving now will end the session and your progress for this attempt will be lost.
                     </DialogDescription>
                 </DialogHeader>
@@ -35,7 +35,7 @@ export function QuitConfirmationModal({ isOpen, onClose, onConfirm }: QuitConfir
                     <Button
                         variant="secondary"
                         onClick={onClose}
-                        className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white border-none"
+                        className="flex-1 bg-muted hover:bg-accent text-foreground border-none"
                     >
                         Stay & Continue
                     </Button>

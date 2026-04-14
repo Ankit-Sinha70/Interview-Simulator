@@ -33,7 +33,7 @@ export default function WeaknessInsights({ weaknessInsights, totalSessions }: We
         return (
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-border/50">
-                    <h3 className="font-bold text-sm uppercase tracking-wider text-slate-200">Weakness Tracker</h3>
+                    <h3 className="font-bold text-sm uppercase tracking-wider text-foreground">Weakness Tracker</h3>
                 </div>
                 <CardContent className="p-8 text-center text-muted-foreground flex flex-col items-center">
                     <Target className="w-10 h-10 mb-3 opacity-20" />
@@ -45,9 +45,9 @@ export default function WeaknessInsights({ weaknessInsights, totalSessions }: We
 
     return (
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border/50 flex justify-between items-center bg-black/20">
+            <div className="px-6 py-4 border-b border-border/50 flex justify-between items-center bg-muted/30">
                 <div>
-                    <h3 className="font-bold text-sm uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                    <h3 className="font-bold text-sm uppercase tracking-wider text-foreground flex items-center gap-2">
                         <TrendingDown className="w-4 h-4 text-red-400" />
                         Weakness Tracker
                     </h3>
@@ -72,16 +72,16 @@ export default function WeaknessInsights({ weaknessInsights, totalSessions }: We
                                 <span className="text-xl">❌</span>
                             </div>
                             <div>
-                                <h4 className="text-xl font-black text-white">{weaknessInsights.recurringWeakDimension}</h4>
+                                <h4 className="text-xl font-black text-foreground">{weaknessInsights.recurringWeakDimension}</h4>
                                 <p className="text-sm text-muted-foreground mt-1">
-                                    Flagged in <strong className="text-white">{recurrencePct}%</strong> of sessions
+                                    Flagged in <strong className="text-foreground">{recurrencePct}%</strong> of sessions
                                 </p>
                             </div>
                         </div>
                     </div>
 
                     {/* 2. Impact Analysis */}
-                    <div className="p-6 flex flex-col justify-center bg-black/10">
+                    <div className="p-6 flex flex-col justify-center bg-muted/20">
                         <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
                             <Target className="w-3.5 h-3.5" />
                             <span>Impact Score</span>
@@ -102,7 +102,7 @@ export default function WeaknessInsights({ weaknessInsights, totalSessions }: We
                             <Lightbulb className="w-3.5 h-3.5" />
                             <span>Recommended Practice</span>
                         </div>
-                        <p className="text-sm text-slate-300 leading-relaxed">
+                        <p className="text-sm text-foreground/80 leading-relaxed">
                             {weaknessInsights.suggestedFocus}
                         </p>
                     </div>
@@ -111,12 +111,12 @@ export default function WeaknessInsights({ weaknessInsights, totalSessions }: We
             </CardContent>
             
             {/* Improvement Tracking Bar */}
-            <div className="px-6 py-4 bg-black/40 border-t border-border/50">
+            <div className="px-6 py-4 bg-muted/30 border-t border-border/50">
                 <div className="flex justify-between text-xs text-muted-foreground mb-2">
                     <span>Improvement Tracking ({weaknessInsights.recurringWeakDimension})</span>
                     <span className="text-red-400 font-bold">{recurrencePct}% recurrence</span>
                 </div>
-                <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                     <div 
                         className="h-full bg-gradient-to-r from-red-500 to-amber-500 rounded-full" 
                         style={{ width: `${recurrencePct}%` }} 

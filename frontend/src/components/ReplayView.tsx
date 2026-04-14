@@ -61,7 +61,7 @@ export default function ReplayView({ session, onClose, isPro }: ReplayViewProps)
     return (
         <div className="fixed inset-0 z-[200] bg-background/95 backdrop-blur-xl flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-black/40">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-muted/30">
                 <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
                         <X className="w-5 h-5" />
@@ -77,7 +77,7 @@ export default function ReplayView({ session, onClose, isPro }: ReplayViewProps)
                 </div>
 
                 {/* Playback Controls */}
-                <div className="flex items-center gap-2 bg-zinc-900/80 p-1.5 rounded-full border border-zinc-800">
+                <div className="flex items-center gap-2 bg-card/90 p-1.5 rounded-full border border-border">
                     <Button 
                         variant="ghost" 
                         size="icon" 
@@ -111,7 +111,7 @@ export default function ReplayView({ session, onClose, isPro }: ReplayViewProps)
                         {qIndex + 1} / {questions.length}
                     </span>
                     {/* Timeline progress bar */}
-                    <div className="w-32 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
                         <div 
                             className="h-full bg-[var(--accent-teal)] transition-all duration-300"
                             style={{ width: `${(step / (totalSteps - 1)) * 100}%` }}

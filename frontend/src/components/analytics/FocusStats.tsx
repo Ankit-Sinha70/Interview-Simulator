@@ -28,18 +28,18 @@ export default function FocusStats({ focusStats }: FocusStatsProps) {
     return (
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border/50">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-slate-200">Focus & Attention</h3>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-foreground">Focus & Attention</h3>
                 <p className="text-[10px] text-muted-foreground mt-0.5">Eye tracking and distraction analysis</p>
             </div>
             <CardContent className="p-4 space-y-4">
                 {/* Summary row */}
                 <div className="grid grid-cols-3 gap-3">
-                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-center">
-                        <div className="text-2xl font-black text-white">{focusStats.avgFocusScore}%</div>
+                    <div className="p-4 rounded-xl bg-background/70 border border-border/60 text-center">
+                        <div className="text-2xl font-black text-foreground">{focusStats.avgFocusScore}%</div>
                         <div className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider mt-1">Avg Focus</div>
                     </div>
-                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-center">
-                        <div className="text-2xl font-black text-white">{focusStats.avgDistractions}</div>
+                    <div className="p-4 rounded-xl bg-background/70 border border-border/60 text-center">
+                        <div className="text-2xl font-black text-foreground">{focusStats.avgDistractions}</div>
                         <div className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider mt-1">Distractions</div>
                     </div>
                     <div className={`p-4 rounded-xl ${grade.bg} border ${grade.border} text-center`}>

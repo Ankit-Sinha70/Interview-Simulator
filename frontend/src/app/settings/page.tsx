@@ -15,7 +15,7 @@ export default function SettingsPage() {
     return (
         <div className="container mx-auto max-w-2xl px-4 py-6 sm:px-6 space-y-8 animate-fade-in">
             <div className="space-y-1">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Settings</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Settings</h1>
                 <p className="text-sm text-muted-foreground">Manage your account and subscription.</p>
             </div>
 
@@ -28,11 +28,11 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1">
                             <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Name</p>
-                            <p className="text-base font-semibold text-white">{user.name}</p>
+                            <p className="text-base font-semibold text-foreground">{user.name}</p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Email</p>
-                            <p className="text-base font-semibold text-white">{user.email}</p>
+                            <p className="text-base font-semibold text-foreground">{user.email}</p>
                         </div>
                     </div>
                 </CardContent>
@@ -40,7 +40,7 @@ export default function SettingsPage() {
 
             {/* Subscription Transparency */}
             <div className="space-y-2">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                     💳 Subscription
                 </h2>
                 <SubscriptionCard />

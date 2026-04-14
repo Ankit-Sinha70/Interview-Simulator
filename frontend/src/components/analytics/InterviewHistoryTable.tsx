@@ -46,7 +46,7 @@ export default function InterviewHistoryTable({ interviews, limitedHistory }: In
     return (
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-border/50">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-slate-200">Interview History</h3>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-foreground">Interview History</h3>
                 <p className="text-[10px] text-muted-foreground mt-0.5">{limitedHistory ? 'Showing last 2 sessions' : `${interviews.length} completed sessions`}</p>
             </div>
             <CardContent className="p-0 flex-1 flex flex-col">
@@ -77,7 +77,7 @@ export default function InterviewHistoryTable({ interviews, limitedHistory }: In
                                         })}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <span className="text-xs font-medium text-white truncate max-w-[140px] block">{interview.role}</span>
+                                        <span className="text-xs font-medium text-foreground truncate max-w-[140px] block">{interview.role}</span>
                                     </td>
                                     <td className="px-4 py-3 text-center">
                                         <span className={`text-sm font-bold ${getScoreColor(interview.score)}`}>
@@ -107,7 +107,7 @@ export default function InterviewHistoryTable({ interviews, limitedHistory }: In
                         <div key={interview.sessionId} className="p-4 space-y-3">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-white truncate">{interview.role}</p>
+                                    <p className="text-sm font-semibold text-foreground truncate">{interview.role}</p>
                                     <p className="text-xs text-muted-foreground">
                                         {new Date(interview.date).toLocaleDateString('en-US', {
                                             month: 'short',
@@ -126,15 +126,15 @@ export default function InterviewHistoryTable({ interviews, limitedHistory }: In
                                 </div>
                                 <div className="rounded-xl border border-border/50 bg-background/30 p-3">
                                     <p className="text-muted-foreground">Questions</p>
-                                    <p className="mt-1 text-base font-bold text-white">{interview.questionsCount}</p>
+                                    <p className="mt-1 text-base font-bold text-foreground">{interview.questionsCount}</p>
                                 </div>
                                 <div className="rounded-xl border border-border/50 bg-background/30 p-3">
                                     <p className="text-muted-foreground">Time</p>
-                                    <p className="mt-1 text-base font-bold text-white">{interview.timeMinutes > 0 ? `${interview.timeMinutes}m` : '—'}</p>
+                                    <p className="mt-1 text-base font-bold text-foreground">{interview.timeMinutes > 0 ? `${interview.timeMinutes}m` : '—'}</p>
                                 </div>
                                 <div className="rounded-xl border border-border/50 bg-background/30 p-3">
                                     <p className="text-muted-foreground">Focus</p>
-                                    <p className="mt-1 text-base font-bold text-white">{interview.focusScore > 0 ? `${interview.focusScore}%` : '—'}</p>
+                                    <p className="mt-1 text-base font-bold text-foreground">{interview.focusScore > 0 ? `${interview.focusScore}%` : '—'}</p>
                                 </div>
                             </div>
                         </div>
@@ -155,7 +155,7 @@ export default function InterviewHistoryTable({ interviews, limitedHistory }: In
                                 <Lock className="w-5 h-5 text-violet-400" />
                             </div>
                             <div className="space-y-1">
-                                <h4 className="text-sm font-bold text-white">Full History Locked</h4>
+                                <h4 className="text-sm font-bold text-foreground">Full History Locked</h4>
                                 <p className="text-xs text-muted-foreground max-w-[280px]">
                                     You're viewing your last 2 sessions. Upgrade to Pro to unlock your complete interview history and advanced trend analytics.
                                 </p>

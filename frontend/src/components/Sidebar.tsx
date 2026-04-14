@@ -15,6 +15,7 @@ import {
     X,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface SidebarProps {
     mobileOpen?: boolean;
@@ -24,8 +25,6 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { user, logout } = useAuth();
-
-    if (!user) return null;
 
     useEffect(() => {
         if (!mobileOpen) return;
@@ -37,6 +36,8 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             document.body.style.overflow = previousOverflow;
         };
     }, [mobileOpen]);
+
+    if (!user) return null;
 
     const isActive = (path: string) => pathname === path;
 
@@ -94,6 +95,10 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                 <NavItem href="/analytics" icon={BarChart3} label="Analytics" />
                 <NavItem href="/settings" icon={Settings} label="Settings" />
 
+                <div className="pt-4">
+                    <ThemeToggle className="w-full justify-center sm:justify-start" />
+                </div>
+
                 {user.planType === 'FREE' ? (
                     <div className="mt-8 p-4 rounded-2xl bg-gradient-to-br from-[var(--accent-violet)]/10 to-[var(--accent-teal)]/10 border border-[var(--accent-violet)]/20">
                         <div className="flex items-center gap-2 mb-2">
@@ -127,7 +132,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             <div className="p-4 border-t border-border/50">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 shadow-sm">
                     {user.profilePicture ? (
-                        <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-slate-700">
+                        <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-border/60">
                             <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
                         </div>
                     ) : (

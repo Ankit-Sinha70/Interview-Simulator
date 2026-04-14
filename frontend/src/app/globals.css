@@ -4,6 +4,49 @@
 
 :root {
   /* Core Shadcn Colors (Slate/Zinc Base) */
+  --background: 220 35% 97%;
+  --foreground: 228 36% 14%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 228 36% 14%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 228 36% 14%;
+
+  --primary: 252 80% 62%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 220 30% 93%;
+  --secondary-foreground: 228 36% 14%;
+
+  --muted: 220 26% 92%;
+  --muted-foreground: 224 16% 43%;
+
+  --accent: 220 32% 91%;
+  --accent-foreground: 228 36% 14%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 21% 85%;
+  --input: 220 21% 85%;
+  --ring: 252 80% 62%;
+
+  --radius: 0.75rem;
+
+  /* Custom Premium Theme Overrides */
+  --bg-primary: #f6f8fc;
+  --bg-secondary: #ffffff;
+
+  --accent-violet: #6c5ce7;
+  --accent-teal: #00cec9;
+  --accent-coral: #e17055;
+
+  --accent-violet-glow: rgba(108, 92, 231, 0.24);
+  --accent-teal-glow: rgba(0, 206, 201, 0.2);
+}
+
+.dark {
   --background: 224 71% 4%;
   --foreground: 213 31% 91%;
 
@@ -32,23 +75,11 @@
   --input: 216 34% 17%;
   --ring: 216 34% 17%;
 
-  --radius: 0.75rem;
-
-  /* Custom Premium Theme Overrides */
   --bg-primary: #0a0a1a;
   --bg-secondary: #111128;
 
-  --accent-violet: #6c5ce7;
-  --accent-teal: #00cec9;
-  --accent-coral: #e17055;
-
   --accent-violet-glow: rgba(108, 92, 231, 0.4);
   --accent-teal-glow: rgba(0, 206, 201, 0.4);
-}
-
-.dark {
-  --background: 224 71% 4%;
-  --foreground: 213 31% 91%;
 }
 
 @theme inline {
@@ -145,10 +176,18 @@
     font-family: 'Inter', system-ui, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
     background-image:
       radial-gradient(circle at 15% 50%, rgba(108, 92, 231, 0.08), transparent 25%),
       radial-gradient(circle at 85% 30%, rgba(0, 206, 201, 0.08), transparent 25%);
   }
+}
+
+.light body {
+  background-image:
+    radial-gradient(circle at 12% 20%, rgba(108, 92, 231, 0.1), transparent 24%),
+    radial-gradient(circle at 88% 18%, rgba(0, 206, 201, 0.1), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(246, 248, 252, 0.95));
 }
 
 /* Sidebar hiding for active interviews on the SPA dashboard */

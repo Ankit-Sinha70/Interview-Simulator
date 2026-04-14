@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Eye, EyeOff, Plus, X } from 'lucide-react';
+import { Eye, EyeOff, X } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { SuccessDialog } from '@/components/ui/SuccessDialog';
+import { useTheme } from 'next-themes';
 
 interface RecentLogin {
     email: string;
@@ -17,6 +17,7 @@ interface RecentLogin {
 
 export default function LoginPage() {
     const { login } = useAuth();
+    const { resolvedTheme } = useTheme();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -127,26 +128,26 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#0b0816] text-slate-200 relative overflow-hidden font-sans">
+        <div className="min-h-screen flex flex-col bg-background text-foreground relative overflow-hidden font-sans">
             <main className="flex-1 w-full flex items-center justify-center p-4">
                 {/* Single Centered Container */}
-                <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center justify-center gap-16 lg:gap-24 border border-white/10 p-10 rounded-2xl shadow-[0_20px_60px_-10px_rgba(235, 231, 233, 0.8)]">
+                <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 border border-border/60 bg-card/45 backdrop-blur-xl p-6 sm:p-10 rounded-2xl shadow-[0_20px_60px_-20px_rgba(108,92,231,0.18)]">
 
                     {/* Left Column: Recent Logins */}
                     <div className="w-full max-w-[380px] space-y-8 flex flex-col items-center lg:items-start text-center lg:text-left">
                         {/* Avatar Placeholder */}
-                        <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                        <div className="w-16 h-16 rounded-full bg-muted/60 border border-border/60 flex items-center justify-center overflow-hidden">
                             <img src="./png/avatar.png" alt="User Avatar" className="w-full h-full object-cover" />
                         </div>
                         <div className="space-y-1">
-                            <h1 className="text-xl font-semibold tracking-tight text-white">
+                            <h1 className="text-xl font-semibold tracking-tight text-foreground">
                                 Recent logins
                             </h1>
-                            <p className="text-sm text-slate-400">
+                            <p className="text-sm text-muted-foreground">
                                 Click your picture to sign in
                             </p>
                         </div>
-                        <hr className="w-full border-white/10" />
+                        <hr className="w-full border-border/60" />
 
 
                         <div className="flex gap-4 justify-center lg:justify-start flex-wrap max-w-full">
@@ -155,12 +156,12 @@ export default function LoginPage() {
                                 <div
                                     key={loginData.email}
                                     onClick={() => handleRecentLoginClick(loginData.email)}
-                                    className="group relative overflow-hidden rounded-2xl bg-[#1c1635] hover:bg-[#231b42] transition-colors cursor-pointer w-[140px] h-[190px] flex flex-col shadow-xl shadow-black/40"
+                                    className="group relative overflow-hidden rounded-2xl bg-background/85 hover:bg-accent transition-colors cursor-pointer w-[140px] h-[190px] flex flex-col shadow-xl shadow-black/10 border border-border/50"
                                 >
                                     {/* Close Button */}
                                     <button
                                         onClick={(e) => handleRemoveRecentLogin(e, loginData.email)}
-                                        className="absolute top-2 left-2 z-10 w-6 h-6 rounded-full bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60 hover:text-red-400"
+                                        className="absolute top-2 left-2 z-10 w-6 h-6 rounded-full bg-background/80 flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted hover:text-red-500"
                                     >
                                         <X className="w-3.5 h-3.5" />
                                     </button>
@@ -170,7 +171,7 @@ export default function LoginPage() {
                                             {loginData.name.charAt(0)}
                                         </div>
                                     </div>
-                                    <div className="py-4 px-2 truncate text-center font-medium text-sm text-white border-t border-black/20 bg-black/10">
+                                    <div className="py-4 px-2 truncate text-center font-medium text-sm text-foreground border-t border-border/50 bg-muted/30">
                                         {loginData.name}
                                     </div>
                                 </div>
@@ -179,46 +180,46 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <div className="hidden lg:block w-px h-[400px] bg-white/10"></div>
+                    <div className="hidden lg:block w-px h-[400px] bg-border/60"></div>
 
-                    <div className="block lg:hidden w-full h-px bg-white/10 my-8"></div>
+                    <div className="block lg:hidden w-full h-px bg-border/60 my-8"></div>
                     <div className="w-full max-w-[420px]">
-                        <div className="bg-[#120f22] p-8 rounded-3xl shadow-2xl shadow-black/50 border border-white/5">
+                        <div className="bg-card p-8 rounded-3xl shadow-2xl shadow-black/10 border border-border/60">
                             <form onSubmit={handleSubmit} className="space-y-5">
                                 {error && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center">{error}</div>}
 
                                 {!isLogin && (
                                     <div className="space-y-1.5">
-                                        <label className="text-xs text-slate-400 font-medium px-1">Your name</label>
+                                        <label className="text-xs text-muted-foreground font-medium px-1">Your name</label>
                                         <Input
                                             placeholder="Name"
                                             value={name}
                                             onChange={e => setName(e.target.value)}
                                             required
-                                            className="h-12 bg-[#1b1731] border-transparent focus-visible:ring-[#6d5ae6] rounded-xl placeholder:text-slate-500 text-sm"
+                                            className="h-12 bg-background border-border focus-visible:ring-[#6d5ae6] rounded-xl placeholder:text-muted-foreground text-sm"
                                         />
                                     </div>
                                 )}
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs text-slate-400 font-medium px-1">Your email</label>
+                                    <label className="text-xs text-muted-foreground font-medium px-1">Your email</label>
                                     <Input
                                         type="email"
                                         placeholder="Email address"
                                         value={email}
                                         onChange={e => setEmail(e.target.value)}
                                         required
-                                        className="h-12 bg-[#1b1731] border-transparent focus-visible:ring-[#6d5ae6] rounded-xl placeholder:text-slate-500 text-sm"
+                                        className="h-12 bg-background border-border focus-visible:ring-[#6d5ae6] rounded-xl placeholder:text-muted-foreground text-sm"
                                     />
                                 </div>
 
                                 <div className="space-y-1.5 focus-within:relative">
                                     <div className="flex justify-between px-1">
-                                        <label className="text-xs text-slate-400 font-medium">Your password</label>
+                                        <label className="text-xs text-muted-foreground font-medium">Your password</label>
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors focus:outline-none font-medium"
+                                            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors focus:outline-none font-medium"
                                         >
                                             {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                                             {showPassword ? 'Hide' : 'Show'}
@@ -230,7 +231,7 @@ export default function LoginPage() {
                                         value={password}
                                         onChange={e => setPassword(e.target.value)}
                                         required
-                                        className="h-12 bg-[#1b1731] border-transparent focus-visible:ring-[#6d5ae6] rounded-xl pr-10 placeholder:text-slate-500 text-sm"
+                                        className="h-12 bg-background border-border focus-visible:ring-[#6d5ae6] rounded-xl pr-10 placeholder:text-muted-foreground text-sm"
                                     />
                                 </div>
 
@@ -244,7 +245,7 @@ export default function LoginPage() {
 
                                     {isLogin && (
                                         <div className="text-center pt-1">
-                                            <Link href="/forgot-password" className="text-sm text-slate-300 hover:text-white transition-colors">
+                                            <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                                 Forgot your password?
                                             </Link>
                                         </div>
@@ -255,10 +256,10 @@ export default function LoginPage() {
                             <div className="mt-6">
                                 <div className="relative">
                                     <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-white/10"></div>
+                                        <div className="w-full border-t border-border/60"></div>
                                     </div>
                                     <div className="relative flex justify-center text-sm">
-                                        <span className="px-2 bg-[#120f22] text-slate-400">Or continue with</span>
+                                        <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
                                     </div>
                                 </div>
 
@@ -271,7 +272,7 @@ export default function LoginPage() {
                                             onError={() => {
                                                 setError('Google login failed');
                                             }}
-                                            theme="filled_black"
+                                            theme={resolvedTheme === 'light' ? 'outline' : 'filled_black'}
                                             size="large"
                                             shape="pill"
                                             width="356" // approximately fits the container
@@ -300,7 +301,7 @@ export default function LoginPage() {
                         <div className="mt-6 flex justify-center">
                             <button
                                 onClick={() => setIsLogin(!isLogin)}
-                                className="w-[85%] h-12 rounded-full border border-white/10 text-white text-[15px] font-medium hover:bg-white/5 transition-colors bg-transparent"
+                                className="w-[85%] h-12 rounded-full border border-border/60 text-foreground text-[15px] font-medium hover:bg-accent transition-colors bg-transparent"
                             >
                                 {isLogin ? 'Create an account' : 'Log in to existing account'}
                             </button>
