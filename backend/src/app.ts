@@ -11,13 +11,27 @@ import { errorMiddleware } from './middlewares/error.middleware';
 const app = express();
 
 // Middleware
+// Configure CORS with a dynamic origin checker. Accepts exact allowed origins
+// and any vercel preview domains (e.g. *.vercel.app). Also trims trailing
+// slashes from `FRONTEND_URL` to avoid mismatches.
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    (process.env.FRONTEND_URL || '').replace(/\/$/, ''),
+    'https://interview-simulator-psi.vercel.app',
+].filter(Boolean);
+
 app.use(cors({
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        process.env.FRONTEND_URL || '',
-        'https://interview-simulator-psi.vercel.app'
-    ].filter(Boolean),
+    origin: (origin, callback) => {
+        if (!origin) {
+            // Allow non-browser requests like server-to-server, Postman, etc.
+            return callback(null, true);
+        }
+        const normalized = origin.replace(/\/$/, '');
+        const isAllowed = allowedOrigins.includes(normalized) || /\.vercel\.app$/.test(normalized);
+        if (isAllowed) return callback(null, true);
+        return callback(new Error(`CORS policy: origin not allowed - ${origin}`));
+    },
     credentials: true,
 }));
 
