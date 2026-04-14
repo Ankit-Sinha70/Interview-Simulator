@@ -2,8 +2,13 @@
 
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
-import type { ThemeProviderProps } from "next-themes/dist/types"
+<<<<<<< HEAD
+import type { ThemeProviderProps } from "next-themes"
+=======
+import type { ThemeProviderProps } from "next-themes"
+>>>>>>> b12e63d (fix(theme): import ThemeProviderProps from next-themes)
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return <NextThemesProvider {...props}>{children}</NextThemesProvider>
 }
+export default ThemeProvider
