@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getSubscriptionPlans, ISubscriptionPlan } from '@/services/api';
+import { getSubscriptionPlans, ISubscriptionPlan, createCheckoutSession } from '@/services/api';
 
 export default function PricingPage() {
     const { user } = useAuth();
@@ -35,16 +35,7 @@ export default function PricingPage() {
     const handleUpgrade = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/subscription/create-checkout-session`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ billingCycle: selectedCycle }),
-            });
-            const data = await res.json();
+            const data = await createCheckoutSession(selectedCycle);
             if (data.url) {
                 window.location.href = data.url;
             } else {

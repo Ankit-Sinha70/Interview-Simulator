@@ -61,21 +61,7 @@ export function useActiveSession(sessionId: string) {
 
         const load = async () => {
             try {
-                const session = await getSession(sessionId) as {
-                    questions: Array<{
-                        questionText: string;
-                        topic: string;
-                        difficulty: 'easy' | 'medium' | 'hard';
-                        answer?: string;
-                        evaluation?: Evaluation;
-                    }>;
-                    status: string;
-                    finalReport?: FinalReport;
-                    endsAt?: string;
-                    hasShownFiveMinWarning?: boolean;
-                    maxQuestions?: number;
-                    aggregatedScores?: AggregatedScores;
-                };
+                const session = await getSession(sessionId);
 
                 const history: InterviewHistoryEntry[] = session.questions
                     .filter((q) => q.answer && q.evaluation)
@@ -83,7 +69,7 @@ export function useActiveSession(sessionId: string) {
                         question: {
                             question: q.questionText,
                             topic: q.topic,
-                            difficulty: q.difficulty as 'easy' | 'medium' | 'hard'
+                            difficulty: q.difficulty
                         },
                         evaluation: q.evaluation as Evaluation,
                         questionNumber: index + 1
@@ -100,7 +86,7 @@ export function useActiveSession(sessionId: string) {
                     currentQuestion: currentQ ? {
                         question: currentQ.questionText,
                         topic: currentQ.topic,
-                        difficulty: currentQ.difficulty as 'easy' | 'medium' | 'hard'
+                        difficulty: currentQ.difficulty
                     } : null,
                     questionNumber: currentQ ? (history.length + 1) : history.length,
                     latestEvaluation: history.length > 0 ? history[history.length - 1].evaluation : null,

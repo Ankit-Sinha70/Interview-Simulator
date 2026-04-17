@@ -18,15 +18,19 @@ export function SuccessDialog({
     buttonText,
     onConfirm,
 }: SuccessDialogProps) {
-    const [show, setShow] = useState(false);
+    const [show, setShow] = useState(isOpen);
 
     useEffect(() => {
-        if (isOpen) {
+        let timeout: NodeJS.Timeout;
+        if (isOpen && !show) {
             setShow(true);
-        } else {
-            setTimeout(() => setShow(false), 300); // Wait for transition
+        } else if (!isOpen && show) {
+            timeout = setTimeout(() => setShow(false), 300); // Wait for transition
         }
-    }, [isOpen]);
+        return () => {
+            if (timeout) clearTimeout(timeout);
+        };
+    }, [isOpen, show]);
 
     if (!show) return null;
 
