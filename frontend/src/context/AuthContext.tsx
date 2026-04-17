@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 export interface User {
@@ -36,17 +36,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
-    useEffect(() => {
-        // Check for token on mount
-        const token = localStorage.getItem('token');
-        if (token) {
-            fetchUser(token);
-        } else {
-            setIsLoading(false);
-        }
-    }, []);
+    const logout = useCallback(() => {
+        localStorage.removeItem('token');
+        setUser(null);
+        router.push('/login');
+    }, [router]);
 
-    const fetchUser = async (token: string) => {
+    const fetchUser = useCallback(async (token: string) => {
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -63,18 +59,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [logout]);
+
+    useEffect(() => {
+        // Check for token on mount
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetchUser(token);
+        } else {
+            setIsLoading(false);
+        }
+    }, [fetchUser]);
 
     const login = (token: string, userData: User) => {
         localStorage.setItem('token', token);
         setUser(userData);
         router.push('/');
-    };
-
-    const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-        router.push('/login');
     };
 
     const refreshUser = async () => {

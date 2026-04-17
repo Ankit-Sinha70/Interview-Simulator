@@ -137,7 +137,7 @@ export async function startInterview(data: StartInterviewRequest): Promise<Start
     });
 }
 
-export async function uploadResume(formData: FormData): Promise<any> {
+export async function uploadResume(formData: FormData): Promise<{ message: string; url?: string }> {
     const token = localStorage.getItem('token');
     const url = `${API_BASE}/users/resume`;
     const res = await fetch(url, {
@@ -159,7 +159,7 @@ export async function uploadResume(formData: FormData): Promise<any> {
         throw new Error(errorMessage);
     }
 
-    const json = await res.json();
+    const json: ApiResponse<{ message: string; url?: string }> = await res.json();
     return json.data;
 }
 
@@ -211,9 +211,27 @@ export async function completeInterview(sessionId: string, attentionStats?: Atte
     });
 }
 
-export async function getSession(sessionId: string): Promise<any> {
+export interface InterviewSession {
+    _id: string;
+    userId: string;
+    questions: Array<{
+        questionText: string;
+        topic: string;
+        difficulty: 'easy' | 'medium' | 'hard';
+        answer?: string;
+        evaluation?: Evaluation;
+    }>;
+    status: 'READY' | 'COMPLETED' | 'TIME_EXPIRED' | 'MAX_QUESTIONS_REACHED' | 'ABANDONED';
+    finalReport?: FinalReport;
+    endsAt?: string;
+    hasShownFiveMinWarning?: boolean;
+    maxQuestions?: number;
+    aggregatedScores?: AggregatedScores;
+}
+
+export async function getSession(sessionId: string): Promise<InterviewSession> {
     const token = localStorage.getItem('token');
-    return apiCall<any>(`/interview/${sessionId}`, {
+    return apiCall<InterviewSession>(`/interview/${sessionId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
 }
@@ -228,9 +246,9 @@ export async function markWarningTriggered(sessionId: string): Promise<void> {
     });
 }
 
-export async function verifySubscription(sessionId: string): Promise<any> {
+export async function verifySubscription(sessionId: string): Promise<{ success: boolean }> {
     const token = localStorage.getItem('token');
-    return apiCall<any>('/subscription/verify-session', {
+    return apiCall<{ success: boolean }>('/subscription/verify-session', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -240,9 +258,18 @@ export async function verifySubscription(sessionId: string): Promise<any> {
     });
 }
 
-export async function getUserAnalytics(userId: string): Promise<any> {
+export interface UserAnalyticsSummary {
+    readinessScore: number;
+    totalInterviews: number;
+    improvementTrend: number;
+    topSkills: string[];
+    weakestSkills: string[];
+    [key: string]: any;
+}
+
+export async function getUserAnalytics(userId: string): Promise<UserAnalyticsSummary> {
     const token = localStorage.getItem('token');
-    return apiCall<any>(`/analytics/user/${userId}`, {
+    return apiCall<UserAnalyticsSummary>(`/analytics/user/${userId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
 }
@@ -262,9 +289,9 @@ export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSumm
     });
 }
 
-export async function syncSubscription(): Promise<any> {
+export async function syncSubscription(): Promise<{ success: boolean; planType: string }> {
     const token = localStorage.getItem('token');
-    return apiCall<any>('/subscription/sync', {
+    return apiCall<{ success: boolean; planType: string }>('/subscription/sync', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -292,9 +319,9 @@ export async function getActiveSession(): Promise<ActiveSessionResponse> {
     });
 }
 
-export async function abandonSession(sessionId: string): Promise<any> {
+export async function abandonSession(sessionId: string): Promise<{ success: boolean }> {
     const token = localStorage.getItem('token');
-    return apiCall<any>('/interview/abandon', {
+    return apiCall<{ success: boolean }>('/interview/abandon', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -398,6 +425,18 @@ export async function resumeSubscription(): Promise<{ success: boolean; status: 
     });
 }
 
+export async function createCheckoutSession(billingCycle: string): Promise<{ url: string }> {
+    const token = localStorage.getItem('token');
+    return apiCall<{ url: string }>('/subscription/create-checkout-session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ billingCycle }),
+    });
+}
+
 // ==========================================
 // 8. USER PROFILE API
 // ==========================================
@@ -455,9 +494,9 @@ export async function getWelcomeOfferStatus(): Promise<WelcomeOfferStatus> {
     });
 }
 
-export async function dismissWelcomeOffer(): Promise<void> {
+export async function dismissWelcomeOffer(): Promise<{ success: boolean }> {
     const token = localStorage.getItem('token');
-    await apiCall<any>('/users/dismiss-welcome-offer', {
+    return apiCall<{ success: boolean }>('/users/dismiss-welcome-offer', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

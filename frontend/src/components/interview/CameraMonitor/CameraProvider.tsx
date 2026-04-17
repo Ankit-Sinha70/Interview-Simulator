@@ -83,6 +83,7 @@ function CameraManager({ children }: { children: React.ReactNode }) {
         if (initRef.current) return;
         initRef.current = true;
 
+        console.log("[CameraProvider] MediaPipe script loaded successfully");
         try {
             await startCamera();
             await loadModel(onResults);
@@ -91,6 +92,16 @@ function CameraManager({ children }: { children: React.ReactNode }) {
             console.error("[CameraProvider] Initialization failed:", err);
         }
     }, [startCamera, loadModel, onResults, runLoop]);
+
+    // Added a safety timeout for script loading
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (!initRef.current) {
+                console.warn("[CameraProvider] MediaPipe script loading is taking longer than expected...");
+            }
+        }, 10000);
+        return () => clearTimeout(timeout);
+    }, []);
 
     useEffect(() => {
         return () => {
