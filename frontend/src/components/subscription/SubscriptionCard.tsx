@@ -171,6 +171,15 @@ export default function SubscriptionCard() {
             setResumeLoading(false);
         }
     };
+    const isWithinRefundPeriod = () => {
+        if (!sub || !sub.subscriptionStartDate) return false;
+        const now = new Date();
+        const start = new Date(sub.subscriptionStartDate);
+        const msDiff = now.getTime() - start.getTime();
+        const daysDiff = msDiff / (1000 * 60 * 60 * 24);
+        return daysDiff <= 7;
+    };
+
     // Billing progress
     const daysElapsed = sub.totalDays != null && sub.daysRemaining != null
         ? sub.totalDays - sub.daysRemaining
@@ -388,7 +397,7 @@ export default function SubscriptionCard() {
                                     {sub.cancelAtPeriodEnd && 'Billing Portal'}
                                 </button>
                                 {/* Refund Button */}
-                                {!sub.refunded && (
+                                {!sub.refunded && isWithinRefundPeriod() && (
                                     <ConfirmDialog
                                         title="Request Refund"
                                         description="Refund will cancel your Pro plan immediately. You will lose access to all premium features including unlimited interviews, advanced analytics, and voice mode. This action cannot be undone."
