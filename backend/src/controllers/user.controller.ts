@@ -3,8 +3,6 @@ import { User } from '../models/user.model';
 import { SubscriptionPlan } from '../models/subscriptionPlan.model';
 import bcrypt from 'bcryptjs';
 import { parseResumeText } from '../ai/resume.engine';
-const pdfParse = require('pdf-parse');
-
 /**
  * GET /api/users/me
  * Returns current user's profile info (no password hash)
@@ -300,8 +298,15 @@ export async function uploadResume(req: Request, res: Response, next: NextFuncti
 
         let rawText = '';
         if (file.mimetype === 'application/pdf') {
-            const pdfData = await pdfParse(file.buffer);
-            rawText = pdfData.text;
+            try {
+                const { PDFParse } = require('pdf-parse');
+                const parser = new PDFParse({ data: file.buffer });
+                const pdfData = await parser.getText();
+                rawText = pdfData.text || '';
+            } catch (pdfError: any) {
+                console.error('[uploadResume PDF Parse Error]', pdfError);
+                return res.status(400).json({ success: false, error: `Failed to parse PDF resume: ${pdfError.message || pdfError}` });
+            }
         } else if (file.mimetype === 'text/plain') {
             rawText = file.buffer.toString('utf-8');
         } else {
