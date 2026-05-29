@@ -18,6 +18,9 @@ export interface User {
     hasEverSubscribed?: boolean;
     createdAt?: string;
     parsedResume?: any;
+    githubProfile?: any;
+    targetJobDescription?: any;
+    atsScore?: any;
 }
 
 interface AuthContextType {

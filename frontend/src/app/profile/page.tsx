@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Loader2, User as UserIcon, Mail, ShieldCheck, CreditCard, Lock, CheckCircle2, AlertCircle, Camera, Eye, EyeOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
+import ProfileIntegrations from '@/components/profile/ProfileIntegrations';
 
 export default function ProfilePage() {
     const { user, refreshUser } = useAuth();
@@ -261,6 +262,11 @@ export default function ProfilePage() {
                                 </CardFooter>
                             </form>
                         </Card>
+
+                        {/* LinkedIn / GitHub Integrations */}
+                        <div className="animate-fadeInUp" style={{ animationDelay: '150ms' }}>
+                            <ProfileIntegrations />
+                        </div>
 
                         {/* Change Password Card - ONLY LOCAL USERS */}
                         {user.provider === 'local' && (

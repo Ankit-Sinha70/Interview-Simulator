@@ -19,6 +19,8 @@ export interface FollowUpContext {
    targetDifficulty: Difficulty;
    questionHistory: string[];
    parsedResume?: any;
+   jobDescription?: string;
+   targetCompany?: string;
 }
 
 // ─── Level-Specific Follow-Up Rules ───
@@ -58,7 +60,8 @@ export function getFollowUpPrompt(ctx: FollowUpContext): string {
 
    return `You are a senior technical interviewer conducting a realistic interview.
 Interview Style: ${ctx.interviewStyle || 'friendly'}
-Company Style: ${ctx.companyStyle || 'general'}
+Company Style: ${ctx.companyStyle || 'general'} ${ctx.targetCompany ? `(Specifically targeted at company: ${ctx.targetCompany})` : ''}
+${ctx.targetCompany ? `Ensure questions test skills, coding paradigms, and topics typical of an engineering interview at ${ctx.targetCompany}.` : ''}
 If the Company Style is "google", ask deeply technical, algorithmic, or scale-focused questions.
 If the Company Style is "startup", ask practical, fast-paced, "get it done" questions.
 If the Interview Style is "strict" or "faang", be very demanding and precise.
@@ -82,6 +85,12 @@ Communication Score: ${ctx.communicationScore}
 
 Identified Weaknesses:
 ${ctx.weaknesses.join(', ')}
+
+${ctx.jobDescription ? `TARGET JOB DESCRIPTION CONTEXT:
+${ctx.jobDescription}
+
+Please align the follow-up question to test the specific technologies and requirements described in this Job Description.
+` : ''}
 
 ${ctx.parsedResume ? `CANDIDATE'S RESUME CONTEXT (Use this to strongly tailor your follow-up if applicable to their answers):
 ${JSON.stringify(ctx.parsedResume, null, 2)}
