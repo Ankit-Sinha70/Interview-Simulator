@@ -1,32 +1,28 @@
 import { v4 as uuidv4 } from 'uuid';
-import {
-    Role,
-    ExperienceLevel,
-    InterviewMode,
-    Evaluation,
-    QuestionEntry,
-    AnswerInfo,
-    GeneratedQuestion,
-    FollowUpQuestion,
-    VoiceMetadata,
-    AggregatedScores,
-    WeaknessTracker,
-    VoiceEvaluation,
-} from '../models/interviewSession.model';
-import * as sessionService from './session.service';
-import * as scoringService from './scoring.service';
-import { generateQuestion } from '../ai/question.engine';
 import { evaluateAnswer } from '../ai/evaluation.engine';
 import { generateFollowUp } from '../ai/followup.engine';
-import { evaluateVoice } from '../ai/voice.engine';
 import { generateHint } from '../ai/hint.engine';
+import { generateQuestion } from '../ai/question.engine';
+import { evaluateVoice } from '../ai/voice.engine';
+import {
+    AnswerInfo,
+    AttentionStats,
+    ExperienceLevel,
+    GeneratedQuestion,
+    InterviewMode,
+    QuestionEntry,
+    Role,
+    VoiceMetadata,
+    WeaknessTracker
+} from '../models/interviewSession.model';
+import * as scoringService from './scoring.service';
+import * as sessionService from './session.service';
 
 import {
-    getNextDifficulty,
     determineFollowUpIntent,
     findWeakestDimension,
+    getNextDifficulty,
 } from '../utils/scoreCalculator';
-import { clampDifficulty } from '../constants/difficultyMatrix';
 
 // ─── Weakness Dimension Map ───
 
@@ -201,6 +197,7 @@ export async function processAnswer(
     sessionId: string,
     answer: string,
     voiceMeta?: VoiceMetadata,
+    attentionStats?: AttentionStats,
 ) {
     const session = await sessionService.getSession(sessionId);
     if (!session) throw new Error('Session not found');
@@ -288,7 +285,7 @@ export async function processAnswer(
 
         // Import report service dynamically to avoid circular dependencies if any
         const { generateFinalReport } = await import('./report.service');
-        await generateFinalReport(session.sessionId);
+        await generateFinalReport(session.sessionId, attentionStats);
 
         return {
             evaluation: evalResult,
@@ -415,7 +412,7 @@ export async function processAnswer(
         }
 
         const { generateFinalReport } = await import('./report.service');
-        const finalReport = await generateFinalReport(session.sessionId);
+        const finalReport = await generateFinalReport(session.sessionId, attentionStats);
 
         return {
             evaluation,

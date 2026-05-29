@@ -89,6 +89,22 @@ const FinalReportSchema = new Schema({
     improvementRoadmap: { type: [String], default: [] },
     nextPreparationFocus: { type: [String], default: [] },
     timeAnalysis: { type: TimeAnalysisSchema, default: null },
+    
+    // Resume-Based & Advanced Analytics
+    resumeAlignmentScore: { type: Number },
+    strongResumeSkills: { type: [String], default: [] },
+    improvementResumeSkills: { type: [String], default: [] },
+    skillValidationMatrix: {
+        type: [{
+            skill: String,
+            performanceScore: Number,
+            insight: String
+        }],
+        default: []
+    },
+    projectUnderstandingScore: { type: Number },
+    interviewReadinessScore: { type: Number },
+    recommendedLearningPath: { type: [String], default: [] }
 }, { _id: false });
 
 // ─── Main Session Schema ───

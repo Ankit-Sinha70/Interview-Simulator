@@ -151,6 +151,12 @@ export interface AttentionStats {
     focusCategory: 'Excellent' | 'Good' | 'Moderate' | 'Low';
 }
 
+export interface SkillValidation {
+    skill: string;
+    performanceScore: number;
+    insight: string;
+}
+
 // ─── Final Report ───
 
 export interface FinalReport {
@@ -164,6 +170,15 @@ export interface FinalReport {
     nextPreparationFocus: string[];
     executiveSummary?: string;
     timeAnalysis?: TimeAnalysis;
+    
+    // Resume-Based & Advanced Analytics
+    resumeAlignmentScore?: number;
+    strongResumeSkills?: string[];
+    improvementResumeSkills?: string[];
+    skillValidationMatrix?: SkillValidation[];
+    projectUnderstandingScore?: number;
+    interviewReadinessScore?: number;
+    recommendedLearningPath?: string[];
 }
 
 export interface TimeAnalysis {

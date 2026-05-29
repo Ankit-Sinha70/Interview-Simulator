@@ -38,8 +38,8 @@ export async function startInterview(req: Request, res: Response, next: NextFunc
  */
 export async function submitAnswer(req: Request, res: Response, next: NextFunction) {
     try {
-        const { sessionId, answer, voiceMeta } = req.body;
-        const result = await interviewService.processAnswer(sessionId, answer, voiceMeta);
+        const { sessionId, answer, voiceMeta, attentionStats } = req.body;
+        const result = await interviewService.processAnswer(sessionId, answer, voiceMeta, attentionStats);
 
         res.status(200).json({
             success: true,

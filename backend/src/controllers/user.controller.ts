@@ -341,3 +341,41 @@ export async function uploadResume(req: Request, res: Response, next: NextFuncti
         next(error);
     }
 }
+
+/**
+ * PUT /api/users/resume-data
+ * Updates the parsed resume details (role, experience, skills, projects, technologies)
+ */
+export async function updateParsedResume(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+        const { role, experienceYears, skills, technologies, projects, experience } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+        user.parsedResume = {
+            role: role || user.parsedResume?.role || '',
+            experienceYears: experienceYears || user.parsedResume?.experienceYears || '',
+            skills: Array.isArray(skills) ? skills : (user.parsedResume?.skills || []),
+            technologies: Array.isArray(technologies) ? technologies : (user.parsedResume?.technologies || []),
+            projects: Array.isArray(projects) ? projects : (user.parsedResume?.projects || []),
+            experience: Array.isArray(experience) ? experience : (user.parsedResume?.experience || []),
+            rawText: user.parsedResume?.rawText || '',
+            updatedAt: new Date()
+        };
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Resume profile updated successfully',
+            data: user.parsedResume
+        });
+    } catch (error) {
+        console.error('[updateParsedResume Error]', error);
+        next(error);
+    }
+}
