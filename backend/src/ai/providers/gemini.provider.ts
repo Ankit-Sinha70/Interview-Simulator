@@ -18,7 +18,10 @@ export class GeminiProvider implements IAIProvider {
             const genAI = new GoogleGenerativeAI(apiKey);
             this.model = genAI.getGenerativeModel({
                 model: aiConfig.gemini.model,
-                generationConfig: aiConfig.gemini.generationConfig,
+                generationConfig: {
+                    ...aiConfig.gemini.generationConfig,
+                    responseMimeType: 'application/json',
+                },
             });
         }
         return this.model;
@@ -35,15 +38,24 @@ export class GeminiProvider implements IAIProvider {
 
     private parseResponse<T>(text: string): T {
         let cleaned = text.trim();
-        if (cleaned.startsWith('```json')) {
-            cleaned = cleaned.slice(7);
-        } else if (cleaned.startsWith('```')) {
-            cleaned = cleaned.slice(3);
+
+        // Robustly extract JSON block by finding the first and last structural braces/brackets
+        const startBrace = cleaned.indexOf('{');
+        const startBracket = cleaned.indexOf('[');
+        let startIndex = -1;
+        let endIndex = -1;
+
+        if (startBrace !== -1 && (startBracket === -1 || startBrace < startBracket)) {
+            startIndex = startBrace;
+            endIndex = cleaned.lastIndexOf('}');
+        } else if (startBracket !== -1) {
+            startIndex = startBracket;
+            endIndex = cleaned.lastIndexOf(']');
         }
-        if (cleaned.endsWith('```')) {
-            cleaned = cleaned.slice(0, -3);
+
+        if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+            cleaned = cleaned.substring(startIndex, endIndex + 1);
         }
-        cleaned = cleaned.trim();
 
         try {
             return JSON.parse(cleaned) as T;

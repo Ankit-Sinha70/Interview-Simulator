@@ -43,11 +43,25 @@ export class GroqProvider implements IAIProvider {
     }
 
     private cleanAndParseJSON<T>(content: string): T {
-        // 1. Remove markdown code blocks if present
-        let clean = content.replace(/```json\n?/g, '').replace(/```/g, '');
+        let clean = content.trim();
 
-        // 2. Trim whitespace
-        clean = clean.trim();
+        // Robustly extract JSON block by finding the first and last structural braces/brackets
+        const startBrace = clean.indexOf('{');
+        const startBracket = clean.indexOf('[');
+        let startIndex = -1;
+        let endIndex = -1;
+
+        if (startBrace !== -1 && (startBracket === -1 || startBrace < startBracket)) {
+            startIndex = startBrace;
+            endIndex = clean.lastIndexOf('}');
+        } else if (startBracket !== -1) {
+            startIndex = startBracket;
+            endIndex = clean.lastIndexOf(']');
+        }
+
+        if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+            clean = clean.substring(startIndex, endIndex + 1);
+        }
 
         try {
             return JSON.parse(clean) as T;

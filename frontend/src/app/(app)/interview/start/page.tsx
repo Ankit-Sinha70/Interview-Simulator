@@ -13,7 +13,8 @@ export default function StartInterviewPage() {
         role: string, 
         level: 'Junior' | 'Mid' | 'Senior',
         interviewStyle: 'friendly' | 'strict' | 'faang',
-        companyStyle: 'google' | 'startup' | 'product' | 'general'
+        companyStyle: 'google' | 'startup' | 'product' | 'general',
+        useResume: boolean = false
     ) => {
         setIsLoading(true);
         try {
@@ -22,7 +23,8 @@ export default function StartInterviewPage() {
                 experienceLevel: level, 
                 interviewStyle,
                 companyStyle,
-                mode: 'text' 
+                mode: 'text',
+                useResume
             });
             router.push(`/interview/session/${sessionId}`);
         } catch (error) {

@@ -25,5 +25,6 @@ router.get('/goal', userController.getGoal);
 router.post('/goal', userController.setGoal);
 
 router.post('/resume', upload.single('resume'), userController.uploadResume);
+router.put('/resume-data', userController.updateParsedResume);
 
 export default router;

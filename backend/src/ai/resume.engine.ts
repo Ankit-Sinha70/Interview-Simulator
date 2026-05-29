@@ -1,6 +1,8 @@
 import { callAI } from './provider.factory';
 
 export interface ParsedResume {
+    role?: string;
+    experienceYears?: string;
     skills: string[];
     technologies: string[];
     projects: {
@@ -20,10 +22,12 @@ const RESUME_PARSER_PROMPT = `You are a highly capable AI resume parser.
 Your task is to take raw text extracted from a candidate's resume and convert it into structured JSON data.
 
 Extract the following information:
-1. "skills": Array of generic skills (e.g. "Agile", "System Design", "Leadership")
-2. "technologies": Array of programming languages, frameworks, or tools (e.g. "React", "Node.js", "Docker")
-3. "projects": Array of notable projects. Include the name, a brief description, and the tech stack used.
-4. "experience": Array of work experience. Include the job role/title, company name, duration, and bullet points of responsibilities or achievements.
+1. "role": Estimated primary job role (e.g. "Frontend Developer", "Backend Developer", "Fullstack Developer", "DevOps Engineer")
+2. "experienceYears": Estimated total years of professional experience (e.g. "3 Years")
+3. "skills": Array of generic skills (e.g. "Agile", "System Design", "Leadership")
+4. "technologies": Array of programming languages, frameworks, or tools (e.g. "React", "Node.js", "Docker")
+5. "projects": Array of notable projects. Include the name, a brief description, and the tech stack used.
+6. "experience": Array of work experience. Include the job role/title, company name, duration, and bullet points of responsibilities or achievements.
 
 RAW RESUME TEXT:
 <<<RAW_TEXT>>>
@@ -31,6 +35,8 @@ RAW RESUME TEXT:
 Return STRICTLY JSON. Do not include markdown formatting or explanation. 
 Your response must match this schema exactly:
 {
+  "role": "...",
+  "experienceYears": "...",
   "skills": ["..."],
   "technologies": ["..."],
   "projects": [

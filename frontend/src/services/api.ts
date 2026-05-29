@@ -80,6 +80,12 @@ export interface TimeAnalysis {
     insights: string[];
 }
 
+export interface SkillValidation {
+    skill: string;
+    performanceScore: number;
+    insight: string;
+}
+
 export interface FinalReport {
     averageScore: number;
     strongestAreas: string[];
@@ -90,6 +96,15 @@ export interface FinalReport {
     improvementRoadmap: string[];
     nextPreparationFocus: string[];
     timeAnalysis?: TimeAnalysis;
+    
+    // Resume-Based & Advanced Analytics
+    resumeAlignmentScore?: number;
+    strongResumeSkills?: string[];
+    improvementResumeSkills?: string[];
+    skillValidationMatrix?: SkillValidation[];
+    projectUnderstandingScore?: number;
+    interviewReadinessScore?: number;
+    recommendedLearningPath?: string[];
 }
 
 // ─── API Client ───
@@ -163,10 +178,30 @@ export async function uploadResume(formData: FormData): Promise<{ message: strin
     return json.data;
 }
 
+export async function updateResumeData(data: {
+    role?: string;
+    experienceYears?: string;
+    skills?: string[];
+    technologies?: string[];
+    projects?: Array<{ name: string; description: string; techStack: string[] }>;
+    experience?: Array<{ role: string; company: string; duration: string; responsibilities: string[] }>;
+}): Promise<any> {
+    const token = localStorage.getItem('token');
+    return apiCall<any>('/users/resume-data', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data),
+    });
+}
+
 export async function submitAnswer(
     sessionId: string,
     answer: string,
     voiceMeta?: VoiceMetadata,
+    attentionStats?: AttentionStats,
 ): Promise<AnswerResponse> {
     const token = localStorage.getItem('token');
     return apiCall<AnswerResponse>('/interview/answer', {
@@ -175,7 +210,7 @@ export async function submitAnswer(
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ sessionId, answer, voiceMeta }),
+        body: JSON.stringify({ sessionId, answer, voiceMeta, attentionStats }),
     });
 }
 

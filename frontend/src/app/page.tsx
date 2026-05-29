@@ -1,35 +1,35 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import InterviewLimitModal from '@/components/InterviewLimitModal';
-import SessionSetup from '@/components/SessionSetup';
-import QuestionCard from '@/components/QuestionCard';
 import AnswerInput from '@/components/AnswerInput';
-import VoiceInput from '@/components/VoiceInput';
 import EvaluationCard from '@/components/EvaluationCard';
+import { EyeTracker } from '@/components/eye-tracker/EyeTracker';
+import InterviewLimitModal from '@/components/InterviewLimitModal';
+import QuestionCard from '@/components/QuestionCard';
 import ReportView from '@/components/ReportView';
-import Link from 'next/link';
+import SessionSetup from '@/components/SessionSetup';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import VoiceInput from '@/components/VoiceInput';
+import WelcomeOfferModal from '@/components/WelcomeOfferModal';
 import { useAuth } from '@/context/AuthContext';
 import {
-  startInterview,
-  submitAnswer,
+  AnswerResponse,
+  AttentionStats,
   completeInterview,
-  GeneratedQuestion,
   Evaluation,
   FinalReport,
-  AnswerResponse,
-  VoiceMetadata,
-  verifySubscription,
-  AttentionStats,
+  GeneratedQuestion,
   getWelcomeOfferStatus,
+  startInterview,
+  submitAnswer,
+  verifySubscription,
+  VoiceMetadata,
   WelcomeOfferStatus,
 } from '@/services/api';
-import { EyeTracker } from '@/components/eye-tracker/EyeTracker';
-import WelcomeOfferModal from '@/components/WelcomeOfferModal';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useCallback, useEffect, useState } from 'react';
 
 type AppState = 'setup' | 'interview' | 'report';
 
@@ -133,42 +133,24 @@ function HomeContent() {
 
   // ─── Start Interview ───
   const handleStart = useCallback(async (
-      role: string, 
-      experienceLevel: 'Junior' | 'Mid' | 'Senior', 
-      interviewStyle?: string, 
-      companyStyle?: string, 
-      resumeFile?: File | null,
-      useResumeFlag?: boolean
+    role: string,
+    experienceLevel: 'Junior' | 'Mid' | 'Senior',
+    interviewStyle: 'friendly' | 'strict' | 'faang',
+    companyStyle: 'google' | 'startup' | 'product' | 'general',
+    useResumeFlag?: boolean
   ) => {
     setIsLoading(true);
     setError(null);
     try {
       setExperienceLevel(experienceLevel);
-      
-      let finalUseResume = useResumeFlag;
 
-      // If user uploaded a new file, upload it first
-      if (resumeFile) {
-        const formData = new FormData();
-        formData.append('resume', resumeFile);
-        
-        const { uploadResume } = await import('@/services/api');
-        await uploadResume(formData);
-        
-        // Refresh AuthContext to get the new parsedResume
-        if (refreshUser) await refreshUser();
-        
-        // Since they just uploaded it, they definitely want to use it
-        finalUseResume = true;
-      }
-
-        const result = await startInterview({ 
-          role, 
-          experienceLevel, 
-          mode: 'text',
-          interviewStyle,
-          companyStyle,
-          useResume: finalUseResume
+      const result = await startInterview({
+        role,
+        experienceLevel,
+        mode: 'text',
+        interviewStyle,
+        companyStyle,
+        useResume: useResumeFlag
       });
 
       setSessionId(result.sessionId);
@@ -201,7 +183,12 @@ function HomeContent() {
     setIsLoading(true);
     setError(null);
     try {
-      const result: AnswerResponse = await submitAnswer(sessionId, answer, meta);
+      const result: AnswerResponse = await submitAnswer(
+        sessionId,
+        answer,
+        meta,
+        attentionStatsRef.current || undefined
+      );
 
       // Save this Q&A to history
       if (currentQuestion) {
@@ -447,18 +434,18 @@ function HomeContent() {
             {/* Current Question */}
             {currentQuestion && (
               <div className="animate-fade-in-up delay-100">
-                <QuestionCard 
-                    question={currentQuestion} 
-                    questionNumber={questionNumber} 
-                    trend={
-                        history.length > 0 && currentQuestion.levelScore !== undefined && history[history.length - 1].question.levelScore !== undefined
-                        ? currentQuestion.levelScore > history[history.length - 1].question.levelScore!
-                            ? 'up'
-                            : currentQuestion.levelScore < history[history.length - 1].question.levelScore!
-                            ? 'down'
-                            : 'flat'
-                        : undefined
-                    }
+                <QuestionCard
+                  question={currentQuestion}
+                  questionNumber={questionNumber}
+                  trend={
+                    history.length > 0 && currentQuestion.levelScore !== undefined && history[history.length - 1].question.levelScore !== undefined
+                      ? currentQuestion.levelScore > history[history.length - 1].question.levelScore!
+                        ? 'up'
+                        : currentQuestion.levelScore < history[history.length - 1].question.levelScore!
+                          ? 'down'
+                          : 'flat'
+                      : undefined
+                  }
                 />
               </div>
             )}

@@ -54,6 +54,8 @@ export interface IUser extends Document {
     lastInterviewDate?: Date;
 
     parsedResume?: {
+        role?: string;
+        experienceYears?: string;
         skills: string[];
         technologies: string[];
         projects: { name: string; description: string; techStack: string[] }[];
@@ -115,6 +117,8 @@ const UserSchema: Schema = new Schema({
     lastInterviewDate: { type: Date },
 
     parsedResume: {
+        role: { type: String },
+        experienceYears: { type: String },
         skills: [{ type: String }],
         technologies: [{ type: String }],
         projects: [{

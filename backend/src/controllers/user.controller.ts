@@ -3,8 +3,6 @@ import { User } from '../models/user.model';
 import { SubscriptionPlan } from '../models/subscriptionPlan.model';
 import bcrypt from 'bcryptjs';
 import { parseResumeText } from '../ai/resume.engine';
-const pdfParse = require('pdf-parse');
-
 /**
  * GET /api/users/me
  * Returns current user's profile info (no password hash)
@@ -300,8 +298,15 @@ export async function uploadResume(req: Request, res: Response, next: NextFuncti
 
         let rawText = '';
         if (file.mimetype === 'application/pdf') {
-            const pdfData = await pdfParse(file.buffer);
-            rawText = pdfData.text;
+            try {
+                const { PDFParse } = require('pdf-parse');
+                const parser = new PDFParse({ data: file.buffer });
+                const pdfData = await parser.getText();
+                rawText = pdfData.text || '';
+            } catch (pdfError: any) {
+                console.error('[uploadResume PDF Parse Error]', pdfError);
+                return res.status(400).json({ success: false, error: `Failed to parse PDF resume: ${pdfError.message || pdfError}` });
+            }
         } else if (file.mimetype === 'text/plain') {
             rawText = file.buffer.toString('utf-8');
         } else {
@@ -333,6 +338,44 @@ export async function uploadResume(req: Request, res: Response, next: NextFuncti
         });
     } catch (error) {
         console.error('[uploadResume Error]', error);
+        next(error);
+    }
+}
+
+/**
+ * PUT /api/users/resume-data
+ * Updates the parsed resume details (role, experience, skills, projects, technologies)
+ */
+export async function updateParsedResume(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = (req as any).user?.userId;
+        if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+        const { role, experienceYears, skills, technologies, projects, experience } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+        user.parsedResume = {
+            role: role || user.parsedResume?.role || '',
+            experienceYears: experienceYears || user.parsedResume?.experienceYears || '',
+            skills: Array.isArray(skills) ? skills : (user.parsedResume?.skills || []),
+            technologies: Array.isArray(technologies) ? technologies : (user.parsedResume?.technologies || []),
+            projects: Array.isArray(projects) ? projects : (user.parsedResume?.projects || []),
+            experience: Array.isArray(experience) ? experience : (user.parsedResume?.experience || []),
+            rawText: user.parsedResume?.rawText || '',
+            updatedAt: new Date()
+        };
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Resume profile updated successfully',
+            data: user.parsedResume
+        });
+    } catch (error) {
+        console.error('[updateParsedResume Error]', error);
         next(error);
     }
 }

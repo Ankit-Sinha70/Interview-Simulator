@@ -72,6 +72,19 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
     // ─── Time Analysis ───
     const timeAnalysis = calculateTimeMetrics(session.questions);
 
+    // Fetch parsedResume context
+    let parsedResume: any = undefined;
+    if (session.useResumeData && session.userId) {
+        try {
+            const user = await User.findById(session.userId);
+            if (user) {
+                parsedResume = user.parsedResume;
+            }
+        } catch (resumeErr) {
+            console.error('[ReportService] Error loading user resume:', resumeErr);
+        }
+    }
+
     // ─── 2. Generate AI Report with Full Context ───
     const aiReport = await generateReport({
         questionsAndEvaluations,
@@ -81,6 +94,7 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         hireBand: calculatedHireBand,
         confidenceLevel: calculatedConfidence,
         weaknessFrequency,
+        parsedResume,
     });
 
     // ─── 3. Construct Final Report ───
@@ -96,6 +110,15 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         nextPreparationFocus: aiReport.nextPreparationFocus || getPersonalizedRoadmap(aggregatedScores.weakestDimension),
         executiveSummary: aiReport.executiveSummary, // New field from Master Prompt
         timeAnalysis,
+        
+        // Resume-Based & Advanced metrics from AI
+        resumeAlignmentScore: aiReport.resumeAlignmentScore,
+        strongResumeSkills: aiReport.strongResumeSkills,
+        improvementResumeSkills: aiReport.improvementResumeSkills,
+        skillValidationMatrix: aiReport.skillValidationMatrix,
+        projectUnderstandingScore: aiReport.projectUnderstandingScore,
+        interviewReadinessScore: aiReport.interviewReadinessScore || Math.round(aggregatedScores.overallAverage * 10),
+        recommendedLearningPath: aiReport.recommendedLearningPath || aiReport.improvementRoadmap || [],
     };
 
     // Save to session
