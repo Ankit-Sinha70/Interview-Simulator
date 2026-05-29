@@ -92,7 +92,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
                 <div className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-widest px-3 mb-2">Menu</div>
                 <NavItem href="/" icon={LayoutDashboard} label="Dashboard" />
                 <NavItem href="/profile" icon={UserIcon} label="Profile" />
-                <NavItem href="/analytics" icon={BarChart3} label="Analytics" />
+                <NavItem href="/analytics" icon={BarChart3} label="Career Dashboard" />
                 <NavItem href="/settings" icon={Settings} label="Settings" />
 
                 <div className="pt-4">

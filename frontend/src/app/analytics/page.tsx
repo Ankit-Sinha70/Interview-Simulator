@@ -2,8 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getAnalyticsSummary } from '@/services/api';
-import ReadinessCard from '@/components/analytics/ReadinessCard';
+import { 
+    getCareerDashboard, 
+    refreshCareerDashboard, 
+    getAnalyticsSummary,
+    CareerDashboardData,
+    AnalyticsSummaryResponse
+} from '@/services/api';
+import { ReadinessMeter, SkillGapMatrix, AICoachPanel, RoadmapPlanner, ResumeAlignmentCard } from '@/components/career/CareerDashboardComponents';
 import TrendChart from '@/components/analytics/TrendChart';
 import RadarBreakdown from '@/components/analytics/RadarBreakdown';
 import TimeStats from '@/components/analytics/TimeStats';
@@ -12,8 +18,8 @@ import WeaknessInsights from '@/components/analytics/WeaknessInsights';
 import InterviewHistoryTable from '@/components/analytics/InterviewHistoryTable';
 import SessionIntegrity from '@/components/analytics/SessionIntegrity';
 import LockedSection from '@/components/LockedSection';
-
-// ─── Skeleton Components ───
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Sparkles, X, LayoutDashboard, Target, Compass, Award } from 'lucide-react';
 
 function SkeletonCard({ className = '', height = 'h-40' }: { className?: string; height?: string }) {
     return (
@@ -27,7 +33,7 @@ function SkeletonCard({ className = '', height = 'h-40' }: { className?: string;
     );
 }
 
-function AnalyticsSkeleton() {
+function DashboardSkeleton() {
     return (
         <div className="container mx-auto px-4 py-6 sm:px-6 space-y-6">
             <div className="space-y-2">
@@ -49,52 +55,61 @@ function AnalyticsSkeleton() {
     );
 }
 
-// ─── Main Page ───
-
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Sparkles, X } from 'lucide-react';
-
-// ... (other imports stay the same)
-
 export default function AnalyticsPage() {
     return (
-        <React.Suspense fallback={<AnalyticsSkeleton />}>
-            <AnalyticsContent />
+        <React.Suspense fallback={<DashboardSkeleton />}>
+            <CareerDashboardContent />
         </React.Suspense>
     );
 }
 
-function AnalyticsContent() {
+function CareerDashboardContent() {
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const router = useRouter();
-    const [data, setData] = useState<any>(null);
+    
+    const [careerData, setCareerData] = useState<CareerDashboardData | null>(null);
+    const [analyticsData, setAnalyticsData] = useState<AnalyticsSummaryResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
+    const [activeTab, setActiveTab] = useState<'growth' | 'history' | 'coaching'>('growth');
 
     useEffect(() => {
         if (searchParams.get('upgraded') === 'true') {
             setShowCelebration(true);
-            // Clean up the URL so it doesn't show next time they naturally navigate here
             router.replace('/analytics', { scroll: false });
         }
     }, [searchParams, router]);
 
-    useEffect(() => {
-        if (user?._id) {
-            setLoading(true);
-            getAnalyticsSummary(user._id)
-                .then(setData)
-                .catch((err) => {
-                    console.error('[Analytics]', err);
-                    setError(err.message || 'Failed to load analytics');
-                })
-                .finally(() => setLoading(false));
+    const loadData = async (force = false) => {
+        if (!user?._id) return;
+        setLoading(true);
+        try {
+            const [cData, aData] = await Promise.all([
+                force ? refreshCareerDashboard() : getCareerDashboard(),
+                getAnalyticsSummary(user._id)
+            ]);
+            setCareerData(cData);
+            setAnalyticsData(aData);
+            setError(null);
+        } catch (err: any) {
+            console.error('[CareerDashboard Load Error]', err);
+            setError(err.message || 'Failed to load career assessment data');
+        } finally {
+            setLoading(false);
         }
+    };
+
+    useEffect(() => {
+        loadData();
     }, [user]);
 
-    if (loading) return <AnalyticsSkeleton />;
+    const handleRefreshCoach = async () => {
+        await loadData(true);
+    };
+
+    if (loading) return <DashboardSkeleton />;
 
     if (error) {
         return (
@@ -106,17 +121,19 @@ function AnalyticsContent() {
         );
     }
 
-    if (!data || data.totalSessions === 0) {
+    if (!careerData || !analyticsData || analyticsData.totalSessions === 0) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-4">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center text-2xl animate-bounce">📊</div>
-                <h2 className="text-xl font-bold text-foreground">No Analytics Data Yet</h2>
+                <h2 className="text-xl font-bold text-foreground">No Performance History Yet</h2>
                 <p className="text-muted-foreground max-w-md">
-                    Complete your first interview to see detailed performance trends, skill breakdowns, and AI-driven insights.
+                    Complete your first interview session to unlock your hiring readiness analysis, skill gaps breakdown, learning roadmaps, and AI career coach mentoring report.
                 </p>
             </div>
         );
     }
+
+    const isPro = user?.planType === 'PRO';
 
     return (
         <div className="container mx-auto px-4 py-6 sm:px-6 space-y-6 animate-fade-in relative">
@@ -130,7 +147,7 @@ function AnalyticsContent() {
                         <div>
                             <h2 className="text-xl font-extrabold text-white">🎉 Pro Activated!</h2>
                             <p className="text-white/80 text-sm mt-0.5">
-                                Your full analytics history, performance trends, and focus metrics are now unlocked.
+                                Career Coaching, Personalized Roadmaps, and Skill Gap Analysis have been unlocked!
                             </p>
                         </div>
                     </div>
@@ -144,77 +161,178 @@ function AnalyticsContent() {
             )}
 
             {/* Header */}
-            <div className="flex flex-col gap-1">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Analytics Hub</h1>
-                <p className="text-muted-foreground text-sm">
-                    Comprehensive overview of your interview performance. <span className="text-foreground font-medium">{data.totalSessions}</span> sessions analyzed.
-                </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border/30">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text">
+                        Career Development Platform
+                    </h1>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                        Identify hiring readiness, map learning tracks, receive personal career coaching, and track historical growth.
+                    </p>
+                </div>
+
+                {/* Sub Tab Navigation */}
+                <div className="flex bg-muted/60 border border-border/40 p-1.5 rounded-xl self-start shrink-0">
+                    <button
+                        onClick={() => setActiveTab('growth')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                            activeTab === 'growth' 
+                                ? 'bg-card text-foreground shadow-sm' 
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <Target className="w-3.5 h-3.5" />
+                        Readiness & Gaps
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('coaching')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                            activeTab === 'coaching' 
+                                ? 'bg-card text-foreground shadow-sm' 
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <Compass className="w-3.5 h-3.5" />
+                        Coach & Roadmap
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                            activeTab === 'history' 
+                                ? 'bg-card text-foreground shadow-sm' 
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <Award className="w-3.5 h-3.5" />
+                        Session History
+                    </button>
+                </div>
             </div>
 
-            {/* 1. Readiness Overview */}
-            <ReadinessCard
-                readinessScore={data.readinessScore}
-                trend={data.trend}
-                knowledgeAverage={data.knowledgeAverage}
-                timeEfficiency={data.timeEfficiency}
-                focusAverage={data.focusAverage}
-                consistencyScore={data.consistencyScore}
-                skills={data.skills}
-            />
-
-            {/* 2. Performance Trend + 3. Skill Breakdown */}
-            <div className="grid gap-6 md:grid-cols-2">
-                <TrendChart data={data.performanceTrend} />
-                <RadarBreakdown
-                    skills={data.skills}
-                    strongestDimension={data.strongestDimension}
-                    weakestDimension={data.weakestDimension}
-                />
-            </div>
-
-            {/* 4. Time Analytics + 5. Focus Analytics */}
-            <div className="grid gap-6 md:grid-cols-2">
-                <TimeStats timeStats={data.timeStats} />
-                {user?.planType === 'PRO' ? (
-                    <FocusStats focusStats={data.focusStats} />
-                ) : (
-                    <LockedSection featureLabel="Unlock Focus Tracking">
-                        <FocusStats focusStats={data.focusStats} />
-                    </LockedSection>
-                )}
-            </div>
-
-            {/* 6. Weakness Insights */}
-            {user?.planType === 'PRO' ? (
-                <WeaknessInsights
-                    weaknessInsights={data.weaknessInsights}
-                    totalSessions={data.totalSessions}
-                />
-            ) : (
-                <LockedSection featureLabel="Unlock AI Weakness Analysis">
-                    <WeaknessInsights
-                        weaknessInsights={data.weaknessInsights}
-                        totalSessions={data.totalSessions}
+            {/* TAB CONTENT: 1. READINESS & GAPS */}
+            {activeTab === 'growth' && (
+                <div className="space-y-6">
+                    {/* Hiring Readiness Card */}
+                    <ReadinessMeter 
+                        score={careerData.readinessScore} 
+                        breakdown={careerData.readinessBreakdown} 
+                        roleSuitability={careerData.roleSuitability} 
+                        aiRecommendation={careerData.aiRecommendation} 
                     />
-                </LockedSection>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {/* Skill Gaps Breakdown */}
+                        {isPro ? (
+                            <SkillGapMatrix gaps={careerData.skillGap} insight={careerData.skillGapInsight} />
+                        ) : (
+                            <LockedSection featureLabel="Unlock Pro Skill Gaps Matrix">
+                                <SkillGapMatrix gaps={careerData.skillGap} insight={careerData.skillGapInsight} />
+                            </LockedSection>
+                        )}
+
+                        {/* Resume alignment Card */}
+                        {isPro ? (
+                            <ResumeAlignmentCard alignment={careerData.resumeAlignment} />
+                        ) : (
+                            <LockedSection featureLabel="Unlock Resume Claim Validation">
+                                <ResumeAlignmentCard alignment={careerData.resumeAlignment} />
+                            </LockedSection>
+                        )}
+                    </div>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <RadarBreakdown 
+                            skills={analyticsData.skills} 
+                            strongestDimension={analyticsData.strongestDimension} 
+                            weakestDimension={analyticsData.weakestDimension} 
+                        />
+                        {isPro ? (
+                            <WeaknessInsights 
+                                weaknessInsights={analyticsData.weaknessInsights} 
+                                totalSessions={analyticsData.totalSessions} 
+                            />
+                        ) : (
+                            <LockedSection featureLabel="Unlock Weakness Insights">
+                                <WeaknessInsights 
+                                    weaknessInsights={analyticsData.weaknessInsights} 
+                                    totalSessions={analyticsData.totalSessions} 
+                                />
+                            </LockedSection>
+                        )}
+                    </div>
+                </div>
             )}
 
-            {/* 7. Session Integrity */}
-            {data.sessionIntegrity && (
-                user?.planType === 'PRO' ? (
-                    <SessionIntegrity sessionIntegrity={data.sessionIntegrity} />
-                ) : (
-                    <LockedSection featureLabel="Unlock Integrity Checks">
-                        <SessionIntegrity sessionIntegrity={data.sessionIntegrity} />
-                    </LockedSection>
-                )
+            {/* TAB CONTENT: 2. COACHING & ROADMAP */}
+            {activeTab === 'coaching' && (
+                <div className="space-y-6">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {/* AI Coach panel */}
+                        {isPro ? (
+                            <AICoachPanel 
+                                coachMessage={careerData.coachMessage} 
+                                recommendations={careerData.coachRecommendations} 
+                                onRefresh={handleRefreshCoach} 
+                                planType={user?.planType || 'FREE'}
+                            />
+                        ) : (
+                            <LockedSection featureLabel="Unlock Personal AI Coach">
+                                <AICoachPanel 
+                                    coachMessage={careerData.coachMessage} 
+                                    recommendations={careerData.coachRecommendations} 
+                                    onRefresh={handleRefreshCoach} 
+                                    planType={user?.planType || 'FREE'}
+                                />
+                            </LockedSection>
+                        )}
+
+                        {/* Learning Roadmap */}
+                        {isPro ? (
+                            <RoadmapPlanner roadmap={careerData.roadmap} />
+                        ) : (
+                            <LockedSection featureLabel="Unlock Custom Study Roadmap">
+                                <RoadmapPlanner roadmap={careerData.roadmap} />
+                            </LockedSection>
+                        )}
+                    </div>
+                </div>
             )}
 
-            {/* 8. Full History */}
-            <InterviewHistoryTable
-                interviews={data.interviews}
-                limitedHistory={data.limitedHistory}
-            />
+            {/* TAB CONTENT: 3. HISTORY & DETAILED METRICS */}
+            {activeTab === 'history' && (
+                <div className="space-y-6">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <TrendChart data={analyticsData.performanceTrend} />
+                        <TimeStats timeStats={analyticsData.timeStats} />
+                    </div>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {isPro ? (
+                            <FocusStats focusStats={analyticsData.focusStats} />
+                        ) : (
+                            <LockedSection featureLabel="Unlock Focus Tracking Metrics">
+                                <FocusStats focusStats={analyticsData.focusStats} />
+                            </LockedSection>
+                        )}
+
+                        {analyticsData.sessionIntegrity && (
+                            isPro ? (
+                                <SessionIntegrity sessionIntegrity={analyticsData.sessionIntegrity} />
+                            ) : (
+                                <LockedSection featureLabel="Unlock Session Integrity Checks">
+                                    <SessionIntegrity sessionIntegrity={analyticsData.sessionIntegrity} />
+                                </LockedSection>
+                            )
+                        )}
+                    </div>
+
+                    {/* Complete History Table */}
+                    <InterviewHistoryTable 
+                        interviews={analyticsData.interviews} 
+                        limitedHistory={analyticsData.limitedHistory} 
+                    />
+                </div>
+            )}
         </div>
     );
 }

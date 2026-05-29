@@ -657,3 +657,63 @@ export async function evaluateATS(jobDescription: string, title?: string, compan
     });
 }
 
+// ─── Career Dashboard APIs ───
+
+export interface CareerDashboardData {
+    userId: string;
+    readinessScore: number;
+    readinessBreakdown: {
+        technical: number;
+        communication: number;
+        confidence: number;
+        consistency: number;
+    };
+    roleSuitability: string;
+    aiRecommendation: string;
+    skillGap: {
+        skill: string;
+        expectedScore: number;
+        candidateScore: number;
+    }[];
+    skillGapInsight: string;
+    coachMessage: string;
+    coachRecommendations: string[];
+    roadmap: {
+        week: number;
+        topic: string;
+        focusItems: string[];
+    }[];
+    resumeAlignment: {
+        alignmentScore: number;
+        insights: string[];
+        strongSkills: string[];
+        improvementSkills: string[];
+    };
+    weakAreas: string[];
+    progressHistory: {
+        date: string;
+        readiness: number;
+        technical: number;
+        communication: number;
+        confidence: number;
+    }[];
+    updatedAt: string;
+}
+
+export async function getCareerDashboard(): Promise<CareerDashboardData> {
+    const token = localStorage.getItem('token');
+    const res = await apiCall<{ success: boolean; data: CareerDashboardData }>('/career/dashboard', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.data;
+}
+
+export async function refreshCareerDashboard(): Promise<CareerDashboardData> {
+    const token = localStorage.getItem('token');
+    const res = await apiCall<{ success: boolean; data: CareerDashboardData }>('/career/refresh', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.data;
+}
+

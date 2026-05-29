@@ -17,6 +17,7 @@ import { isDbConnected } from '../config/db.config';
 import { AnalyticsModel } from '../schemas/analytics.schema';
 import { isDifficultyAllowed } from '../constants/difficultyMatrix';
 import { User } from '../models/user.model';
+import { refreshCareerReport } from './career.service';
 // ...
 export async function generateFinalReport(sessionId: string, attentionStats?: AttentionStats): Promise<FinalReport> {
     const session = await sessionService.getSession(sessionId);
@@ -162,6 +163,11 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
                 }
 
                 await user.save();
+                
+                // Recalculate Career Growth report asynchronously
+                refreshCareerReport(session.userId).catch(err => {
+                    console.error('[Report] Failed to auto-refresh Career Growth Report:', err);
+                });
             }
         } catch (err) {
             console.error('[Report] Failed to update completedInterviews:', (err as Error).message);
