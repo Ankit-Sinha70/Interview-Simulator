@@ -3,13 +3,14 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-    FileText, CheckCircle2, Code, Server, Layers, Leaf, Rocket, 
-    Star, Smile, UserCheck, Briefcase, Globe, Zap, Brain, Target, 
-    Plus, X, UploadCloud, AlertCircle, RefreshCw, ArrowLeft, ShieldAlert
+import { Badge } from '@/components/ui/badge';
+import {
+    FileText, CheckCircle2, Code, Server, Layers, Leaf, Rocket,
+    Star, Smile, UserCheck, Briefcase, Globe, Zap, Brain, Target,
+    Plus, X, UploadCloud, AlertCircle, RefreshCw, ArrowLeft, ShieldAlert, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { uploadResume, updateResumeData } from '@/services/api';
+import { uploadResume, updateResumeData, evaluateATS } from '@/services/api';
 import { toast } from 'sonner';
 
 interface SessionSetupProps {
@@ -35,18 +36,187 @@ const ROLES = [
 ];
 
 const SUGGESTED_SKILLS = [
-    'React', 'Next.js', 'Redux', 'TypeScript', 'JavaScript', 
-    'Node.js', 'Express', 'NestJS', 'MongoDB', 'PostgreSQL', 
-    'Docker', 'Kubernetes', 'AWS', 'System Design', 'Git', 
+    'React', 'Next.js', 'Redux', 'TypeScript', 'JavaScript',
+    'Node.js', 'Express', 'NestJS', 'MongoDB', 'PostgreSQL',
+    'Docker', 'Kubernetes', 'AWS', 'System Design', 'Git',
     'Python', 'Go', 'Java', 'GraphQL', 'TailwindCSS'
 ];
 
 export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) {
     const { user, refreshUser } = useAuth();
-    
+
     // Step state: 'choose_type' | 'manual_setup' | 'resume_upload' | 'resume_review'
     const [step, setStep] = useState<'choose_type' | 'manual_setup' | 'resume_upload' | 'resume_review'>('choose_type');
-    
+
+    // --- ATS & COMPANY SPECIFIC STATE ---
+    const [jobDescription, setJobDescription] = useState(user?.targetJobDescription?.rawText || '');
+    const [targetCompany, setTargetCompany] = useState(user?.targetJobDescription?.company || 'General');
+    const [customCompany, setCustomCompany] = useState('');
+    const [atsLoading, setAtsLoading] = useState(false);
+    const [atsResult, setAtsResult] = useState<{
+        score: number;
+        matchedSkills: string[];
+        missingSkills: string[];
+        suggestions: string[];
+    } | null>(user?.atsScore ? {
+        score: user.atsScore.score,
+        matchedSkills: user.atsScore.matchedSkills,
+        missingSkills: user.atsScore.missingSkills,
+        suggestions: user.atsScore.suggestions
+    } : null);
+
+    const getCompanyStyleForStart = (co: string) => {
+        const lower = co.toLowerCase();
+        if (lower.includes('google')) return 'google';
+        if (lower.includes('startup')) return 'startup';
+        if (lower.includes('product') || lower.includes('netflix') || lower.includes('stripe') || lower.includes('apple') || lower.includes('meta') || lower.includes('amazon') || lower.includes('microsoft')) return 'product';
+        return 'general';
+    };
+
+    const handleAtsEvaluate = async () => {
+        if (!jobDescription.trim()) {
+            return toast.error('Please enter a Job Description to evaluate');
+        }
+        setAtsLoading(true);
+        try {
+            const role = step === 'manual_setup'
+                ? (manualRole === 'Custom' ? customManualRole : manualRole)
+                : detectedRole;
+            const companyName = targetCompany === 'Custom' ? customCompany : targetCompany;
+            const res = await evaluateATS(jobDescription.trim(), role, companyName);
+            if (res && res.atsScore) {
+                setAtsResult(res.atsScore);
+                toast.success(`ATS Evaluation Complete! Match Score: ${res.atsScore.score}%`);
+                await refreshUser();
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to analyze Job Description');
+        } finally {
+            setAtsLoading(false);
+        }
+    };
+
+    const renderJobDescriptionSection = () => {
+        return (
+            <div className="p-5 rounded-2xl bg-background/40 border border-border/40 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <Target className="w-3.5 h-3.5 text-violet-400" />
+                        Target Job Description & ATS Analysis
+                    </h3>
+                    <Badge variant="outline" className="text-[9px] text-violet-400 border-violet-500/20 bg-violet-500/5">
+                        Match Optimization
+                    </Badge>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted-foreground">Target Company</label>
+                    <div className="flex flex-wrap gap-1.5">
+                        {['General', 'Google', 'Meta', 'Netflix', 'Amazon', 'Stripe', 'Startup', 'Custom'].map(c => (
+                            <button
+                                key={c}
+                                type="button"
+                                onClick={() => { setTargetCompany(c); if (c !== 'Custom') setCustomCompany(''); }}
+                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-all ${targetCompany === c
+                                        ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 text-[var(--accent-violet)] dark:border-violet-500/50 dark:bg-violet-950/30 dark:text-violet-300'
+                                        : 'border-border/50 bg-background/20 text-muted-foreground hover:bg-background/80'
+                                    }`}
+                            >
+                                {c}
+                            </button>
+                        ))}
+                    </div>
+
+                    {targetCompany === 'Custom' && (
+                        <input
+                            type="text"
+                            value={customCompany}
+                            onChange={(e) => setCustomCompany(e.target.value)}
+                            placeholder="Enter custom company (e.g. OpenAI, Apple)..."
+                            className="w-full mt-2 px-3 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-violet-500 text-xs"
+                        />
+                    )}
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground">Job Description Text</label>
+                    <textarea
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
+                        placeholder="Paste Job Description here to get real-time ATS match rating & optimize questions..."
+                        rows={4}
+                        className="w-full p-3 rounded-xl bg-background border border-border focus:outline-none focus:border-violet-500 text-xs font-medium"
+                    />
+                </div>
+
+                <Button
+                    type="button"
+                    variant="default"
+                    disabled={atsLoading || !jobDescription.trim()}
+                    onClick={handleAtsEvaluate}
+                    className="w-full font-semibold rounded-xl text-xs py-2 h-9 flex items-center justify-center gap-1.5"
+                >
+                    {atsLoading ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing Match...</>
+                    ) : (
+                        <><RefreshCw className="w-3.5 h-3.5" /> Evaluate Profile Match</>
+                    )}
+                </Button>
+
+                {atsResult && (
+                    <div className="mt-4 p-4 rounded-xl border border-border/40 bg-muted/10 space-y-4 text-left">
+                        <div className="flex items-center gap-3">
+                            <div className="relative flex items-center justify-center w-12 h-12 rounded-full border-2 border-violet-500/30 bg-violet-500/10">
+                                <span className="text-xs font-black text-violet-600 dark:text-violet-400">{atsResult.score}%</span>
+                            </div>
+                            <div>
+                                <h4 className="text-xs font-bold">ATS Alignment Match</h4>
+                                <p className="text-[10px] text-muted-foreground">Calculated matching ratio relative to target profile & GitHub activity</p>
+                            </div>
+                        </div>
+
+                        {atsResult.matchedSkills.length > 0 && (
+                            <div>
+                                <h5 className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-1.5">Matched Keywords</h5>
+                                <div className="flex flex-wrap gap-1">
+                                    {atsResult.matchedSkills.map(s => (
+                                        <span key={s} className="text-[9px] px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium">
+                                            {s}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {atsResult.missingSkills.length > 0 && (
+                            <div>
+                                <h5 className="text-[9px] font-bold text-rose-400 uppercase tracking-wider mb-1.5">Missing Gaps</h5>
+                                <div className="flex flex-wrap gap-1">
+                                    {atsResult.missingSkills.map(s => (
+                                        <span key={s} className="text-[9px] px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 font-medium">
+                                            {s}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {atsResult.suggestions.length > 0 && (
+                            <div>
+                                <h5 className="text-[9px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-1.5">Optimization Checklist</h5>
+                                <ul className="list-disc pl-4 space-y-1 text-[10px] text-muted-foreground leading-relaxed">
+                                    {atsResult.suggestions.map((s, i) => (
+                                        <li key={i}>{s}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     // Loading state for upload & parse
     const [isParsing, setIsParsing] = useState(false);
 
@@ -65,7 +235,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
     const [detectedSkills, setDetectedSkills] = useState<string[]>([]);
     const [detectedProjects, setDetectedProjects] = useState<Array<{ name: string; description: string; techStack: string[] }>>([]);
     const [newResumeSkill, setNewResumeSkill] = useState('');
-    
+
     // File upload state
     const [uploadProgress, setUploadProgress] = useState(0);
     const [dragActive, setDragActive] = useState(false);
@@ -74,7 +244,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
     const enterReviewScreen = (parsedData: any) => {
         setDetectedRole(parsedData.role || parsedData.rolePreference || 'Software Developer');
         setDetectedExperience(parsedData.experienceYears || '2-3 Years');
-        
+
         // Combine skills and technologies
         const skillsSet = new Set<string>();
         if (Array.isArray(parsedData.skills)) parsedData.skills.forEach((s: any) => skillsSet.add(String(s)));
@@ -107,20 +277,20 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
 
         setIsParsing(true);
         setUploadProgress(20);
-        
+
         try {
             const formData = new FormData();
             formData.append('resume', file);
-            
+
             setUploadProgress(50);
             const res = await uploadResume(formData);
-            
+
             setUploadProgress(80);
             await refreshUser(); // sync context
-            
+
             toast.success('Resume analyzed successfully');
             setUploadProgress(100);
-            
+
             // Get user data directly after refresh
             const updatedUserRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/me`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -190,7 +360,13 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
             toast.error('Please specify a job role');
             return;
         }
-        onStart(finalRole, manualLevel, manualDifficulty, manualFocus, false);
+        onStart(
+            finalRole,
+            manualLevel,
+            manualDifficulty,
+            getCompanyStyleForStart(targetCompany === 'Custom' ? customCompany : targetCompany),
+            false
+        );
     };
 
     // Launch Resume Interview
@@ -204,9 +380,9 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                 skills: detectedSkills,
                 projects: detectedProjects
             });
-            
+
             await refreshUser();
-            
+
             // Map experience to nearest enum level for validation engine
             let nearestLevel: 'Junior' | 'Mid' | 'Senior' = 'Mid';
             const expLower = detectedExperience.toLowerCase();
@@ -215,8 +391,14 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
             } else if (expLower.includes('senior') || expLower.includes('5+') || expLower.includes('5 year') || expLower.includes('8 year') || expLower.includes('10 year')) {
                 nearestLevel = 'Senior';
             }
-            
-            onStart(detectedRole, nearestLevel, 'friendly', 'general', true);
+
+            onStart(
+                detectedRole,
+                nearestLevel,
+                'friendly',
+                getCompanyStyleForStart(targetCompany === 'Custom' ? customCompany : targetCompany),
+                true
+            );
         } catch (err: any) {
             toast.error('Failed to update resume preferences before starting');
         } finally {
@@ -226,7 +408,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
 
     return (
         <div className="w-full max-w-5xl px-4 sm:px-6 py-6 sm:py-10 animate-fade-in-up">
-            
+
             {/* Step 1: Choose Interview Type */}
             {step === 'choose_type' && (
                 <div className="space-y-8">
@@ -243,9 +425,9 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pt-4">
-                        
+
                         {/* Option 1: Manual Setup */}
-                        <Card 
+                        <Card
                             onClick={() => setStep('manual_setup')}
                             className="group cursor-pointer border-2 border-border/50 bg-background/50 hover:bg-background/80 hover:border-[var(--accent-violet)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(108,92,231,0.15)] flex flex-col justify-between"
                         >
@@ -268,7 +450,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         </Card>
 
                         {/* Option 2: Resume-Based Setup */}
-                        <Card 
+                        <Card
                             onClick={loadExistingResumeReview}
                             className="group cursor-pointer border-2 border-border/50 bg-background/50 hover:bg-background/80 hover:border-[var(--accent-teal)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(45,210,188,0.15)] flex flex-col justify-between"
                         >
@@ -298,7 +480,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
             {step === 'manual_setup' && (
                 <div className="space-y-6 max-w-3xl mx-auto">
                     <div className="flex items-center justify-between pb-4 border-b border-border/40">
-                        <button 
+                        <button
                             onClick={() => setStep('choose_type')}
                             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
@@ -309,7 +491,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                     </div>
 
                     <div className="p-6 sm:p-8 rounded-3xl bg-secondary/20 border border-border/50 backdrop-blur-md space-y-6">
-                        
+
                         {/* Job Role Selection */}
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-muted-foreground">Select Job Role</label>
@@ -318,22 +500,20 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                     <button
                                         key={r}
                                         onClick={() => { setManualRole(r); setCustomManualRole(''); }}
-                                        className={`px-3 py-2.5 rounded-xl text-xs font-medium border text-center transition-all ${
-                                            manualRole === r 
+                                        className={`px-3 py-2.5 rounded-xl text-xs font-medium border text-center transition-all ${manualRole === r
                                                 ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 text-[var(--accent-violet)] ring-1 ring-[var(--accent-violet)]/30'
                                                 : 'border-border/50 bg-background/30 text-muted-foreground hover:bg-background/80 hover:text-foreground'
-                                        }`}
+                                            }`}
                                     >
                                         {r.replace(' Developer', '').replace(' Engineer', '')}
                                     </button>
                                 ))}
                                 <button
                                     onClick={() => setManualRole('Custom')}
-                                    className={`px-3 py-2.5 rounded-xl text-xs font-medium border text-center transition-all ${
-                                        manualRole === 'Custom'
+                                    className={`px-3 py-2.5 rounded-xl text-xs font-medium border text-center transition-all ${manualRole === 'Custom'
                                             ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 text-[var(--accent-violet)]'
                                             : 'border-border/50 bg-background/30 text-muted-foreground hover:bg-background/80'
-                                    }`}
+                                        }`}
                                 >
                                     + Custom Role
                                 </button>
@@ -362,11 +542,10 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                     <button
                                         key={l.id}
                                         onClick={() => setManualLevel(l.id)}
-                                        className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-0.5 ${
-                                            manualLevel === l.id
+                                        className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-0.5 ${manualLevel === l.id
                                                 ? 'border-[var(--accent-teal)] bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] ring-1 ring-[var(--accent-teal)]/30'
                                                 : 'border-border/50 bg-background/30 text-muted-foreground hover:bg-background/80'
-                                        }`}
+                                            }`}
                                     >
                                         <span className="text-sm font-bold">{l.label}</span>
                                         <span className="text-[10px] opacity-70">{l.sub}</span>
@@ -378,14 +557,14 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         {/* Skills Selection (Tags) */}
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-muted-foreground">Skills / Technologies (Primary Stack)</label>
-                            
+
                             {/* Tags list */}
                             <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-background/40 border border-border/40 min-h-[50px]">
                                 {manualSkills.length === 0 ? (
                                     <span className="text-xs text-muted-foreground self-center">No skills added yet. Click suggestions below or type custom.</span>
                                 ) : (
                                     manualSkills.map(skill => (
-                                        <span 
+                                        <span
                                             key={skill}
                                             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--accent-violet)]/10 border border-[var(--accent-violet)]/30 text-[var(--accent-violet)]"
                                         >
@@ -408,8 +587,8 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                     placeholder="Type a skill and press enter..."
                                     className="flex-1 px-4 py-2.5 rounded-xl bg-background border border-border focus:border-[var(--accent-violet)] focus:outline-none text-sm"
                                 />
-                                <Button 
-                                    type="button" 
+                                <Button
+                                    type="button"
                                     onClick={() => addManualSkill(skillInput)}
                                     className="bg-muted hover:bg-muted/80 text-foreground px-4 rounded-xl"
                                 >
@@ -438,7 +617,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-muted-foreground">Interviewer Persona</label>
-                                <select 
+                                <select
                                     value={manualDifficulty}
                                     onChange={(e) => setManualDifficulty(e.target.value as any)}
                                     className="w-full px-3 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-violet)] text-sm"
@@ -450,7 +629,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-muted-foreground">Company Environment Focus</label>
-                                <select 
+                                <select
                                     value={manualFocus}
                                     onChange={(e) => setManualFocus(e.target.value as any)}
                                     className="w-full px-3 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-violet)] text-sm"
@@ -462,6 +641,9 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                 </select>
                             </div>
                         </div>
+
+                        {/* Job Description & ATS matching */}
+                        {renderJobDescriptionSection()}
 
                         {/* Submit Button */}
                         <Button
@@ -481,7 +663,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
             {step === 'resume_upload' && (
                 <div className="space-y-6 max-w-2xl mx-auto">
                     <div className="flex items-center justify-between pb-4 border-b border-border/40">
-                        <button 
+                        <button
                             onClick={() => setStep('choose_type')}
                             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
@@ -505,23 +687,22 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                     </p>
                                 </div>
                                 <div className="w-full max-w-xs bg-muted/40 h-2.5 rounded-full overflow-hidden">
-                                    <div 
+                                    <div
                                         className="h-full bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] transition-all duration-500"
                                         style={{ width: `${uploadProgress}%` }}
                                     />
                                 </div>
                             </div>
                         ) : (
-                            <div 
+                            <div
                                 onDragEnter={handleDrag}
                                 onDragOver={handleDrag}
                                 onDragLeave={handleDrag}
                                 onDrop={handleDrop}
-                                className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 flex flex-col items-center justify-center gap-4 cursor-pointer min-h-[300px] ${
-                                    dragActive 
-                                        ? 'border-[var(--accent-teal)] bg-[var(--accent-teal)]/5' 
+                                className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 flex flex-col items-center justify-center gap-4 cursor-pointer min-h-[300px] ${dragActive
+                                        ? 'border-[var(--accent-teal)] bg-[var(--accent-teal)]/5'
                                         : 'border-border bg-background/30 hover:bg-background/50 hover:border-muted-foreground/60'
-                                }`}
+                                    }`}
                             >
                                 <input
                                     type="file"
@@ -563,7 +744,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
             {step === 'resume_review' && (
                 <div className="space-y-6 max-w-4xl mx-auto">
                     <div className="flex items-center justify-between pb-4 border-b border-border/40">
-                        <button 
+                        <button
                             onClick={() => setStep('resume_upload')}
                             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
@@ -576,13 +757,13 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        
+
                         {/* Primary details left column */}
                         <div className="md:col-span-2 space-y-6">
                             <div className="p-6 sm:p-8 rounded-3xl bg-secondary/10 border border-border/40 space-y-6">
-                                
+
                                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Detected Profile Fields</h3>
-                                
+
                                 {/* Edit Role */}
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-muted-foreground">Job Role</label>
@@ -610,10 +791,10 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                 {/* Edit Skills tags */}
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-muted-foreground">Target Skills (Used for question generation)</label>
-                                    
+
                                     <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-background/50 border border-border/50 min-h-[60px]">
                                         {detectedSkills.map(skill => (
-                                            <span 
+                                            <span
                                                 key={skill}
                                                 className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--accent-teal)]/10 border border-[var(--accent-teal)]/30 text-[var(--accent-teal)]"
                                             >
@@ -634,7 +815,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                             placeholder="Add skill (e.g. GraphQL, Tailwind)..."
                                             className="flex-1 px-4 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-teal)] text-xs"
                                         />
-                                        <button 
+                                        <button
                                             onClick={() => addResumeSkill(newResumeSkill)}
                                             className="px-3 rounded-xl bg-muted text-xs hover:bg-muted/80 text-foreground"
                                         >
@@ -644,6 +825,9 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                 </div>
 
                             </div>
+
+                            {/* Job Description & ATS matching */}
+                            {renderJobDescriptionSection()}
                         </div>
 
                         {/* Projects column */}
@@ -651,7 +835,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             <div className="p-6 rounded-3xl bg-secondary/10 border border-border/40 h-full flex flex-col justify-between">
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Detected Projects</h3>
-                                    
+
                                     <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
                                         {detectedProjects.length === 0 ? (
                                             <p className="text-xs text-muted-foreground italic">No projects found. AI will ask general scenario questions.</p>

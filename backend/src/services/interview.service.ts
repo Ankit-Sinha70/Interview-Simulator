@@ -159,7 +159,9 @@ export async function startInterview(
         level: session.experienceLevel,
         interviewStyle: session.interviewStyle,
         companyStyle: session.companyStyle,
-        parsedResume: useResume ? user.parsedResume : undefined
+        parsedResume: useResume ? user.parsedResume : undefined,
+        jobDescription: user.targetJobDescription?.rawText,
+        targetCompany: user.targetJobDescription?.company
     });
 
     // Add question to session
@@ -298,11 +300,17 @@ export async function processAnswer(
     const currentQuestion = session.questions[currentQuestionIndex];
 
     let parsedResume: any = undefined;
-    if (session.useResumeData && session.userId) {
+    let jobDescription: string | undefined = undefined;
+    let targetCompany: string | undefined = undefined;
+    if (session.userId) {
         try {
             const { User } = await import('../models/user.model');
             const user = await User.findById(session.userId);
-            if (user) parsedResume = user.parsedResume;
+            if (user) {
+                if (session.useResumeData) parsedResume = user.parsedResume;
+                jobDescription = user.targetJobDescription?.rawText;
+                targetCompany = user.targetJobDescription?.company;
+            }
         } catch (e) {
             console.error('[Interview] Failed to fetch resume for context:', e);
         }
@@ -448,7 +456,9 @@ export async function processAnswer(
         followUpIntent,
         targetDifficulty,
         questionHistory,
-        parsedResume
+        parsedResume,
+        jobDescription,
+        targetCompany
     });
 
     const nextEntry: QuestionEntry = {

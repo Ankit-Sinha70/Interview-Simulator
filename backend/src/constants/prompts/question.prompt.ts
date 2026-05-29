@@ -54,6 +54,8 @@ export function getQuestionPrompt(params: {
   previousQuestion?: string;
   evaluationSummary?: string;
   parsedResume?: any;
+  jobDescription?: string;
+  targetCompany?: string;
 }): string {
   const level = params.level as ExperienceLevel;
   const allowedTopics = getAllowedTopics(params.role, level);
@@ -66,7 +68,8 @@ export function getQuestionPrompt(params: {
 Generate one interview question based on:
 
 Interview Style: ${params.interviewStyle || 'friendly'}
-Company Style: ${params.companyStyle || 'general'}
+Company Style: ${params.companyStyle || 'general'} ${params.targetCompany ? `(Specifically targeted at company: ${params.targetCompany})` : ''}
+${params.targetCompany ? `Ensure the question aligns with the actual technical standards, engineering culture, and questions typically asked at ${params.targetCompany}.` : ''}
 If the Company Style is "google", focus heavily on scale, algorithms, or complex architecture.
 If the Company Style is "startup", focus on practical execution, "building from 0 to 1", and wearing multiple hats.
 If the Interview Style is "strict" or "faang", be extremely demanding and rigorous.
@@ -78,6 +81,12 @@ ${LEVEL_DESCRIPTIONS[level]}
 
 Previous Question: ${params.previousQuestion || 'None (this is the first question)'}
 Previous Answer Evaluation: ${params.evaluationSummary || 'None (this is the first question)'}
+
+${params.jobDescription ? `TARGET JOB DESCRIPTION:
+${params.jobDescription}
+
+Please align the questions to test the specific technologies and requirements described in this Job Description.
+` : ''}
 
 ${params.parsedResume ? `RESUME CONTEXT (Use this structured data to strongly tailor the question to the candidate's actual background):
 ${JSON.stringify(params.parsedResume, null, 2)}

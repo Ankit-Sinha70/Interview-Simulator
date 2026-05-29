@@ -53,6 +53,24 @@ export interface IUser extends Document {
     longestStreak: number;
     lastInterviewDate?: Date;
 
+    githubProfile?: {
+        username: string;
+        repos: { name: string; description?: string; language?: string; stars?: number }[];
+        summary?: string;
+        analyzedAt?: Date;
+    };
+    targetJobDescription?: {
+        title?: string;
+        company?: string;
+        rawText: string;
+    };
+    atsScore?: {
+        score: number;
+        matchedSkills: string[];
+        missingSkills: string[];
+        suggestions: string[];
+        updatedAt: Date;
+    };
     parsedResume?: {
         role?: string;
         experienceYears?: string;
@@ -133,6 +151,29 @@ const UserSchema: Schema = new Schema({
             responsibilities: [{ type: String }]
         }],
         rawText: { type: String },
+        updatedAt: { type: Date }
+    },
+    githubProfile: {
+        username: { type: String },
+        repos: [{
+            name: { type: String },
+            description: { type: String },
+            language: { type: String },
+            stars: { type: Number }
+        }],
+        summary: { type: String },
+        analyzedAt: { type: Date }
+    },
+    targetJobDescription: {
+        title: { type: String },
+        company: { type: String },
+        rawText: { type: String }
+    },
+    atsScore: {
+        score: { type: Number },
+        matchedSkills: [{ type: String }],
+        missingSkills: [{ type: String }],
+        suggestions: [{ type: String }],
         updatedAt: { type: Date }
     }
 }, {

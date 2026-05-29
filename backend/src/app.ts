@@ -6,6 +6,8 @@ import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import subscriptionRoutes from './routes/subscription.routes';
 import subscriptionPlanRoutes from './routes/subscriptionPlan.routes';
+import phase2Routes from './routes/phase2.routes';
+import careerRoutes from './routes/career.routes';
 import { errorMiddleware } from './middlewares/error.middleware';
 
 const app = express();
@@ -56,6 +58,8 @@ app.use('/api/interview', interviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/plans', subscriptionPlanRoutes);
+app.use('/api/phase2', phase2Routes);
+app.use('/api/career', careerRoutes);
 
 // Error handling
 app.use(errorMiddleware);

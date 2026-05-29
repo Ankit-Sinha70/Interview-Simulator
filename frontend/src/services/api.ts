@@ -577,3 +577,143 @@ export async function setUserGoal(title: string, targetInterviews: number, targe
     });
     return res.data;
 }
+
+// ─── Phase 2 APIs ───
+
+export interface GitHubProfile {
+    username: string;
+    repos: { name: string; description?: string; language?: string; stars?: number }[];
+    summary?: string;
+    analyzedAt?: string;
+}
+
+export interface ATSEvalData {
+    targetJobDescription: {
+        title?: string;
+        company?: string;
+        rawText: string;
+    };
+    atsScore: {
+        score: number;
+        matchedSkills: string[];
+        missingSkills: string[];
+        suggestions: string[];
+        updatedAt: string;
+    };
+}
+
+export async function importLinkedIn(rawText?: string, file?: File): Promise<{ success: boolean; data: any }> {
+    const token = localStorage.getItem('token');
+    const url = `${API_BASE}/phase2/linkedin-import`;
+    
+    let body: any;
+    let headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`
+    };
+
+    if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        body = formData;
+    } else {
+        headers['Content-Type'] = 'application/json';
+        body = JSON.stringify({ rawText });
+    }
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body
+    });
+
+    if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to import LinkedIn profile');
+    }
+    return res.json();
+}
+
+export async function analyzeGitHub(username: string): Promise<GitHubProfile> {
+    const token = localStorage.getItem('token');
+    return apiCall<GitHubProfile>('/phase2/github-analyze', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ username })
+    });
+}
+
+export async function evaluateATS(jobDescription: string, title?: string, company?: string): Promise<ATSEvalData> {
+    const token = localStorage.getItem('token');
+    return apiCall<ATSEvalData>('/phase2/ats-evaluate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ jobDescription, title, company })
+    });
+}
+
+// ─── Career Dashboard APIs ───
+
+export interface CareerDashboardData {
+    userId: string;
+    readinessScore: number;
+    readinessBreakdown: {
+        technical: number;
+        communication: number;
+        confidence: number;
+        consistency: number;
+    };
+    roleSuitability: string;
+    aiRecommendation: string;
+    skillGap: {
+        skill: string;
+        expectedScore: number;
+        candidateScore: number;
+    }[];
+    skillGapInsight: string;
+    coachMessage: string;
+    coachRecommendations: string[];
+    roadmap: {
+        week: number;
+        topic: string;
+        focusItems: string[];
+    }[];
+    resumeAlignment: {
+        alignmentScore: number;
+        insights: string[];
+        strongSkills: string[];
+        improvementSkills: string[];
+    };
+    weakAreas: string[];
+    progressHistory: {
+        date: string;
+        readiness: number;
+        technical: number;
+        communication: number;
+        confidence: number;
+    }[];
+    updatedAt: string;
+}
+
+export async function getCareerDashboard(): Promise<CareerDashboardData> {
+    const token = localStorage.getItem('token');
+    const res = await apiCall<{ success: boolean; data: CareerDashboardData }>('/career/dashboard', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.data;
+}
+
+export async function refreshCareerDashboard(): Promise<CareerDashboardData> {
+    const token = localStorage.getItem('token');
+    const res = await apiCall<{ success: boolean; data: CareerDashboardData }>('/career/refresh', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return res.data;
+}
+
