@@ -66,6 +66,18 @@ export interface IUser extends Document {
     };
     atsScore?: {
         score: number;
+        breakdown?: {
+            technicalMatch: number;
+            experienceMatch: number;
+            projectRelevance: number;
+            communicationPrediction: number;
+        };
+        hiringReadiness?: {
+            readinessScore: number;
+            readyFor: string[];
+            needsImprovementBefore: string[];
+            reasoning: string[];
+        };
         matchedSkills: string[];
         missingSkills: string[];
         suggestions: string[];
@@ -171,6 +183,18 @@ const UserSchema: Schema = new Schema({
     },
     atsScore: {
         score: { type: Number },
+        breakdown: {
+            technicalMatch: { type: Number },
+            experienceMatch: { type: Number },
+            projectRelevance: { type: Number },
+            communicationPrediction: { type: Number }
+        },
+        hiringReadiness: {
+            readinessScore: { type: Number },
+            readyFor: [{ type: String }],
+            needsImprovementBefore: [{ type: String }],
+            reasoning: [{ type: String }]
+        },
         matchedSkills: [{ type: String }],
         missingSkills: [{ type: String }],
         suggestions: [{ type: String }],

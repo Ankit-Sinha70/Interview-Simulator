@@ -167,6 +167,8 @@ export async function atsEvaluate(req: Request, res: Response, next: NextFunctio
         // Save ATS score results
         user.atsScore = {
             score: atsResult.score,
+            breakdown: atsResult.breakdown,
+            hiringReadiness: atsResult.hiringReadiness,
             matchedSkills: atsResult.matchedSkills,
             missingSkills: atsResult.missingSkills,
             suggestions: atsResult.suggestions,

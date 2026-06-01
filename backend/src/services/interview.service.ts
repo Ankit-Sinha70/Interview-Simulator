@@ -99,7 +99,24 @@ export async function autoAbandonStaleSessions() {
     }
 }
 
-// ...
+function getQuestionTypeForIndex(index: number, mode: 'manual' | 'resume' | 'resume_jd'): 'resume' | 'jd_required' | 'missing_skill' | 'scenario' | 'behavioral' | 'general' {
+    if (mode === 'resume_jd') {
+        if (index < 3) return 'resume';
+        if (index < 6) return 'jd_required';
+        if (index < 8) return 'missing_skill';
+        if (index === 8) return 'scenario';
+        return 'behavioral';
+    } else if (mode === 'resume') {
+        if (index < 7) return 'resume';
+        if (index < 9) return 'scenario';
+        return 'behavioral';
+    } else {
+        // manual mode
+        if (index < 8) return 'general';
+        if (index === 8) return 'scenario';
+        return 'behavioral';
+    }
+}
 
 /**
  * Start a new interview session
@@ -111,7 +128,8 @@ export async function startInterview(
     interviewStyle: string = 'friendly',
     companyStyle: string = 'general',
     mode: InterviewMode = 'text',
-    useResume: boolean = false
+    useResume: boolean = false,
+    interviewMode: 'manual' | 'resume' | 'resume_jd' = 'manual'
 ) {
     // Check usage limits
     const user = await User.findById(userId);
@@ -142,7 +160,8 @@ export async function startInterview(
         companyStyle, 
         mode, 
         userId, 
-        useResume
+        useResume,
+        interviewMode
     );
     session.status = 'IN_PROGRESS';
 
@@ -153,6 +172,8 @@ export async function startInterview(
     session.maxQuestions = MAX_QUESTIONS;
     session.maxDurationMinutes = SESSION_DURATION_MINUTES;
 
+    const questionType = getQuestionTypeForIndex(0, interviewMode);
+
     // Generate first question
     const firstQuestion: GeneratedQuestion = await generateQuestion({
         role: session.role,
@@ -161,7 +182,8 @@ export async function startInterview(
         companyStyle: session.companyStyle,
         parsedResume: useResume ? user.parsedResume : undefined,
         jobDescription: user.targetJobDescription?.rawText,
-        targetCompany: user.targetJobDescription?.company
+        targetCompany: user.targetJobDescription?.company,
+        questionType
     });
 
     // Add question to session
@@ -439,6 +461,8 @@ export async function processAnswer(
     const targetDifficulty = getNextDifficulty(currentQuestion.difficulty, evaluation.overallScore);
     const questionHistory = session.questions.map(q => q.questionText);
 
+    const questionType = getQuestionTypeForIndex(questionsAnswered, session.interviewMode || 'manual');
+
     const followUp = await generateFollowUp({
         role: session.role,
         experienceLevel: session.experienceLevel,
@@ -458,7 +482,8 @@ export async function processAnswer(
         questionHistory,
         parsedResume,
         jobDescription,
-        targetCompany
+        targetCompany,
+        questionType
     });
 
     const nextEntry: QuestionEntry = {

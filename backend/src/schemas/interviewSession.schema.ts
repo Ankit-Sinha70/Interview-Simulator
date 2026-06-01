@@ -142,6 +142,7 @@ export interface IInterviewSessionDoc extends Document {
         focusCategory: string;
     } | null;
     useResumeData: boolean;
+    interviewMode?: string;
 }
 
 const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
@@ -177,6 +178,7 @@ const InterviewSessionSchema = new Schema<IInterviewSessionDoc>({
         }, default: null
     },
     useResumeData: { type: Boolean, default: false },
+    interviewMode: { type: String, enum: ['manual', 'resume', 'resume_jd'], default: 'manual' },
 }, {
     timestamps: true, // auto createdAt + updatedAt
 });

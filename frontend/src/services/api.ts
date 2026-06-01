@@ -16,6 +16,7 @@ export interface StartInterviewRequest {
     companyStyle?: string;
     mode: 'text' | 'voice' | 'hybrid';
     useResume?: boolean;
+    interviewMode?: 'manual' | 'resume' | 'resume_jd';
 }
 
 import { User } from '../context/AuthContext';

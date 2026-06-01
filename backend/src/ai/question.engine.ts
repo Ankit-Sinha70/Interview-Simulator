@@ -19,6 +19,7 @@ export async function generateQuestion(params: {
     parsedResume?: any;
     jobDescription?: string;
     targetCompany?: string;
+    questionType?: string;
 }): Promise<GeneratedQuestion> {
     const experienceLevel = params.level as ExperienceLevel;
     const config = getLevelConfig(experienceLevel);

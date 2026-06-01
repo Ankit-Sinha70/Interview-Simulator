@@ -141,6 +141,7 @@ export interface InterviewSession {
     completedAt: string | null;
     attentionStats: AttentionStats | null;
     useResumeData?: boolean;
+    interviewMode?: 'manual' | 'resume' | 'resume_jd';
 }
 
 export interface AttentionStats {
