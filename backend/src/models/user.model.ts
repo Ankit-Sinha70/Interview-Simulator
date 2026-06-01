@@ -57,6 +57,11 @@ export interface IUser extends Document {
         username: string;
         repos: { name: string; description?: string; language?: string; stars?: number }[];
         summary?: string;
+        detectedTechnologies?: string[];
+        topRepositories?: string[];
+        strongestAreas?: string[];
+        moderateAreas?: string[];
+        weakAreas?: string[];
         analyzedAt?: Date;
     };
     targetJobDescription?: {
@@ -66,6 +71,9 @@ export interface IUser extends Document {
     };
     atsScore?: {
         score: number;
+        resumeMatchScore?: number;
+        githubMatchScore?: number;
+        overallMatchScore?: number;
         breakdown?: {
             technicalMatch: number;
             experienceMatch: number;
@@ -81,6 +89,15 @@ export interface IUser extends Document {
         matchedSkills: string[];
         missingSkills: string[];
         suggestions: string[];
+        candidateStrengths?: string[];
+        potentialRiskAreas?: string[];
+        resumeValidationScore?: number;
+        githubValidationScore?: number;
+        recruiterRecommendation?: {
+            recommendation: 'YES' | 'NO';
+            reason: string;
+            concerns: string[];
+        };
         updatedAt: Date;
     };
     parsedResume?: {
@@ -174,6 +191,11 @@ const UserSchema: Schema = new Schema({
             stars: { type: Number }
         }],
         summary: { type: String },
+        detectedTechnologies: [{ type: String }],
+        topRepositories: [{ type: String }],
+        strongestAreas: [{ type: String }],
+        moderateAreas: [{ type: String }],
+        weakAreas: [{ type: String }],
         analyzedAt: { type: Date }
     },
     targetJobDescription: {
@@ -183,6 +205,9 @@ const UserSchema: Schema = new Schema({
     },
     atsScore: {
         score: { type: Number },
+        resumeMatchScore: { type: Number },
+        githubMatchScore: { type: Number },
+        overallMatchScore: { type: Number },
         breakdown: {
             technicalMatch: { type: Number },
             experienceMatch: { type: Number },
@@ -198,6 +223,15 @@ const UserSchema: Schema = new Schema({
         matchedSkills: [{ type: String }],
         missingSkills: [{ type: String }],
         suggestions: [{ type: String }],
+        candidateStrengths: [{ type: String }],
+        potentialRiskAreas: [{ type: String }],
+        resumeValidationScore: { type: Number },
+        githubValidationScore: { type: Number },
+        recruiterRecommendation: {
+            recommendation: { type: String, enum: ['YES', 'NO'] },
+            reason: { type: String },
+            concerns: [{ type: String }]
+        },
         updatedAt: { type: Date }
     }
 }, {

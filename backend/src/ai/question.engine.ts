@@ -17,6 +17,7 @@ export async function generateQuestion(params: {
     previousQuestion?: string;
     evaluationSummary?: string;
     parsedResume?: any;
+    githubProfile?: any;
     jobDescription?: string;
     targetCompany?: string;
     questionType?: string;

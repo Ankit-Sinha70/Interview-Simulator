@@ -138,7 +138,7 @@ function HomeContent() {
     interviewStyle: 'friendly' | 'strict' | 'faang',
     companyStyle: 'google' | 'startup' | 'product' | 'general',
     useResumeFlag?: boolean,
-    interviewModeParam?: 'manual' | 'resume' | 'resume_jd'
+    interviewModeParam?: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd'
   ) => {
     setIsLoading(true);
     setError(null);

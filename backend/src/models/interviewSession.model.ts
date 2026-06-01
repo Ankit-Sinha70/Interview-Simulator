@@ -141,7 +141,7 @@ export interface InterviewSession {
     completedAt: string | null;
     attentionStats: AttentionStats | null;
     useResumeData?: boolean;
-    interviewMode?: 'manual' | 'resume' | 'resume_jd';
+    interviewMode?: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd';
 }
 
 export interface AttentionStats {
@@ -174,6 +174,7 @@ export interface FinalReport {
     
     // Resume-Based & Advanced Analytics
     resumeAlignmentScore?: number;
+    githubValidationScore?: number;
     strongResumeSkills?: string[];
     improvementResumeSkills?: string[];
     skillValidationMatrix?: SkillValidation[];

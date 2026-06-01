@@ -93,6 +93,7 @@ export async function refreshCareerReport(userId: string): Promise<any> {
         targetJobDescription: user.targetJobDescription,
         parsedResume: user.parsedResume,
         atsScore: user.atsScore,
+        githubProfile: user.githubProfile,
         recentSessions,
         streaks: {
             currentStreak: user.currentStreak || 0,
@@ -143,6 +144,19 @@ export async function refreshCareerReport(userId: string): Promise<any> {
     report.resumeAlignment = aiAssessment.resumeAlignment;
     report.weakAreas = aiAssessment.weakAreas;
     report.progressHistory = progressHistory;
+    
+    // Save advanced flagship matching / validation fields
+    report.resumeMatchScore = user.atsScore?.resumeMatchScore || 0;
+    report.githubMatchScore = user.atsScore?.githubMatchScore || 0;
+    report.overallMatchScore = user.atsScore?.overallMatchScore || 0;
+    report.resumeValidationScore = aiAssessment.resumeValidationScore;
+    report.githubValidationScore = aiAssessment.githubValidationScore;
+    report.recruiterRecommendation = aiAssessment.recruiterRecommendation;
+    report.detectedTechnologies = user.githubProfile?.detectedTechnologies || [];
+    report.topRepositories = user.githubProfile?.topRepositories || [];
+    report.strongestAreas = user.githubProfile?.strongestAreas || [];
+    report.moderateAreas = user.githubProfile?.moderateAreas || [];
+    report.githubWeakAreas = user.githubProfile?.weakAreas || [];
 
     await report.save();
     return report;
@@ -170,6 +184,21 @@ function getRedactedReport(report: ICareerGrowthDoc) {
             strongSkills: [],
             improvementSkills: []
         },
-        weakAreas: report.weakAreas.slice(0, 1) // Only show top 1 weakness
+        weakAreas: report.weakAreas.slice(0, 1), // Only show top 1 weakness
+        resumeMatchScore: 0,
+        githubMatchScore: 0,
+        overallMatchScore: 0,
+        resumeValidationScore: 0,
+        githubValidationScore: 0,
+        recruiterRecommendation: {
+            recommendation: 'NO',
+            reason: 'Upgrade to Pro to unlock recruiter recommendations.',
+            concerns: ['Recruiter recommendations require a Pro plan.']
+        },
+        detectedTechnologies: [],
+        topRepositories: [],
+        strongestAreas: [],
+        moderateAreas: [],
+        githubWeakAreas: []
     };
 }

@@ -28,7 +28,7 @@ interface SessionSetupProps {
         interviewStyle: 'friendly' | 'strict' | 'faang',
         companyStyle: 'google' | 'startup' | 'product' | 'general',
         useResumeFlag?: boolean,
-        interviewMode?: 'manual' | 'resume' | 'resume_jd'
+        interviewMode?: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd'
     ) => void;
     isLoading: boolean;
 }
@@ -57,7 +57,9 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
 
     // Step state: 'choose_type' | 'manual_setup' | 'resume_upload' | 'candidate_review'
     const [step, setStep] = useState<'choose_type' | 'manual_setup' | 'resume_upload' | 'candidate_review'>('choose_type');
-    const [currentFlow, setCurrentFlow] = useState<'manual' | 'resume' | 'resume_jd'>('manual');
+    const [currentFlow, setCurrentFlow] = useState<'manual' | 'resume' | 'resume_jd' | 'resume_github_jd'>('manual');
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [githubInput, setGithubInput] = useState(user?.githubProfile?.username || '');
 
     // --- JD / ATS STATE ---
     const [jobDescription, setJobDescription] = useState(user?.targetJobDescription?.rawText || '');
@@ -117,57 +119,92 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
             toast.error('File size exceeds the 5 MB limit');
             return;
         }
+        setSelectedFile(file);
+        toast.success(`Selected resume: ${file.name}. Please complete setup and click analyze.`);
+    };
+
+    const runProfileAnalysis = async () => {
+        const flowMode = currentFlow;
+        if (flowMode === 'resume_jd' || flowMode === 'resume_github_jd') {
+            if (!selectedFile && !user?.parsedResume) {
+                toast.error('Please upload a resume first');
+                return;
+            }
+            if (flowMode === 'resume_github_jd' && !githubInput.trim()) {
+                toast.error('Please enter your GitHub profile or username');
+                return;
+            }
+            if (!jobDescription.trim()) {
+                toast.error('Please enter a target Job Description');
+                return;
+            }
+        } else {
+            if (!selectedFile && !user?.parsedResume) {
+                toast.error('Please upload a resume first');
+                return;
+            }
+        }
 
         setIsParsing(true);
-        setUploadProgress(20);
+        setUploadProgress(10);
 
         try {
-            const formData = new FormData();
-            formData.append('resume', file);
-
-            setUploadProgress(50);
-            await uploadResume(formData);
-
-            setUploadProgress(80);
-            await refreshUser();
-
-            setUploadProgress(100);
-
-            // Fetch the freshly updated user profile
-            const updatedUserRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/me`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            if (updatedUserRes.ok) {
-                const userJson = await updatedUserRes.json();
-                const parsed = userJson.data.parsedResume;
-
-                // If JD Match flow, we run ATS evaluate next
-                if (currentFlow === 'resume_jd' && jobDescription.trim()) {
-                    setUploadProgress(90);
-                    const companyName = targetCompany === 'Custom' ? customCompany : targetCompany;
-                    const role = parsed.role || 'Software Developer';
-                    const res = await evaluateATS(jobDescription.trim(), role, companyName);
-                    if (res && res.atsScore) {
-                        toast.success('Resume & Job Description Analysis Completed!');
-                    }
-                } else {
-                    toast.success('Resume analyzed successfully');
-                }
-
+            // 1. Upload resume if new file selected
+            if (selectedFile) {
+                setUploadProgress(20);
+                const formData = new FormData();
+                formData.append('resume', selectedFile);
+                await uploadResume(formData);
+                setUploadProgress(40);
                 await refreshUser();
+            }
 
-                // Re-fetch to get final scores
-                const finalUserRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+            // 2. Connect and analyze GitHub if in resume_github_jd flow
+            if (flowMode === 'resume_github_jd') {
+                setUploadProgress(60);
+                let username = githubInput.trim();
+                if (username.includes('github.com/')) {
+                    const parts = username.split('github.com/');
+                    username = parts[parts.length - 1].split('/')[0];
+                }
+                
+                const { analyzeGitHub } = await import('@/services/api');
+                await analyzeGitHub(username);
+                setUploadProgress(80);
+                await refreshUser();
+            }
+
+            // 3. Evaluate ATS match if in JD / GitHub JD flow
+            if ((flowMode === 'resume_jd' || flowMode === 'resume_github_jd') && jobDescription.trim()) {
+                setUploadProgress(90);
+                const updatedUserRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/me`, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                 });
-                if (finalUserRes.ok) {
-                    const finalJson = await finalUserRes.json();
-                    enterReviewScreen(finalJson.data.parsedResume);
+                if (updatedUserRes.ok) {
+                    const userJson = await updatedUserRes.json();
+                    const parsed = userJson.data.parsedResume;
+                    const companyName = targetCompany === 'Custom' ? customCompany : targetCompany;
+                    const role = parsed?.role || 'Software Developer';
+                    await evaluateATS(jobDescription.trim(), role, companyName);
                 }
+                setUploadProgress(95);
+                await refreshUser();
+            }
+
+            setUploadProgress(100);
+            toast.success('Candidate profile analysis completed successfully!');
+
+            // 4. Retrieve final user object and enter review screen
+            const finalUserRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (finalUserRes.ok) {
+                const finalJson = await finalUserRes.json();
+                enterReviewScreen(finalJson.data.parsedResume);
             }
         } catch (err: any) {
             console.error(err);
-            toast.error(err.message || 'Failed to upload and parse resume');
+            toast.error(err.message || 'Failed to analyze candidate profile');
         } finally {
             setIsParsing(false);
             setUploadProgress(0);
@@ -334,9 +371,9 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             </CardContent>
                         </Card>
 
-                        {/* Option 3: Resume + JD Setup */}
+                        {/* Option 3: Resume + GitHub + JD Setup */}
                         <Card
-                            onClick={() => { setCurrentFlow('resume_jd'); setStep('resume_upload'); }}
+                            onClick={() => { setCurrentFlow('resume_github_jd'); setStep('resume_upload'); }}
                             className="group cursor-pointer border border-border/50 bg-card/60 backdrop-blur-md hover:bg-card hover:border-amber-500/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(245,158,11,0.12)] flex flex-col justify-between relative overflow-hidden"
                         >
                             <div className="absolute top-0 right-0 bg-amber-500 text-black font-extrabold text-[8px] uppercase tracking-wider px-2 py-0.5 rounded-bl">
@@ -348,10 +385,10 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                 </div>
                                 <div className="space-y-2">
                                     <h2 className="text-xl font-bold text-foreground group-hover:text-amber-500 transition-colors flex items-center gap-1.5">
-                                        Resume + JD Match ⭐
+                                        Resume + GitHub + JD ⭐
                                     </h2>
                                     <p className="text-muted-foreground text-xs leading-relaxed">
-                                        Recruiter-grade simulation. Upload resume and JD to analyze skills gaps, predict readiness, and validate missing skills.
+                                        Personalized Hiring Assessment. Combines resume claims, GitHub repositories activity, and JD requirements for ultimate simulation.
                                     </p>
                                 </div>
                                 <div className="pt-2 text-xs font-semibold text-amber-500 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
@@ -541,7 +578,11 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             <ArrowLeft className="w-4 h-4" /> Back
                         </button>
                         <h2 className="text-2xl font-bold text-foreground">
-                            {currentFlow === 'resume_jd' ? 'Resume + Job Description Match' : 'Upload Resume'}
+                            {currentFlow === 'resume_github_jd'
+                                ? 'Personalized Hiring Assessment'
+                                : currentFlow === 'resume_jd'
+                                    ? 'Resume + Job Description Match'
+                                    : 'Upload Resume'}
                         </h2>
                         <div className="w-10" />
                     </div>
@@ -618,10 +659,12 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         {/* Right column: JD text / details */}
                         <div className="space-y-4">
                             <label className="text-sm font-bold text-foreground">
-                                {currentFlow === 'resume_jd' ? '2. Paste Target Job Description' : 'Resume Mode Information'}
+                                {currentFlow === 'resume_jd' || currentFlow === 'resume_github_jd'
+                                    ? '2. Target Job & GitHub Details'
+                                    : 'Resume Mode Information'}
                             </label>
 
-                            {currentFlow === 'resume_jd' ? (
+                            {currentFlow === 'resume_jd' || currentFlow === 'resume_github_jd' ? (
                                 <div className="p-5 rounded-3xl bg-card/60 border border-border/50 space-y-4 min-h-[320px] flex flex-col justify-between">
                                     <div className="space-y-3 flex-1">
                                         <div className="space-y-1.5">
@@ -653,13 +696,36 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                             )}
                                         </div>
 
+                                        {currentFlow === 'resume_github_jd' && (
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                                    GitHub Username or Profile URL
+                                                    <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[8px] scale-90 py-0.5 px-1.5 font-bold">
+                                                        PRO
+                                                    </Badge>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={githubInput}
+                                                    onChange={(e) => setGithubInput(e.target.value)}
+                                                    placeholder="e.g. octocat or https://github.com/octocat"
+                                                    className="w-full px-3 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-amber-500 text-xs font-semibold"
+                                                />
+                                                {!isPro && (
+                                                    <div className="text-[10px] text-amber-500 flex items-center gap-1 mt-1 font-semibold">
+                                                        <Lock className="w-3 h-3" /> Basic match will mock Github info. Upgrade to Pro for live analysis.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         <div className="space-y-1.5">
                                             <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Job Description Details</label>
                                             <textarea
                                                 value={jobDescription}
                                                 onChange={(e) => setJobDescription(e.target.value)}
                                                 placeholder="Paste target job requirements, technologies, and skills here to calculate fit rating and validate missing skills..."
-                                                rows={6}
+                                                rows={currentFlow === 'resume_github_jd' ? 3 : 5}
                                                 className="w-full p-3 rounded-xl bg-background border border-border focus:outline-none focus:border-amber-500 text-xs font-medium"
                                             />
                                         </div>
@@ -667,7 +733,11 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
 
                                     <div className="text-[10px] text-muted-foreground flex gap-1.5 items-start">
                                         <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                                        Our comparison engine matches resume skills against target JD requirements to identify skill gaps.
+                                        <span>
+                                            {currentFlow === 'resume_github_jd'
+                                                ? 'Our system evaluates matches across your resume, Github projects, and target job description to compute detailed hiring readiness scores.'
+                                                : 'Our comparison engine matches resume skills against target JD requirements to identify skill gaps.'}
+                                        </span>
                                     </div>
                                 </div>
                             ) : (
@@ -686,6 +756,37 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         </div>
 
                     </div>
+
+                    {/* Consolidated Analyze & Match Profile CTA */}
+                    <div className="pt-6 border-t border-border/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="text-left max-w-md">
+                            <h4 className="text-xs font-bold text-foreground">Ready to Compute Compatibility?</h4>
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                                {currentFlow === 'resume_github_jd'
+                                    ? 'We will extract resume content, parse repositories from your public GitHub profile, and perform a semantic analysis against the job description.'
+                                    : currentFlow === 'resume_jd'
+                                        ? 'We will parse your resume achievements and match them against the target Job Description to identify technical gaps.'
+                                        : 'We will parse the uploaded resume and extract your profile details to customize your interview path.'}
+                            </p>
+                        </div>
+                        <Button
+                            onClick={runProfileAnalysis}
+                            disabled={isParsing || (!selectedFile && !user?.parsedResume)}
+                            className="w-full sm:w-auto h-12 px-8 text-sm font-extrabold bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] text-white hover:opacity-95 rounded-xl transition-all shadow-md shrink-0 flex items-center gap-2"
+                        >
+                            {isParsing ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Parsing & Matching Profile...
+                                </>
+                            ) : (
+                                <>
+                                    Analyze Profile & Compute Fit
+                                </>
+                            )}
+                        </Button>
+                    </div>
+
                 </div>
             )}
 
@@ -713,92 +814,356 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         <div className="lg:col-span-2 space-y-6">
 
                             {/* Dial scores row */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                                {/* 1. Job Description Alignment Score */}
-                                <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[200px]">
-                                    <div className="flex justify-between items-start">
-                                        <div className="space-y-1">
-                                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Job Match Score</h3>
-                                            <p className="text-[10px] text-muted-foreground">Resume vs Job Description compatibility</p>
+                            {currentFlow === 'resume_github_jd' ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* 1. Overall Match Score */}
+                                    <div className="p-5 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Overall Blended Match</h3>
+                                                <p className="text-[10px] text-muted-foreground">Combined fit evaluation</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[9px] font-bold">
+                                                Blended Fit
+                                            </Badge>
                                         </div>
-                                        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[9px] font-bold">
-                                            JD Alignment
-                                        </Badge>
+
+                                        <div className="flex items-center gap-4 mt-3">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-20 h-20 transform -rotate-90">
+                                                    <circle cx="40" cy="40" r="32" className="stroke-muted-foreground/10 fill-none" strokeWidth="5" />
+                                                    <circle
+                                                        cx="40"
+                                                        cy="40"
+                                                        r="32"
+                                                        className="stroke-amber-500 fill-none transition-all duration-1000"
+                                                        strokeWidth="6"
+                                                        strokeDasharray={2 * Math.PI * 32}
+                                                        strokeDashoffset={2 * Math.PI * 32 * (1 - (user?.atsScore?.overallMatchScore || user?.atsScore?.score || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-base font-black text-foreground">{user?.atsScore?.overallMatchScore || user?.atsScore?.score || 0}%</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">Target Role Fit</h4>
+                                                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                                    {user?.atsScore?.score && user.atsScore.score >= 80
+                                                        ? 'High fit score. Strong background match.'
+                                                        : 'Moderate compatibility. Technical alignments identified.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        {!isPro && (
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/70 backdrop-blur-[2px] p-4">
+                                                <Lock className="w-4 h-4 text-amber-500 mb-1" />
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-500">Overall Match (PRO)</span>
+                                                <Link href="/pricing" className="text-[8px] text-muted-foreground hover:underline mt-0.5">Upgrade to unlock</Link>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="flex items-center gap-6 mt-4">
-                                        <div className="relative flex items-center justify-center shrink-0">
-                                            <svg className="w-24 h-24 transform -rotate-90">
-                                                <circle cx="48" cy="48" r="40" className="stroke-muted-foreground/10 fill-none" strokeWidth="6" />
-                                                <circle
-                                                    cx="48"
-                                                    cy="48"
-                                                    r="40"
-                                                    className="stroke-amber-500 fill-none transition-all duration-1000"
-                                                    strokeWidth="8"
-                                                    strokeDasharray={2 * Math.PI * 40}
-                                                    strokeDashoffset={2 * Math.PI * 40 * (1 - (user?.atsScore?.score || 50) / 100)}
-                                                    strokeLinecap="round"
-                                                />
-                                            </svg>
-                                            <span className="absolute text-xl font-black text-foreground">{user?.atsScore?.score || 0}%</span>
+                                    {/* 2. Resume Match Score */}
+                                    <div className="p-5 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Resume Match</h3>
+                                                <p className="text-[10px] text-muted-foreground">Resume credentials vs JD</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] border-[var(--accent-teal)]/30 text-[9px] font-bold">
+                                                ATS Score
+                                            </Badge>
                                         </div>
 
-                                        <div className="space-y-1">
-                                            <h4 className="text-xs font-bold text-foreground">Fit rating</h4>
-                                            <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                                {user?.atsScore?.score && user.atsScore.score >= 80
-                                                    ? 'Strong match for this position. Candidate matches primary requirements.'
-                                                    : user?.atsScore?.score && user.atsScore.score >= 60
-                                                        ? 'Moderate match. Technical gaps found in required stack.'
-                                                        : 'Low match. Consider adding missing keywords to optimize.'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+                                        <div className="flex items-center gap-4 mt-3">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-20 h-20 transform -rotate-90">
+                                                    <circle cx="40" cy="40" r="32" className="stroke-muted-foreground/10 fill-none" strokeWidth="5" />
+                                                    <circle
+                                                        cx="40"
+                                                        cy="40"
+                                                        r="32"
+                                                        className="stroke-[var(--accent-teal)] fill-none transition-all duration-1000"
+                                                        strokeWidth="6"
+                                                        strokeDasharray={2 * Math.PI * 32}
+                                                        strokeDashoffset={2 * Math.PI * 32 * (1 - (user?.atsScore?.resumeMatchScore || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-base font-black text-foreground">{user?.atsScore?.resumeMatchScore || 0}%</span>
+                                            </div>
 
-                                {/* 2. Hiring Readiness Score */}
-                                <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[200px]">
-                                    <div className="flex justify-between items-start">
-                                        <div className="space-y-1">
-                                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hiring Readiness</h3>
-                                            <p className="text-[10px] text-muted-foreground">Predicted capability for real-world interviews</p>
-                                        </div>
-                                        <Badge variant="outline" className="bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] border-[var(--accent-teal)]/30 text-[9px] font-bold">
-                                            Readiness
-                                        </Badge>
-                                    </div>
-
-                                    <div className="flex items-center gap-6 mt-4">
-                                        <div className="relative flex items-center justify-center shrink-0">
-                                            <svg className="w-24 h-24 transform -rotate-90">
-                                                <circle cx="48" cy="48" r="40" className="stroke-muted-foreground/10 fill-none" strokeWidth="6" />
-                                                <circle
-                                                    cx="48"
-                                                    cy="48"
-                                                    r="40"
-                                                    className="stroke-[var(--accent-teal)] fill-none transition-all duration-1000"
-                                                    strokeWidth="8"
-                                                    strokeDasharray={2 * Math.PI * 40}
-                                                    strokeDashoffset={2 * Math.PI * 40 * (1 - (user?.atsScore?.hiringReadiness?.readinessScore || 50) / 100)}
-                                                    strokeLinecap="round"
-                                                />
-                                            </svg>
-                                            <span className="absolute text-xl font-black text-foreground">{user?.atsScore?.hiringReadiness?.readinessScore || 0}%</span>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <h4 className="text-xs font-bold text-foreground">Suitability Check</h4>
-                                            <div className="text-[11px] text-muted-foreground space-y-0.5 leading-relaxed">
-                                                <div>Ready for: <strong className="text-emerald-400">{user?.atsScore?.hiringReadiness?.readyFor?.[0] || 'Junior roles'}</strong></div>
-                                                <div>Improve before: <strong className="text-rose-400">{user?.atsScore?.hiringReadiness?.needsImprovementBefore?.[0] || 'Senior roles'}</strong></div>
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">ATS Alignment</h4>
+                                                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                                    Matches skills and projects claimed on the CV with JD.
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                            </div>
+                                    {/* 3. GitHub Match Score */}
+                                    <div className="p-5 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">GitHub Code Match</h3>
+                                                <p className="text-[10px] text-muted-foreground">Evidence from repositories vs JD</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-indigo-500/10 text-indigo-500 border-indigo-500/30 text-[9px] font-bold">
+                                                Code Proof
+                                            </Badge>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 mt-3">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-20 h-20 transform -rotate-90">
+                                                    <circle cx="40" cy="40" r="32" className="stroke-muted-foreground/10 fill-none" strokeWidth="5" />
+                                                    <circle
+                                                        cx="40"
+                                                        cy="40"
+                                                        r="32"
+                                                        className="stroke-indigo-500 fill-none transition-all duration-1000"
+                                                        strokeWidth="6"
+                                                        strokeDasharray={2 * Math.PI * 32}
+                                                        strokeDashoffset={2 * Math.PI * 32 * (1 - (user?.atsScore?.githubMatchScore || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-base font-black text-foreground">{user?.atsScore?.githubMatchScore || 0}%</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">GitHub Evaluation</h4>
+                                                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                                    Identifies codebase relevance and repository density.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {!isPro && (
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/70 backdrop-blur-[2px] p-4">
+                                                <Lock className="w-4 h-4 text-indigo-400 mb-1" />
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-400">GitHub Match (PRO)</span>
+                                                <Link href="/pricing" className="text-[8px] text-muted-foreground hover:underline mt-0.5">Upgrade to unlock</Link>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 4. Hiring Readiness Score */}
+                                    <div className="p-5 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hiring Readiness</h3>
+                                                <p className="text-[10px] text-muted-foreground">Predicted capability for real-world interviews</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-[var(--accent-violet)]/10 text-[var(--accent-violet)] border-[var(--accent-violet)]/30 text-[9px] font-bold">
+                                                Readiness
+                                            </Badge>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 mt-3">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-20 h-20 transform -rotate-90">
+                                                    <circle cx="40" cy="40" r="32" className="stroke-muted-foreground/10 fill-none" strokeWidth="5" />
+                                                    <circle
+                                                        cx="40"
+                                                        cy="40"
+                                                        r="32"
+                                                        className="stroke-[var(--accent-violet)] fill-none transition-all duration-1000"
+                                                        strokeWidth="6"
+                                                        strokeDasharray={2 * Math.PI * 32}
+                                                        strokeDashoffset={2 * Math.PI * 32 * (1 - (user?.atsScore?.hiringReadiness?.readinessScore || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-base font-black text-foreground">{user?.atsScore?.hiringReadiness?.readinessScore || 0}%</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">Suitability Check</h4>
+                                                <div className="text-[10px] text-muted-foreground space-y-0.5 leading-normal">
+                                                    <div>Ready for: <strong className="text-emerald-400">{user?.atsScore?.hiringReadiness?.readyFor?.[0] || 'Junior roles'}</strong></div>
+                                                    <div>Improve: <strong className="text-rose-400">{user?.atsScore?.hiringReadiness?.needsImprovementBefore?.[0] || 'Senior roles'}</strong></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {!isPro && (
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/70 backdrop-blur-[2px] p-4">
+                                                <Lock className="w-4 h-4 text-violet-400 mb-1" />
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-violet-400">Readiness Score (PRO)</span>
+                                                <Link href="/pricing" className="text-[8px] text-muted-foreground hover:underline mt-0.5">Upgrade to unlock</Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* 1. Job Description Alignment Score */}
+                                    <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[200px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Job Match Score</h3>
+                                                <p className="text-[10px] text-muted-foreground">Resume vs Job Description compatibility</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[9px] font-bold">
+                                                JD Alignment
+                                            </Badge>
+                                        </div>
+
+                                        <div className="flex items-center gap-6 mt-4">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-24 h-24 transform -rotate-90">
+                                                    <circle cx="48" cy="48" r="40" className="stroke-muted-foreground/10 fill-none" strokeWidth="6" />
+                                                    <circle
+                                                        cx="48"
+                                                        cy="48"
+                                                        r="40"
+                                                        className="stroke-amber-500 fill-none transition-all duration-1000"
+                                                        strokeWidth="8"
+                                                        strokeDasharray={2 * Math.PI * 40}
+                                                        strokeDashoffset={2 * Math.PI * 40 * (1 - (user?.atsScore?.score || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-xl font-black text-foreground">{user?.atsScore?.score || 0}%</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">Fit rating</h4>
+                                                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                    {user?.atsScore?.score && user.atsScore.score >= 80
+                                                        ? 'Strong match for this position. Candidate matches primary requirements.'
+                                                        : user?.atsScore?.score && user.atsScore.score >= 60
+                                                            ? 'Moderate match. Technical gaps found in required stack.'
+                                                            : 'Low match. Consider adding missing keywords to optimize.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Hiring Readiness Score */}
+                                    <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[200px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hiring Readiness</h3>
+                                                <p className="text-[10px] text-muted-foreground">Predicted capability for real-world interviews</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] border-[var(--accent-teal)]/30 text-[9px] font-bold">
+                                                Readiness
+                                            </Badge>
+                                        </div>
+
+                                        <div className="flex items-center gap-6 mt-4">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-24 h-24 transform -rotate-90">
+                                                    <circle cx="48" cy="48" r="40" className="stroke-muted-foreground/10 fill-none" strokeWidth="6" />
+                                                    <circle
+                                                        cx="48"
+                                                        cy="48"
+                                                        r="40"
+                                                        className="stroke-[var(--accent-teal)] fill-none transition-all duration-1000"
+                                                        strokeWidth="8"
+                                                        strokeDasharray={2 * Math.PI * 40}
+                                                        strokeDashoffset={2 * Math.PI * 40 * (1 - (user?.atsScore?.hiringReadiness?.readinessScore || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-xl font-black text-foreground">{user?.atsScore?.hiringReadiness?.readinessScore || 0}%</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">Suitability Check</h4>
+                                                <div className="text-[11px] text-muted-foreground space-y-0.5 leading-relaxed">
+                                                    <div>Ready for: <strong className="text-emerald-400">{user?.atsScore?.hiringReadiness?.readyFor?.[0] || 'Junior roles'}</strong></div>
+                                                    <div>Improve before: <strong className="text-rose-400">{user?.atsScore?.hiringReadiness?.needsImprovementBefore?.[0] || 'Senior roles'}</strong></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {!isPro && (currentFlow === 'resume_jd') && (
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/70 backdrop-blur-[2px] p-4">
+                                                <Lock className="w-4 h-4 text-violet-400 mb-1" />
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-violet-400">Readiness Score (PRO)</span>
+                                                <Link href="/pricing" className="text-[8px] text-muted-foreground hover:underline mt-0.5">Upgrade to unlock</Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Strengths & Risk Areas (gated for Pro if resume_jd or resume_github_jd) */}
+                            {(currentFlow === 'resume_jd' || currentFlow === 'resume_github_jd') && (
+                                <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden space-y-4">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Candidate Profile Assessment</h3>
+                                    {isPro ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Strengths */}
+                                            <div className="space-y-2.5">
+                                                <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Key Strengths
+                                                </h4>
+                                                <div className="space-y-2">
+                                                    {user?.atsScore?.candidateStrengths && user.atsScore.candidateStrengths.length > 0 ? (
+                                                        user.atsScore.candidateStrengths.map((str: string, i: number) => (
+                                                            <div key={i} className="flex gap-2 items-start text-xs text-muted-foreground leading-relaxed">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
+                                                                <span>{str}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground italic">No strengths highlighted.</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Risks */}
+                                            <div className="space-y-2.5">
+                                                <h4 className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
+                                                    <AlertCircle className="w-4 h-4 text-amber-500" /> Potential Risks & Gaps
+                                                </h4>
+                                                <div className="space-y-2">
+                                                    {user?.atsScore?.potentialRiskAreas && user.atsScore.potentialRiskAreas.length > 0 ? (
+                                                        user.atsScore.potentialRiskAreas.map((risk: string, i: number) => (
+                                                            <div key={i} className="flex gap-2 items-start text-xs text-muted-foreground leading-relaxed">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                                                                <span>{risk}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground italic">No major risks identified.</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="relative rounded-2xl border border-border/50 bg-card/30 overflow-hidden min-h-[120px]">
+                                            {/* Blurred sample list */}
+                                            <div className="opacity-25 blur-[3px] pointer-events-none select-none p-4 grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-24 bg-white/10 rounded" />
+                                                    <div className="h-3 w-40 bg-white/10 rounded" />
+                                                    <div className="h-3 w-32 bg-white/10 rounded" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-24 bg-white/10 rounded" />
+                                                    <div className="h-3 w-40 bg-white/10 rounded" />
+                                                    <div className="h-3 w-32 bg-white/10 rounded" />
+                                                </div>
+                                            </div>
+                                            {/* Gating lock */}
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/50 backdrop-blur-[1.5px] p-4">
+                                                <Lock className="w-4 h-4 text-violet-400 mb-1.5" />
+                                                <h4 className="text-xs font-bold text-foreground mb-0.5">Strengths & Risks are Locked</h4>
+                                                <p className="text-[10px] text-muted-foreground mb-3 max-w-[280px]">Upgrade to Pro to view key strengths and risks analyzed by AI.</p>
+                                                <Link href="/pricing" className="h-7 px-4 rounded-lg bg-[var(--accent-violet)] text-white font-bold text-[10px] flex items-center justify-center hover:opacity-90">Upgrade to Pro</Link>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Job Match Breakdowns (Pro gated) */}
                             <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden">
@@ -980,7 +1345,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             </div>
 
                             {/* Gaps: Missing Skills */}
-                            {currentFlow === 'resume_jd' && (
+                            {(currentFlow === 'resume_jd' || currentFlow === 'resume_github_jd') && (
                                 <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md space-y-4">
                                     <div className="space-y-1">
                                         <h3 className="text-xs font-bold uppercase tracking-wider text-rose-400">Missing Job Gaps</h3>
@@ -992,7 +1357,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                             {user?.atsScore?.missingSkills && user.atsScore.missingSkills.length > 0 ? (
                                                 user.atsScore.missingSkills.map((sk: string) => (
                                                     <span key={sk} className="px-2.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold flex items-center gap-1">
-                                                        <AlertCircle className="w-3 h-3 shrink-0" />
+                                                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                                                         {sk}
                                                     </span>
                                                 ))
@@ -1032,9 +1397,11 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                 </Button>
 
                                 <p className="text-[10px] text-center text-muted-foreground leading-relaxed px-1">
-                                    {currentFlow === 'resume_jd'
-                                        ? 'Tailored: 30% resume details, 30% JD requirements, 20% validation-testing missing skills, and 20% scenarios.'
-                                        : 'Tailored: 40% resume details, 30% project details, and 30% scenarios.'}
+                                    {currentFlow === 'resume_github_jd'
+                                        ? 'Tailored: 30% Resume, 30% GitHub codebase evidence, 20% Job Description requirements, 10% Scenario, and 10% Behavioral questions.'
+                                        : currentFlow === 'resume_jd'
+                                            ? 'Tailored: 30% resume details, 30% JD requirements, 20% validation-testing missing skills, and 20% scenarios.'
+                                            : 'Tailored: 40% resume details, 30% project details, and 30% scenarios.'}
                                 </p>
                             </div>
 

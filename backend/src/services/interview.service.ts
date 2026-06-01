@@ -99,8 +99,14 @@ export async function autoAbandonStaleSessions() {
     }
 }
 
-function getQuestionTypeForIndex(index: number, mode: 'manual' | 'resume' | 'resume_jd'): 'resume' | 'jd_required' | 'missing_skill' | 'scenario' | 'behavioral' | 'general' {
-    if (mode === 'resume_jd') {
+function getQuestionTypeForIndex(index: number, mode: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd'): 'resume' | 'github' | 'jd_required' | 'missing_skill' | 'scenario' | 'behavioral' | 'general' {
+    if (mode === 'resume_github_jd') {
+        if (index < 3) return 'resume';          // Questions 1-3 (30%)
+        if (index < 6) return 'github';          // Questions 4-6 (30%)
+        if (index < 8) return 'jd_required';     // Questions 7-8 (20%)
+        if (index === 8) return 'missing_skill'; // Question 9 (10%)
+        return 'behavioral';                      // Question 10 (10%)
+    } else if (mode === 'resume_jd') {
         if (index < 3) return 'resume';
         if (index < 6) return 'jd_required';
         if (index < 8) return 'missing_skill';
@@ -129,7 +135,7 @@ export async function startInterview(
     companyStyle: string = 'general',
     mode: InterviewMode = 'text',
     useResume: boolean = false,
-    interviewMode: 'manual' | 'resume' | 'resume_jd' = 'manual'
+    interviewMode: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd' = 'manual'
 ) {
     // Check usage limits
     const user = await User.findById(userId);
@@ -181,6 +187,7 @@ export async function startInterview(
         interviewStyle: session.interviewStyle,
         companyStyle: session.companyStyle,
         parsedResume: useResume ? user.parsedResume : undefined,
+        githubProfile: interviewMode === 'resume_github_jd' ? user.githubProfile : undefined,
         jobDescription: user.targetJobDescription?.rawText,
         targetCompany: user.targetJobDescription?.company,
         questionType
@@ -322,6 +329,7 @@ export async function processAnswer(
     const currentQuestion = session.questions[currentQuestionIndex];
 
     let parsedResume: any = undefined;
+    let githubProfile: any = undefined;
     let jobDescription: string | undefined = undefined;
     let targetCompany: string | undefined = undefined;
     if (session.userId) {
@@ -330,6 +338,7 @@ export async function processAnswer(
             const user = await User.findById(session.userId);
             if (user) {
                 if (session.useResumeData) parsedResume = user.parsedResume;
+                if (session.interviewMode === 'resume_github_jd') githubProfile = user.githubProfile;
                 jobDescription = user.targetJobDescription?.rawText;
                 targetCompany = user.targetJobDescription?.company;
             }
@@ -481,6 +490,7 @@ export async function processAnswer(
         targetDifficulty,
         questionHistory,
         parsedResume,
+        githubProfile,
         jobDescription,
         targetCompany,
         questionType

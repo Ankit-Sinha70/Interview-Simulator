@@ -30,31 +30,67 @@ export async function fetchGitHubRepos(username: string): Promise<GitHubRepo[]> 
     }
 }
 
-export async function generateGitHubSummary(repos: GitHubRepo[]): Promise<string> {
-    if (repos.length === 0) return 'No public repositories found.';
+export interface GitHubAnalysisResult {
+    summary: string;
+    detectedTechnologies: string[];
+    topRepositories: string[];
+    strongestAreas: string[];
+    moderateAreas: string[];
+    weakAreas: string[];
+}
+
+export async function generateGitHubSummary(repos: GitHubRepo[]): Promise<GitHubAnalysisResult> {
+    const defaultResult: GitHubAnalysisResult = {
+        summary: 'No public repositories found.',
+        detectedTechnologies: [],
+        topRepositories: [],
+        strongestAreas: [],
+        moderateAreas: [],
+        weakAreas: []
+    };
+
+    if (repos.length === 0) return defaultResult;
     
     const repoInfo = repos.map(r => 
         `- ${r.name} (${r.language || 'Unknown'}): ${r.description || 'No description'} (${r.stargazers_count} stars)`
     ).join('\n');
 
-    const prompt = `You are an expert technical recruiter. Analyze the following candidate's GitHub repositories and provide a 2-3 sentence professional summary of their active technical skills, frameworks, and project focus. Return STRICTLY a JSON object with a single key "summary":
+    const prompt = `You are an expert technical recruiter and engineering manager. Analyze the following candidate's GitHub repositories and provide a structured JSON profile analysis:
 
 GITHUB REPOSITORIES:
 ${repoInfo}
 
-Example Response Format:
+Provide:
+1. "summary": A 2-3 sentence professional summary of their active technical skills, frameworks, and project focus.
+2. "detectedTechnologies": A list of technologies/languages/frameworks detected across their repositories (e.g. ["React", "TypeScript", "Node.js"]).
+3. "topRepositories": Names of the most complex, popular, or active repositories (e.g. ["e-commerce-platform", "interview-simulator"]).
+4. "strongestAreas": Technical domains they show high skill or high activity in (e.g. ["Frontend Development", "State Management"]).
+5. "moderateAreas": Domains they show moderate skill or fewer projects in (e.g. ["Backend Development"]).
+6. "weakAreas": Domains/areas required in modern full-stack setups but showing weak or no evidence in these repositories (e.g. ["Cloud Infrastructure", "CI/CD Pipelines", "Automated Testing"]).
+
+Return STRICTLY JSON. Do not include markdown formatting or explanations. 
+Your response must match this schema exactly:
 {
-  "summary": "The candidate shows strong activity in TypeScript and Next.js, with key projects focusing on AI simulators and backend REST APIs. Their repositories exhibit a clean architecture approach and custom tooling development."
+  "summary": "string",
+  "detectedTechnologies": ["string"],
+  "topRepositories": ["string"],
+  "strongestAreas": ["string"],
+  "moderateAreas": ["string"],
+  "weakAreas": ["string"]
 }`;
 
     try {
-        interface SummaryRes {
-            summary: string;
-        }
-        const res = await callAI<SummaryRes>(prompt);
-        return res.summary || 'Analyzed public repositories.';
+        const res = await callAI<GitHubAnalysisResult>(prompt);
+        return {
+            summary: res.summary || 'Analyzed public repositories.',
+            detectedTechnologies: Array.isArray(res.detectedTechnologies) ? res.detectedTechnologies : [],
+            topRepositories: Array.isArray(res.topRepositories) ? res.topRepositories : [],
+            strongestAreas: Array.isArray(res.strongestAreas) ? res.strongestAreas : [],
+            moderateAreas: Array.isArray(res.moderateAreas) ? res.moderateAreas : [],
+            weakAreas: Array.isArray(res.weakAreas) ? res.weakAreas : []
+        };
     } catch (err) {
         console.error('[GitHubService] Failed to generate summary:', err);
-        return 'Analyzed public repositories.';
+        return defaultResult;
     }
 }

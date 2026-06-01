@@ -9,10 +9,12 @@ export interface ReportContext {
   confidenceLevel: ConfidenceLevel;
   weaknessFrequency: Record<string, number>;
   parsedResume?: any;
+  githubProfile?: any;
 }
 
 export function getReportPrompt(ctx: ReportContext): string {
   const hasResume = !!ctx.parsedResume;
+  const hasGitHub = !!ctx.githubProfile;
   return `You are a senior technical interviewer generating a final structured interview report.
 
 Context:
@@ -36,6 +38,14 @@ ${hasResume ? `CANDIDATE'S RESUME CONTEXT (Use this to perform resume alignment 
 ${JSON.stringify(ctx.parsedResume, null, 2)}
 ` : ''}
 
+${hasGitHub ? `CANDIDATE'S GITHUB PORTFOLIO SUMMARY (Use this to perform github validation analysis):
+Summary: ${ctx.githubProfile.summary || 'Not provided'}
+Detected Tech: ${JSON.stringify(ctx.githubProfile.detectedTechnologies || [])}
+Strongest Areas: ${JSON.stringify(ctx.githubProfile.strongestAreas || [])}
+Moderate Areas: ${JSON.stringify(ctx.githubProfile.moderateAreas || [])}
+Weak Areas: ${JSON.stringify(ctx.githubProfile.weakAreas || [])}
+` : ''}
+
 Interview Transcript & Evaluations:
 ${ctx.questionsAndEvaluations}
 
@@ -46,11 +56,12 @@ Tasks:
 3. Identify top 3 areas for improvement.
 4. Generate a personalized 5-step improvement roadmap based on the specific weaknesses found.
 5. Generate an "interviewReadinessScore" (0-100) based on their performance, communication, and technical depth.
-6. Generate a "recommendedLearningPath" (array of strings, e.g. "Master Advanced Node.js Event Loop", "Practice System Design for Distributed Caching") based on the technical gaps identified.
+6. Generate a "recommendedLearningPath" (array of strings, e.g. "Master Advanced Node.js Event Loop") based on the technical gaps identified.
 ${hasResume ? `7. Calculate a "resumeAlignmentScore" (0-100) comparing how the candidate's actual interview performance matches their resume claims.
 8. Identify "strongResumeSkills" (array of skills where they scored high) and "improvementResumeSkills" (array of skills where they claimed experience but scored low).
 9. Create a "skillValidationMatrix" containing validation details for each primary skill in their resume. Format: Array of {"skill": string, "performanceScore": number (1-10), "insight": string (explaining the rating based on the interview)}.
 10. Calculate a "projectUnderstandingScore" (0-100) reflecting how well they explained and defended the projects mentioned on their resume.` : ''}
+${hasGitHub ? `11. Calculate a "githubValidationScore" (0-100) comparing how well the candidate's public projects and repositories on GitHub support their resume claims and align with their actual mock interview performance.` : ''}
 
 Rules:
 - Be objective and constructive.
@@ -80,6 +91,7 @@ Return STRICT JSON:
       "insight": "string"
     }
   ],
-  "projectUnderstandingScore": number` : ''}
+  "projectUnderstandingScore": number` : ''}${hasGitHub ? `,
+  "githubValidationScore": number` : ''}
 }`;
 }

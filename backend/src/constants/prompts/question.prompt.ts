@@ -54,6 +54,7 @@ export function getQuestionPrompt(params: {
   previousQuestion?: string;
   evaluationSummary?: string;
   parsedResume?: any;
+  githubProfile?: any;
   jobDescription?: string;
   targetCompany?: string;
   questionType?: string;
@@ -68,6 +69,9 @@ export function getQuestionPrompt(params: {
   if (params.questionType) {
     if (params.questionType === 'resume') {
       questionInstructions = `\nFOCUS AREA INSTRUCTION: Focus heavily on the candidate's resume claims. Ask them to explain or discuss a specific project, technology choice, or experience listed in their parsed resume. Tailor the question specifically to their claimed background.`;
+    } else if (params.questionType === 'github') {
+      const topRepos = params.githubProfile?.topRepositories ? params.githubProfile.topRepositories.join(', ') : '';
+      questionInstructions = `\nFOCUS AREA INSTRUCTION: Focus heavily on the candidate's GitHub repositories, active technical skills, or project evidence. Ask them about tech choices, optimization, or architecture of a project on their GitHub profile (like ${topRepos || 'their repositories'} if available) and how they structured their code.`;
     } else if (params.questionType === 'jd_required') {
       questionInstructions = `\nFOCUS AREA INSTRUCTION: Focus heavily on the key required skills listed in the target Job Description. Ask conceptual or implementation questions related to these skills.`;
     } else if (params.questionType === 'missing_skill') {

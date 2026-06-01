@@ -19,7 +19,7 @@ export async function createSession(
     mode: InterviewMode = 'text',
     userId?: string,
     useResumeData: boolean = false,
-    interviewMode: 'manual' | 'resume' | 'resume_jd' = 'manual'
+    interviewMode: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd' = 'manual'
 ): Promise<InterviewSession> {
     const promptVersion = await getCurrentPromptVersion();
     const now = new Date().toISOString();

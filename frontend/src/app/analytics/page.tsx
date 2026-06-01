@@ -9,7 +9,16 @@ import {
     CareerDashboardData,
     AnalyticsSummaryResponse
 } from '@/services/api';
-import { ReadinessMeter, SkillGapMatrix, AICoachPanel, RoadmapPlanner, ResumeAlignmentCard } from '@/components/career/CareerDashboardComponents';
+import { 
+    ReadinessMeter, 
+    SkillGapMatrix, 
+    AICoachPanel, 
+    RoadmapPlanner, 
+    ResumeAlignmentCard,
+    MatchBreakdownCard,
+    ValidationScoresCard,
+    RecruiterRecommendationCard 
+} from '@/components/career/CareerDashboardComponents';
 import TrendChart from '@/components/analytics/TrendChart';
 import RadarBreakdown from '@/components/analytics/RadarBreakdown';
 import TimeStats from '@/components/analytics/TimeStats';
@@ -218,6 +227,31 @@ function CareerDashboardContent() {
                         breakdown={careerData.readinessBreakdown} 
                         roleSuitability={careerData.roleSuitability} 
                         aiRecommendation={careerData.aiRecommendation} 
+                    />
+
+                    {/* Premium Profile Matching Widgets */}
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <MatchBreakdownCard
+                            overallScore={careerData.overallMatchScore || careerData.readinessScore || 0}
+                            resumeScore={careerData.resumeMatchScore || 0}
+                            githubScore={careerData.githubMatchScore || 0}
+                            detectedTechs={careerData.detectedTechnologies}
+                            strongAreas={careerData.strongestAreas}
+                            planType={user?.planType || 'FREE'}
+                        />
+                        <RecruiterRecommendationCard
+                            recommendation={careerData.recruiterRecommendation?.recommendation || 'NO'}
+                            reason={careerData.recruiterRecommendation?.reason || ''}
+                            concerns={careerData.recruiterRecommendation?.concerns || []}
+                            planType={user?.planType || 'FREE'}
+                        />
+                    </div>
+
+                    {/* Verification Scores Card */}
+                    <ValidationScoresCard
+                        resumeValidation={careerData.resumeValidationScore || 0}
+                        githubValidation={careerData.githubValidationScore || 0}
+                        planType={user?.planType || 'FREE'}
                     />
 
                     <div className="grid gap-6 md:grid-cols-2">
