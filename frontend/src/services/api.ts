@@ -16,6 +16,7 @@ export interface StartInterviewRequest {
     companyStyle?: string;
     mode: 'text' | 'voice' | 'hybrid';
     useResume?: boolean;
+    interviewMode?: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd';
 }
 
 import { User } from '../context/AuthContext';
@@ -584,6 +585,11 @@ export interface GitHubProfile {
     username: string;
     repos: { name: string; description?: string; language?: string; stars?: number }[];
     summary?: string;
+    detectedTechnologies?: string[];
+    topRepositories?: string[];
+    strongestAreas?: string[];
+    moderateAreas?: string[];
+    weakAreas?: string[];
     analyzedAt?: string;
 }
 
@@ -595,8 +601,26 @@ export interface ATSEvalData {
     };
     atsScore: {
         score: number;
+        resumeMatchScore?: number;
+        githubMatchScore?: number;
+        overallMatchScore?: number;
+        breakdown?: {
+            technicalMatch: number;
+            experienceMatch: number;
+            projectRelevance: number;
+            communicationPrediction: number;
+        };
+        hiringReadiness?: {
+            readinessScore: number;
+            readyFor: string[];
+            needsImprovementBefore: string[];
+            reasoning: string[];
+        };
         matchedSkills: string[];
         missingSkills: string[];
+        candidateStrengths?: string[];
+        potentialRiskAreas?: string[];
+        githubValidationScore?: number;
         suggestions: string[];
         updatedAt: string;
     };
@@ -689,7 +713,6 @@ export interface CareerDashboardData {
         strongSkills: string[];
         improvementSkills: string[];
     };
-    weakAreas: string[];
     progressHistory: {
         date: string;
         readiness: number;
@@ -697,6 +720,21 @@ export interface CareerDashboardData {
         communication: number;
         confidence: number;
     }[];
+    resumeMatchScore?: number;
+    githubMatchScore?: number;
+    overallMatchScore?: number;
+    resumeValidationScore?: number;
+    githubValidationScore?: number;
+    recruiterRecommendation?: {
+        recommendation: 'YES' | 'NO';
+        reason: string;
+        concerns: string[];
+    };
+    detectedTechnologies?: string[];
+    topRepositories?: string[];
+    strongestAreas?: string[];
+    moderateAreas?: string[];
+    weakAreas?: string[];
     updatedAt: string;
 }
 

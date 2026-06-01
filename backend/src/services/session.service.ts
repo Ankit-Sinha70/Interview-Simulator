@@ -18,7 +18,8 @@ export async function createSession(
     companyStyle: string = 'general',
     mode: InterviewMode = 'text',
     userId?: string,
-    useResumeData: boolean = false
+    useResumeData: boolean = false,
+    interviewMode: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd' = 'manual'
 ): Promise<InterviewSession> {
     const promptVersion = await getCurrentPromptVersion();
     const now = new Date().toISOString();
@@ -56,6 +57,7 @@ export async function createSession(
         completedAt: null,
         attentionStats: null,
         useResumeData,
+        interviewMode,
     };
 
     if (isDbConnected()) {
@@ -140,5 +142,7 @@ function docToSession(doc: any): InterviewSession {
         updatedAt: obj.updatedAt?.toISOString?.() || obj.updatedAt,
         completedAt: obj.completedAt?.toISOString?.() || obj.completedAt,
         attentionStats: obj.attentionStats || null,
+        useResumeData: obj.useResumeData || false,
+        interviewMode: obj.interviewMode || 'manual',
     };
 }

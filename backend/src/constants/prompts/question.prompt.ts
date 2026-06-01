@@ -54,8 +54,10 @@ export function getQuestionPrompt(params: {
   previousQuestion?: string;
   evaluationSummary?: string;
   parsedResume?: any;
+  githubProfile?: any;
   jobDescription?: string;
   targetCompany?: string;
+  questionType?: string;
 }): string {
   const level = params.level as ExperienceLevel;
   const allowedTopics = getAllowedTopics(params.role, level);
@@ -63,9 +65,28 @@ export function getQuestionPrompt(params: {
   const levelConfig = getLevelConfig(level);
   const band = levelConfig.difficultyBand;
 
+  let questionInstructions = '';
+  if (params.questionType) {
+    if (params.questionType === 'resume') {
+      questionInstructions = `\nFOCUS AREA INSTRUCTION: Focus heavily on the candidate's resume claims. Ask them to explain or discuss a specific project, technology choice, or experience listed in their parsed resume. Tailor the question specifically to their claimed background.`;
+    } else if (params.questionType === 'github') {
+      const topRepos = params.githubProfile?.topRepositories ? params.githubProfile.topRepositories.join(', ') : '';
+      questionInstructions = `\nFOCUS AREA INSTRUCTION: Focus heavily on the candidate's GitHub repositories, active technical skills, or project evidence. Ask them about tech choices, optimization, or architecture of a project on their GitHub profile (like ${topRepos || 'their repositories'} if available) and how they structured their code.`;
+    } else if (params.questionType === 'jd_required') {
+      questionInstructions = `\nFOCUS AREA INSTRUCTION: Focus heavily on the key required skills listed in the target Job Description. Ask conceptual or implementation questions related to these skills.`;
+    } else if (params.questionType === 'missing_skill') {
+      questionInstructions = `\nFOCUS AREA INSTRUCTION: (Missing Skill Pressure Testing) Identify a technology or skill required or preferred by the Job Description that is NOT mentioned in the candidate's resume. Ask a targeted technical question to validate if the candidate actually has any knowledge or capability in this missing skill.`;
+    } else if (params.questionType === 'scenario') {
+      questionInstructions = `\nFOCUS AREA INSTRUCTION: Ask a realistic, scenario-based system design or technical debugging question (e.g. application performance degrades under heavy traffic, database connection pool exhaustion, memory leak investigation, scaling issues).`;
+    } else if (params.questionType === 'behavioral') {
+      questionInstructions = `\nFOCUS AREA INSTRUCTION: Ask a behavioral question testing soft skills, leadership, or teamwork dynamics (e.g. handling a team conflict, resolving technical disagreements, dealing with a challenging timeline).`;
+    }
+  }
+
   return `You are a senior technical interviewer.
 
 Generate one interview question based on:
+${questionInstructions}
 
 Interview Style: ${params.interviewStyle || 'friendly'}
 Company Style: ${params.companyStyle || 'general'} ${params.targetCompany ? `(Specifically targeted at company: ${params.targetCompany})` : ''}

@@ -7,7 +7,7 @@ import { generateFinalReport } from '../services/report.service';
  */
 export async function startInterview(req: Request, res: Response, next: NextFunction) {
     try {
-        const { role, experienceLevel, mode, interviewStyle, companyStyle, useResume } = req.body;
+        const { role, experienceLevel, mode, interviewStyle, companyStyle, useResume, interviewMode } = req.body;
         const userId = (req as any).user?.userId;
 
         if (!userId) {
@@ -21,7 +21,8 @@ export async function startInterview(req: Request, res: Response, next: NextFunc
             interviewStyle, 
             companyStyle, 
             mode, 
-            useResume
+            useResume,
+            interviewMode
         );
 
         res.status(200).json({

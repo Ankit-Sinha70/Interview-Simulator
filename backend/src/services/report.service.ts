@@ -73,16 +73,22 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
     // ─── Time Analysis ───
     const timeAnalysis = calculateTimeMetrics(session.questions);
 
-    // Fetch parsedResume context
+    // Fetch parsedResume and githubProfile context
     let parsedResume: any = undefined;
-    if (session.useResumeData && session.userId) {
+    let githubProfile: any = undefined;
+    if (session.userId) {
         try {
             const user = await User.findById(session.userId);
             if (user) {
-                parsedResume = user.parsedResume;
+                if (session.useResumeData) {
+                    parsedResume = user.parsedResume;
+                }
+                if (session.interviewMode === 'resume_github_jd') {
+                    githubProfile = user.githubProfile;
+                }
             }
         } catch (resumeErr) {
-            console.error('[ReportService] Error loading user resume:', resumeErr);
+            console.error('[ReportService] Error loading user resume/github:', resumeErr);
         }
     }
 
@@ -96,6 +102,7 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         confidenceLevel: calculatedConfidence,
         weaknessFrequency,
         parsedResume,
+        githubProfile,
     });
 
     // ─── 3. Construct Final Report ───
@@ -114,6 +121,7 @@ Weaknesses: ${q.evaluation!.weaknesses.join(', ')}`;
         
         // Resume-Based & Advanced metrics from AI
         resumeAlignmentScore: aiReport.resumeAlignmentScore,
+        githubValidationScore: aiReport.githubValidationScore,
         strongResumeSkills: aiReport.strongResumeSkills,
         improvementResumeSkills: aiReport.improvementResumeSkills,
         skillValidationMatrix: aiReport.skillValidationMatrix,

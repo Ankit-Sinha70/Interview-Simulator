@@ -90,7 +90,7 @@ export async function githubAnalyze(req: Request, res: Response, next: NextFunct
         const repos = await fetchGitHubRepos(username.trim());
 
         // 2. Generate summary with AI
-        const summary = await generateGitHubSummary(repos);
+        const githubAnalysis = await generateGitHubSummary(repos);
 
         // 3. Save to user model
         user.githubProfile = {
@@ -101,7 +101,12 @@ export async function githubAnalyze(req: Request, res: Response, next: NextFunct
                 language: r.language || undefined,
                 stars: r.stargazers_count
             })),
-            summary,
+            summary: githubAnalysis.summary,
+            detectedTechnologies: githubAnalysis.detectedTechnologies,
+            topRepositories: githubAnalysis.topRepositories,
+            strongestAreas: githubAnalysis.strongestAreas,
+            moderateAreas: githubAnalysis.moderateAreas,
+            weakAreas: githubAnalysis.weakAreas,
             analyzedAt: new Date()
         };
 
@@ -153,7 +158,7 @@ export async function atsEvaluate(req: Request, res: Response, next: NextFunctio
         // Evaluate using ATS engine
         const atsResult = await evaluateATS({
             resume: user.parsedResume,
-            githubSummary: user.githubProfile?.summary,
+            githubProfile: user.githubProfile,
             jobDescription: jobDescription.trim()
         });
 
@@ -167,8 +172,16 @@ export async function atsEvaluate(req: Request, res: Response, next: NextFunctio
         // Save ATS score results
         user.atsScore = {
             score: atsResult.score,
+            resumeMatchScore: atsResult.resumeMatchScore,
+            githubMatchScore: atsResult.githubMatchScore,
+            overallMatchScore: atsResult.overallMatchScore,
+            breakdown: atsResult.breakdown,
+            hiringReadiness: atsResult.hiringReadiness,
             matchedSkills: atsResult.matchedSkills,
             missingSkills: atsResult.missingSkills,
+            candidateStrengths: atsResult.candidateStrengths,
+            potentialRiskAreas: atsResult.potentialRiskAreas,
+            githubValidationScore: atsResult.githubValidationScore,
             suggestions: atsResult.suggestions,
             updatedAt: new Date()
         };

@@ -1,16 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-    FileText, CheckCircle2, Code, Server, Layers, Leaf, Rocket,
-    Star, Smile, UserCheck, Briefcase, Globe, Zap, Brain, Target,
-    Plus, X, UploadCloud, AlertCircle, RefreshCw, ArrowLeft, ShieldAlert, Loader2
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
-import { uploadResume, updateResumeData, evaluateATS } from '@/services/api';
+import { evaluateATS, updateResumeData, uploadResume } from '@/services/api';
+import {
+    AlertCircle,
+    ArrowLeft,
+    Award,
+    Brain,
+    CheckCircle2, Code,
+    FileText,
+    Loader2, Lock,
+    Target,
+    UploadCloud,
+    X
+} from 'lucide-react';
+import Link from 'next/link';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 interface SessionSetupProps {
@@ -19,7 +27,8 @@ interface SessionSetupProps {
         experienceLevel: 'Junior' | 'Mid' | 'Senior',
         interviewStyle: 'friendly' | 'strict' | 'faang',
         companyStyle: 'google' | 'startup' | 'product' | 'general',
-        useResumeFlag?: boolean
+        useResumeFlag?: boolean,
+        interviewMode?: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd'
     ) => void;
     isLoading: boolean;
 }
@@ -44,181 +53,19 @@ const SUGGESTED_SKILLS = [
 
 export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) {
     const { user, refreshUser } = useAuth();
+    const isPro = user?.planType === 'PRO';
 
-    // Step state: 'choose_type' | 'manual_setup' | 'resume_upload' | 'resume_review'
-    const [step, setStep] = useState<'choose_type' | 'manual_setup' | 'resume_upload' | 'resume_review'>('choose_type');
+    // Step state: 'choose_type' | 'manual_setup' | 'resume_upload' | 'candidate_review'
+    const [step, setStep] = useState<'choose_type' | 'manual_setup' | 'resume_upload' | 'candidate_review'>('choose_type');
+    const [currentFlow, setCurrentFlow] = useState<'manual' | 'resume' | 'resume_jd' | 'resume_github_jd'>('manual');
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [githubInput, setGithubInput] = useState(user?.githubProfile?.username || '');
 
-    // --- ATS & COMPANY SPECIFIC STATE ---
+    // --- JD / ATS STATE ---
     const [jobDescription, setJobDescription] = useState(user?.targetJobDescription?.rawText || '');
     const [targetCompany, setTargetCompany] = useState(user?.targetJobDescription?.company || 'General');
     const [customCompany, setCustomCompany] = useState('');
     const [atsLoading, setAtsLoading] = useState(false);
-    const [atsResult, setAtsResult] = useState<{
-        score: number;
-        matchedSkills: string[];
-        missingSkills: string[];
-        suggestions: string[];
-    } | null>(user?.atsScore ? {
-        score: user.atsScore.score,
-        matchedSkills: user.atsScore.matchedSkills,
-        missingSkills: user.atsScore.missingSkills,
-        suggestions: user.atsScore.suggestions
-    } : null);
-
-    const getCompanyStyleForStart = (co: string) => {
-        const lower = co.toLowerCase();
-        if (lower.includes('google')) return 'google';
-        if (lower.includes('startup')) return 'startup';
-        if (lower.includes('product') || lower.includes('netflix') || lower.includes('stripe') || lower.includes('apple') || lower.includes('meta') || lower.includes('amazon') || lower.includes('microsoft')) return 'product';
-        return 'general';
-    };
-
-    const handleAtsEvaluate = async () => {
-        if (!jobDescription.trim()) {
-            return toast.error('Please enter a Job Description to evaluate');
-        }
-        setAtsLoading(true);
-        try {
-            const role = step === 'manual_setup'
-                ? (manualRole === 'Custom' ? customManualRole : manualRole)
-                : detectedRole;
-            const companyName = targetCompany === 'Custom' ? customCompany : targetCompany;
-            const res = await evaluateATS(jobDescription.trim(), role, companyName);
-            if (res && res.atsScore) {
-                setAtsResult(res.atsScore);
-                toast.success(`ATS Evaluation Complete! Match Score: ${res.atsScore.score}%`);
-                await refreshUser();
-            }
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to analyze Job Description');
-        } finally {
-            setAtsLoading(false);
-        }
-    };
-
-    const renderJobDescriptionSection = () => {
-        return (
-            <div className="p-5 rounded-2xl bg-background/40 border border-border/40 space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                        <Target className="w-3.5 h-3.5 text-violet-400" />
-                        Target Job Description & ATS Analysis
-                    </h3>
-                    <Badge variant="outline" className="text-[9px] text-violet-400 border-violet-500/20 bg-violet-500/5">
-                        Match Optimization
-                    </Badge>
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-xs font-semibold text-muted-foreground">Target Company</label>
-                    <div className="flex flex-wrap gap-1.5">
-                        {['General', 'Google', 'Meta', 'Netflix', 'Amazon', 'Stripe', 'Startup', 'Custom'].map(c => (
-                            <button
-                                key={c}
-                                type="button"
-                                onClick={() => { setTargetCompany(c); if (c !== 'Custom') setCustomCompany(''); }}
-                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-all ${targetCompany === c
-                                        ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 text-[var(--accent-violet)] dark:border-violet-500/50 dark:bg-violet-950/30 dark:text-violet-300'
-                                        : 'border-border/50 bg-background/20 text-muted-foreground hover:bg-background/80'
-                                    }`}
-                            >
-                                {c}
-                            </button>
-                        ))}
-                    </div>
-
-                    {targetCompany === 'Custom' && (
-                        <input
-                            type="text"
-                            value={customCompany}
-                            onChange={(e) => setCustomCompany(e.target.value)}
-                            placeholder="Enter custom company (e.g. OpenAI, Apple)..."
-                            className="w-full mt-2 px-3 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-violet-500 text-xs"
-                        />
-                    )}
-                </div>
-
-                <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground">Job Description Text</label>
-                    <textarea
-                        value={jobDescription}
-                        onChange={(e) => setJobDescription(e.target.value)}
-                        placeholder="Paste Job Description here to get real-time ATS match rating & optimize questions..."
-                        rows={4}
-                        className="w-full p-3 rounded-xl bg-background border border-border focus:outline-none focus:border-violet-500 text-xs font-medium"
-                    />
-                </div>
-
-                <Button
-                    type="button"
-                    variant="default"
-                    disabled={atsLoading || !jobDescription.trim()}
-                    onClick={handleAtsEvaluate}
-                    className="w-full font-semibold rounded-xl text-xs py-2 h-9 flex items-center justify-center gap-1.5"
-                >
-                    {atsLoading ? (
-                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing Match...</>
-                    ) : (
-                        <><RefreshCw className="w-3.5 h-3.5" /> Evaluate Profile Match</>
-                    )}
-                </Button>
-
-                {atsResult && (
-                    <div className="mt-4 p-4 rounded-xl border border-border/40 bg-muted/10 space-y-4 text-left">
-                        <div className="flex items-center gap-3">
-                            <div className="relative flex items-center justify-center w-12 h-12 rounded-full border-2 border-violet-500/30 bg-violet-500/10">
-                                <span className="text-xs font-black text-violet-600 dark:text-violet-400">{atsResult.score}%</span>
-                            </div>
-                            <div>
-                                <h4 className="text-xs font-bold">ATS Alignment Match</h4>
-                                <p className="text-[10px] text-muted-foreground">Calculated matching ratio relative to target profile & GitHub activity</p>
-                            </div>
-                        </div>
-
-                        {atsResult.matchedSkills.length > 0 && (
-                            <div>
-                                <h5 className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-1.5">Matched Keywords</h5>
-                                <div className="flex flex-wrap gap-1">
-                                    {atsResult.matchedSkills.map(s => (
-                                        <span key={s} className="text-[9px] px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium">
-                                            {s}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {atsResult.missingSkills.length > 0 && (
-                            <div>
-                                <h5 className="text-[9px] font-bold text-rose-400 uppercase tracking-wider mb-1.5">Missing Gaps</h5>
-                                <div className="flex flex-wrap gap-1">
-                                    {atsResult.missingSkills.map(s => (
-                                        <span key={s} className="text-[9px] px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 font-medium">
-                                            {s}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {atsResult.suggestions.length > 0 && (
-                            <div>
-                                <h5 className="text-[9px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-1.5">Optimization Checklist</h5>
-                                <ul className="list-disc pl-4 space-y-1 text-[10px] text-muted-foreground leading-relaxed">
-                                    {atsResult.suggestions.map((s, i) => (
-                                        <li key={i}>{s}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    // Loading state for upload & parse
-    const [isParsing, setIsParsing] = useState(false);
 
     // --- MANUAL SETUP STATE ---
     const [manualRole, setManualRole] = useState('Frontend Developer');
@@ -235,36 +82,34 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
     const [detectedSkills, setDetectedSkills] = useState<string[]>([]);
     const [detectedProjects, setDetectedProjects] = useState<Array<{ name: string; description: string; techStack: string[] }>>([]);
     const [newResumeSkill, setNewResumeSkill] = useState('');
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
 
     // File upload state
+    const [isParsing, setIsParsing] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [dragActive, setDragActive] = useState(false);
 
-    // Handle initial resume detection loading
+    const getCompanyStyleForStart = (co: string) => {
+        const lower = co.toLowerCase();
+        if (lower.includes('google')) return 'google';
+        if (lower.includes('startup')) return 'startup';
+        if (lower.includes('product') || lower.includes('netflix') || lower.includes('stripe') || lower.includes('apple') || lower.includes('meta') || lower.includes('amazon') || lower.includes('microsoft')) return 'product';
+        return 'general';
+    };
+
     const enterReviewScreen = (parsedData: any) => {
         setDetectedRole(parsedData.role || parsedData.rolePreference || 'Software Developer');
         setDetectedExperience(parsedData.experienceYears || '2-3 Years');
 
-        // Combine skills and technologies
         const skillsSet = new Set<string>();
         if (Array.isArray(parsedData.skills)) parsedData.skills.forEach((s: any) => skillsSet.add(String(s)));
         if (Array.isArray(parsedData.technologies)) parsedData.technologies.forEach((t: any) => skillsSet.add(String(t)));
         setDetectedSkills(Array.from(skillsSet));
 
         setDetectedProjects(parsedData.projects || []);
-        setStep('resume_review');
+        setStep('candidate_review');
     };
 
-    // Triggered review screen load from context if already exists
-    const loadExistingResumeReview = () => {
-        if (user?.parsedResume) {
-            enterReviewScreen(user.parsedResume);
-        } else {
-            setStep('resume_upload');
-        }
-    };
-
-    // File selection / drop handler
     const handleFile = async (file: File) => {
         if (file.type !== 'application/pdf') {
             toast.error('Only PDF files are supported');
@@ -274,34 +119,92 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
             toast.error('File size exceeds the 5 MB limit');
             return;
         }
+        setSelectedFile(file);
+        toast.success(`Selected resume: ${file.name}. Please complete setup and click analyze.`);
+    };
+
+    const runProfileAnalysis = async () => {
+        const flowMode = currentFlow;
+        if (flowMode === 'resume_jd' || flowMode === 'resume_github_jd') {
+            if (!selectedFile && !user?.parsedResume) {
+                toast.error('Please upload a resume first');
+                return;
+            }
+            if (flowMode === 'resume_github_jd' && !githubInput.trim()) {
+                toast.error('Please enter your GitHub profile or username');
+                return;
+            }
+            if (!jobDescription.trim()) {
+                toast.error('Please enter a target Job Description');
+                return;
+            }
+        } else {
+            if (!selectedFile && !user?.parsedResume) {
+                toast.error('Please upload a resume first');
+                return;
+            }
+        }
 
         setIsParsing(true);
-        setUploadProgress(20);
+        setUploadProgress(10);
 
         try {
-            const formData = new FormData();
-            formData.append('resume', file);
+            // 1. Upload resume if new file selected
+            if (selectedFile) {
+                setUploadProgress(20);
+                const formData = new FormData();
+                formData.append('resume', selectedFile);
+                await uploadResume(formData);
+                setUploadProgress(40);
+                await refreshUser();
+            }
 
-            setUploadProgress(50);
-            const res = await uploadResume(formData);
+            // 2. Connect and analyze GitHub if in resume_github_jd flow
+            if (flowMode === 'resume_github_jd') {
+                setUploadProgress(60);
+                let username = githubInput.trim();
+                if (username.includes('github.com/')) {
+                    const parts = username.split('github.com/');
+                    username = parts[parts.length - 1].split('/')[0];
+                }
+                
+                const { analyzeGitHub } = await import('@/services/api');
+                await analyzeGitHub(username);
+                setUploadProgress(80);
+                await refreshUser();
+            }
 
-            setUploadProgress(80);
-            await refreshUser(); // sync context
+            // 3. Evaluate ATS match if in JD / GitHub JD flow
+            if ((flowMode === 'resume_jd' || flowMode === 'resume_github_jd') && jobDescription.trim()) {
+                setUploadProgress(90);
+                const updatedUserRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                if (updatedUserRes.ok) {
+                    const userJson = await updatedUserRes.json();
+                    const parsed = userJson.data.parsedResume;
+                    const companyName = targetCompany === 'Custom' ? customCompany : targetCompany;
+                    const role = parsed?.role || 'Software Developer';
+                    await evaluateATS(jobDescription.trim(), role, companyName);
+                }
+                setUploadProgress(95);
+                await refreshUser();
+            }
 
-            toast.success('Resume analyzed successfully');
             setUploadProgress(100);
+            toast.success('Candidate profile analysis completed successfully!');
 
-            // Get user data directly after refresh
-            const updatedUserRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+            // 4. Retrieve final user object and enter review screen
+            const finalUserRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/me`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
-            if (updatedUserRes.ok) {
-                const userJson = await updatedUserRes.json();
-                enterReviewScreen(userJson.data.parsedResume);
+            if (finalUserRes.ok) {
+                const finalJson = await finalUserRes.json();
+                enterReviewScreen(finalJson.data.parsedResume);
             }
         } catch (err: any) {
             console.error(err);
-            toast.error(err.message || 'Failed to upload and parse resume');
+            toast.error(err.message || 'Failed to analyze candidate profile');
         } finally {
             setIsParsing(false);
             setUploadProgress(0);
@@ -327,7 +230,6 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
         }
     };
 
-    // Manual setup tag manipulators
     const addManualSkill = (skill: string) => {
         const trimmed = skill.trim();
         if (trimmed && !manualSkills.includes(trimmed)) {
@@ -340,7 +242,6 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
         setManualSkills(manualSkills.filter(s => s !== skill));
     };
 
-    // Resume tag manipulators
     const addResumeSkill = (skill: string) => {
         const trimmed = skill.trim();
         if (trimmed && !detectedSkills.includes(trimmed)) {
@@ -353,7 +254,6 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
         setDetectedSkills(detectedSkills.filter(s => s !== skill));
     };
 
-    // Launch Manual Interview
     const startManualInterview = () => {
         const finalRole = manualRole === 'Custom' ? customManualRole : manualRole;
         if (!finalRole.trim()) {
@@ -365,15 +265,14 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
             manualLevel,
             manualDifficulty,
             getCompanyStyleForStart(targetCompany === 'Custom' ? customCompany : targetCompany),
-            false
+            false,
+            'manual'
         );
     };
 
-    // Launch Resume Interview
     const startResumeInterview = async () => {
         setIsParsing(true);
         try {
-            // Save modified parameters to user profile first
             await updateResumeData({
                 role: detectedRole,
                 experienceYears: detectedExperience,
@@ -383,7 +282,6 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
 
             await refreshUser();
 
-            // Map experience to nearest enum level for validation engine
             let nearestLevel: 'Junior' | 'Mid' | 'Senior' = 'Mid';
             const expLower = detectedExperience.toLowerCase();
             if (expLower.includes('junior') || expLower.includes('0-2') || expLower.includes('1 year') || expLower.includes('0 year')) {
@@ -397,7 +295,8 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                 nearestLevel,
                 'friendly',
                 getCompanyStyleForStart(targetCompany === 'Custom' ? customCompany : targetCompany),
-                true
+                true,
+                currentFlow
             );
         } catch (err: any) {
             toast.error('Failed to update resume preferences before starting');
@@ -411,7 +310,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
 
             {/* Step 1: Choose Interview Type */}
             {step === 'choose_type' && (
-                <div className="space-y-8">
+                <div className="space-y-8 animate-fade-in">
                     <div className="text-center space-y-4">
                         <div className="inline-block px-4 py-1.5 rounded-full bg-gradient-to-r from-[var(--accent-violet)]/20 to-[var(--accent-teal)]/20 border border-[var(--accent-violet)]/30 mb-2">
                             <span className="text-xs font-semibold tracking-wider text-[var(--accent-teal)] uppercase">Mode Selection</span>
@@ -420,54 +319,80 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             Choose Your <span className="text-gradient-hero">Interview Setup</span>
                         </h1>
                         <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-                            Select manual configuration or let AI tailor the entire experience to your resume.
+                            Configure your topics manually or let AI tailor a hyper-realistic mock interview based on your career profiles.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto pt-4">
 
                         {/* Option 1: Manual Setup */}
                         <Card
-                            onClick={() => setStep('manual_setup')}
-                            className="group cursor-pointer border-2 border-border/50 bg-background/50 hover:bg-background/80 hover:border-[var(--accent-violet)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(108,92,231,0.15)] flex flex-col justify-between"
+                            onClick={() => { setCurrentFlow('manual'); setStep('manual_setup'); }}
+                            className="group cursor-pointer border border-border/50 bg-card/60 backdrop-blur-md hover:bg-card hover:border-[var(--accent-violet)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(108,92,231,0.12)] flex flex-col justify-between"
                         >
-                            <CardContent className="p-8 space-y-6">
+                            <CardContent className="p-6 space-y-6">
                                 <div className="p-4 rounded-2xl bg-[var(--accent-violet)]/10 w-fit group-hover:scale-110 transition-transform duration-300">
-                                    <Code className="w-10 h-10 text-[var(--accent-violet)]" />
+                                    <Code className="w-8 h-8 text-[var(--accent-violet)]" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h2 className="text-2xl font-bold text-foreground group-hover:text-[var(--accent-violet)] transition-colors">
-                                        Manual Setup
+                                    <h2 className="text-xl font-bold text-foreground group-hover:text-[var(--accent-violet)] transition-colors">
+                                        Manual Interview
                                     </h2>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">
-                                        Configure your interview from scratch. Specify your role, experience level, primary tech stack, and difficulty preferences.
+                                    <p className="text-muted-foreground text-xs leading-relaxed">
+                                        Select your role, experience level, and target skills manually. Ideal for focused preparation on specific domains.
                                     </p>
                                 </div>
                                 <div className="pt-2 text-xs font-semibold text-[var(--accent-violet)] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                    Configure Manually &rarr;
+                                    Setup manually &rarr;
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Option 2: Resume-Based Setup */}
                         <Card
-                            onClick={loadExistingResumeReview}
-                            className="group cursor-pointer border-2 border-border/50 bg-background/50 hover:bg-background/80 hover:border-[var(--accent-teal)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(45,210,188,0.15)] flex flex-col justify-between"
+                            onClick={() => { setCurrentFlow('resume'); setStep('resume_upload'); }}
+                            className="group cursor-pointer border border-border/50 bg-card/60 backdrop-blur-md hover:bg-card hover:border-[var(--accent-teal)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(45,210,188,0.12)] flex flex-col justify-between"
                         >
-                            <CardContent className="p-8 space-y-6">
+                            <CardContent className="p-6 space-y-6">
                                 <div className="p-4 rounded-2xl bg-[var(--accent-teal)]/10 w-fit group-hover:scale-110 transition-transform duration-300">
-                                    <FileText className="w-10 h-10 text-[var(--accent-teal)]" />
+                                    <FileText className="w-8 h-8 text-[var(--accent-teal)]" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h2 className="text-2xl font-bold text-foreground group-hover:text-[var(--accent-teal)] transition-colors">
-                                        Resume-Based Setup
+                                    <h2 className="text-xl font-bold text-foreground group-hover:text-[var(--accent-teal)] transition-colors">
+                                        Resume-Based Interview
                                     </h2>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">
-                                        Upload your resume (PDF). AI will analyze your work history, projects, and tech stack to generate a custom conversational interview.
+                                    <p className="text-muted-foreground text-xs leading-relaxed">
+                                        Upload your PDF resume. AI extracts your work background and projects to generate tailored mock questions.
                                     </p>
                                 </div>
                                 <div className="pt-2 text-xs font-semibold text-[var(--accent-teal)] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                    {user?.parsedResume ? 'Review Existing Resume \u2192' : 'Upload Resume \u2192'}
+                                    Upload Resume &rarr;
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Option 3: Resume + GitHub + JD Setup */}
+                        <Card
+                            onClick={() => { setCurrentFlow('resume_github_jd'); setStep('resume_upload'); }}
+                            className="group cursor-pointer border border-border/50 bg-card/60 backdrop-blur-md hover:bg-card hover:border-amber-500/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(245,158,11,0.12)] flex flex-col justify-between relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 bg-amber-500 text-black font-extrabold text-[8px] uppercase tracking-wider px-2 py-0.5 rounded-bl">
+                                Flagship Mode
+                            </div>
+                            <CardContent className="p-6 space-y-6">
+                                <div className="p-4 rounded-2xl bg-amber-500/10 w-fit group-hover:scale-110 transition-transform duration-300">
+                                    <Target className="w-8 h-8 text-amber-500" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h2 className="text-xl font-bold text-foreground group-hover:text-amber-500 transition-colors flex items-center gap-1.5">
+                                        Resume + GitHub + JD ⭐
+                                    </h2>
+                                    <p className="text-muted-foreground text-xs leading-relaxed">
+                                        Personalized Hiring Assessment. Combines resume claims, GitHub repositories activity, and JD requirements for ultimate simulation.
+                                    </p>
+                                </div>
+                                <div className="pt-2 text-xs font-semibold text-amber-500 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                    Optimize & Match &rarr;
                                 </div>
                             </CardContent>
                         </Card>
@@ -478,7 +403,7 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
 
             {/* Step 2: Manual Setup Form */}
             {step === 'manual_setup' && (
-                <div className="space-y-6 max-w-3xl mx-auto">
+                <div className="space-y-6 max-w-3xl mx-auto animate-fade-in">
                     <div className="flex items-center justify-between pb-4 border-b border-border/40">
                         <button
                             onClick={() => setStep('choose_type')}
@@ -487,11 +412,10 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             <ArrowLeft className="w-4 h-4" /> Back
                         </button>
                         <h2 className="text-2xl font-bold text-foreground">Manual Setup</h2>
-                        <div className="w-10" /> {/* Spacer */}
+                        <div className="w-10" />
                     </div>
 
-                    <div className="p-6 sm:p-8 rounded-3xl bg-secondary/20 border border-border/50 backdrop-blur-md space-y-6">
-
+                    <div className="p-6 sm:p-8 rounded-3xl bg-card/60 backdrop-blur-md border border-border/50 space-y-6">
                         {/* Job Role Selection */}
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-muted-foreground">Select Job Role</label>
@@ -499,23 +423,25 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                 {ROLES.map(r => (
                                     <button
                                         key={r}
+                                        type="button"
                                         onClick={() => { setManualRole(r); setCustomManualRole(''); }}
-                                        className={`px-3 py-2.5 rounded-xl text-xs font-medium border text-center transition-all ${manualRole === r
-                                                ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 text-[var(--accent-violet)] ring-1 ring-[var(--accent-violet)]/30'
-                                                : 'border-border/50 bg-background/30 text-muted-foreground hover:bg-background/80 hover:text-foreground'
+                                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${manualRole === r
+                                            ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 text-[var(--accent-violet)]'
+                                            : 'border-border/50 bg-background/25 text-muted-foreground hover:bg-background/80'
                                             }`}
                                     >
-                                        {r.replace(' Developer', '').replace(' Engineer', '')}
+                                        {r}
                                     </button>
                                 ))}
                                 <button
+                                    type="button"
                                     onClick={() => setManualRole('Custom')}
-                                    className={`px-3 py-2.5 rounded-xl text-xs font-medium border text-center transition-all ${manualRole === 'Custom'
-                                            ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 text-[var(--accent-violet)]'
-                                            : 'border-border/50 bg-background/30 text-muted-foreground hover:bg-background/80'
+                                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${manualRole === 'Custom'
+                                        ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 text-[var(--accent-violet)]'
+                                        : 'border-border/50 bg-background/25 text-muted-foreground hover:bg-background/80'
                                         }`}
                                 >
-                                    + Custom Role
+                                    Custom Role
                                 </button>
                             </div>
 
@@ -525,78 +451,65 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                     value={customManualRole}
                                     onChange={(e) => setCustomManualRole(e.target.value)}
                                     placeholder="Enter custom role title..."
-                                    className="w-full mt-2 px-4 py-2.5 rounded-xl bg-background border border-border focus:border-[var(--accent-violet)] focus:outline-none text-sm"
+                                    className="w-full mt-3 px-4 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-violet)] text-sm"
                                 />
                             )}
                         </div>
 
                         {/* Experience Level */}
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-muted-foreground">Experience Level</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                {([
-                                    { id: 'Junior', label: 'Junior', sub: '0-2 years' },
-                                    { id: 'Mid', label: 'Mid-Level', sub: '2-5 years' },
-                                    { id: 'Senior', label: 'Senior', sub: '5+ years' }
-                                ] as const).map(l => (
+                            <label className="text-sm font-semibold text-muted-foreground">Experience Seniority</label>
+                            <div className="flex gap-2">
+                                {(['Junior', 'Mid', 'Senior'] as const).map(l => (
                                     <button
-                                        key={l.id}
-                                        onClick={() => setManualLevel(l.id)}
-                                        className={`p-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-0.5 ${manualLevel === l.id
-                                                ? 'border-[var(--accent-teal)] bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] ring-1 ring-[var(--accent-teal)]/30'
-                                                : 'border-border/50 bg-background/30 text-muted-foreground hover:bg-background/80'
+                                        key={l}
+                                        type="button"
+                                        onClick={() => setManualLevel(l)}
+                                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all ${manualLevel === l
+                                            ? 'border-[var(--accent-violet)] bg-[var(--accent-violet)]/10 text-[var(--accent-violet)]'
+                                            : 'border-border/50 bg-background/25 text-muted-foreground hover:bg-background/80'
                                             }`}
                                     >
-                                        <span className="text-sm font-bold">{l.label}</span>
-                                        <span className="text-[10px] opacity-70">{l.sub}</span>
+                                        {l}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Skills Selection (Tags) */}
+                        {/* Skills Selection */}
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-muted-foreground">Skills / Technologies (Primary Stack)</label>
-
-                            {/* Tags list */}
-                            <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-background/40 border border-border/40 min-h-[50px]">
-                                {manualSkills.length === 0 ? (
-                                    <span className="text-xs text-muted-foreground self-center">No skills added yet. Click suggestions below or type custom.</span>
-                                ) : (
-                                    manualSkills.map(skill => (
-                                        <span
-                                            key={skill}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--accent-violet)]/10 border border-[var(--accent-violet)]/30 text-[var(--accent-violet)]"
-                                        >
-                                            {skill}
-                                            <button onClick={() => removeManualSkill(skill)} className="hover:text-red-400">
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
-                                        </span>
-                                    ))
-                                )}
+                            <label className="text-sm font-semibold text-muted-foreground">Skills Focus</label>
+                            <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-background/40 border border-border/50 min-h-[60px]">
+                                {manualSkills.map(skill => (
+                                    <span
+                                        key={skill}
+                                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[var(--accent-violet)]/10 border border-[var(--accent-violet)]/30 text-[var(--accent-violet)]"
+                                    >
+                                        {skill}
+                                        <button onClick={() => removeManualSkill(skill)} className="hover:text-red-400 ml-1">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </span>
+                                ))}
                             </div>
 
-                            {/* Text Input to add skill */}
                             <div className="flex gap-2">
                                 <input
                                     type="text"
                                     value={skillInput}
                                     onChange={(e) => setSkillInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addManualSkill(skillInput))}
-                                    placeholder="Type a skill and press enter..."
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-background border border-border focus:border-[var(--accent-violet)] focus:outline-none text-sm"
+                                    placeholder="Add tech skill (e.g. Docker, Redis)..."
+                                    className="flex-1 px-4 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-violet)] text-xs"
                                 />
-                                <Button
-                                    type="button"
+                                <button
                                     onClick={() => addManualSkill(skillInput)}
-                                    className="bg-muted hover:bg-muted/80 text-foreground px-4 rounded-xl"
+                                    className="px-4 rounded-xl bg-muted text-xs hover:bg-muted/80 text-foreground font-semibold"
                                 >
                                     Add
-                                </Button>
+                                </button>
                             </div>
 
-                            {/* Popular Suggestions */}
                             <div className="space-y-1.5 pt-2">
                                 <span className="text-[11px] font-medium text-muted-foreground">Suggested Skills:</span>
                                 <div className="flex flex-wrap gap-1.5">
@@ -613,14 +526,14 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                             </div>
                         </div>
 
-                        {/* Interview Style / Type */}
+                        {/* Interview Persona selection */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-muted-foreground">Interviewer Persona</label>
                                 <select
                                     value={manualDifficulty}
                                     onChange={(e) => setManualDifficulty(e.target.value as any)}
-                                    className="w-full px-3 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-violet)] text-sm"
+                                    className="w-full px-3 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-violet)] text-sm font-medium"
                                 >
                                     <option value="friendly">Friendly (Supportive & guiding)</option>
                                     <option value="strict">Strict (Professional & rigorous)</option>
@@ -632,36 +545,31 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                                 <select
                                     value={manualFocus}
                                     onChange={(e) => setManualFocus(e.target.value as any)}
-                                    className="w-full px-3 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-violet)] text-sm"
+                                    className="w-full px-3 py-2.5 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-violet)] text-sm font-medium"
                                 >
                                     <option value="general">General Balanced</option>
                                     <option value="startup">Startup Focus (High velocity & range)</option>
-                                    <option value="google">Google Style (Algorithmic depth & scales)</option>
+                                    <option value="google">Google Style (Algorithmic depth & scale)</option>
                                     <option value="product">Product Focused (UX & trade-offs)</option>
                                 </select>
                             </div>
                         </div>
 
-                        {/* Job Description & ATS matching */}
-                        {renderJobDescriptionSection()}
-
-                        {/* Submit Button */}
+                        {/* Start Button */}
                         <Button
                             onClick={startManualInterview}
                             disabled={isLoading}
-                            size="lg"
-                            className="w-full h-12 text-sm font-bold bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] text-white hover:opacity-95 rounded-xl transition-all shadow-md"
+                            className="w-full h-12 text-sm font-bold bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] text-white hover:opacity-95 rounded-xl transition-all shadow-md mt-6"
                         >
                             {isLoading ? 'Generating Session...' : 'Start Manual Interview'}
                         </Button>
-
                     </div>
                 </div>
             )}
 
-            {/* Step 3: Resume Upload Form */}
+            {/* Step 3: Resume & Job Description Upload Screen */}
             {step === 'resume_upload' && (
-                <div className="space-y-6 max-w-2xl mx-auto">
+                <div className="space-y-6 max-w-3xl mx-auto animate-fade-in">
                     <div className="flex items-center justify-between pb-4 border-b border-border/40">
                         <button
                             onClick={() => setStep('choose_type')}
@@ -669,209 +577,834 @@ export default function SessionSetup({ onStart, isLoading }: SessionSetupProps) 
                         >
                             <ArrowLeft className="w-4 h-4" /> Back
                         </button>
-                        <h2 className="text-2xl font-bold text-foreground">Upload Resume</h2>
+                        <h2 className="text-2xl font-bold text-foreground">
+                            {currentFlow === 'resume_github_jd'
+                                ? 'Personalized Hiring Assessment'
+                                : currentFlow === 'resume_jd'
+                                    ? 'Resume + Job Description Match'
+                                    : 'Upload Resume'}
+                        </h2>
                         <div className="w-10" />
                     </div>
 
-                    <div className="space-y-6">
-                        {isParsing ? (
-                            <div className="p-12 rounded-3xl bg-secondary/10 border border-border/50 backdrop-blur-md flex flex-col items-center justify-center space-y-6 text-center">
-                                <div className="relative flex items-center justify-center">
-                                    <div className="w-16 h-16 border-4 border-[var(--accent-teal)]/20 border-t-[var(--accent-teal)] rounded-full animate-spin" />
-                                    <Brain className="w-6 h-6 text-[var(--accent-teal)] absolute animate-pulse" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-lg font-bold text-foreground">Analyzing Resume Profile</h3>
-                                    <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                                        AI is extracting your skills, professional experience, projects, and estimating your matching job role...
-                                    </p>
-                                </div>
-                                <div className="w-full max-w-xs bg-muted/40 h-2.5 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] transition-all duration-500"
-                                        style={{ width: `${uploadProgress}%` }}
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <div
-                                onDragEnter={handleDrag}
-                                onDragOver={handleDrag}
-                                onDragLeave={handleDrag}
-                                onDrop={handleDrop}
-                                className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 flex flex-col items-center justify-center gap-4 cursor-pointer min-h-[300px] ${dragActive
-                                        ? 'border-[var(--accent-teal)] bg-[var(--accent-teal)]/5'
-                                        : 'border-border bg-background/30 hover:bg-background/50 hover:border-muted-foreground/60'
-                                    }`}
-                            >
-                                <input
-                                    type="file"
-                                    accept=".pdf"
-                                    id="resume-upload-file"
-                                    className="hidden"
-                                    onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-                                />
-                                <label htmlFor="resume-upload-file" className="cursor-pointer flex flex-col items-center gap-4">
-                                    <div className="p-4 rounded-full bg-[var(--accent-teal)]/10 text-[var(--accent-teal)]">
-                                        <UploadCloud className="w-12 h-12" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <h3 className="text-lg font-bold text-foreground">Select PDF Resume</h3>
-                                        <p className="text-xs text-muted-foreground">Drag & drop your PDF file here, or click to browse</p>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-muted/30 border border-border text-[10px] text-muted-foreground">
-                                        <AlertCircle className="w-3 h-3 text-amber-400" />
-                                        Max File Size: 5MB (PDF only)
-                                    </div>
-                                </label>
-                            </div>
-                        )}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                        {user?.parsedResume && !isParsing && (
-                            <button
-                                onClick={() => enterReviewScreen(user.parsedResume)}
-                                className="w-full p-4 rounded-xl border border-[var(--accent-teal)]/30 bg-[var(--accent-teal)]/5 hover:bg-[var(--accent-teal)]/10 text-xs font-semibold text-[var(--accent-teal)] flex items-center justify-center gap-2 transition-colors"
-                            >
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                Review previously uploaded resume instead
-                            </button>
-                        )}
+                        {/* Left column: Resume uploader */}
+                        <div className="space-y-4">
+                            <label className="text-sm font-bold text-foreground">1. Upload Your Resume</label>
+                            {isParsing ? (
+                                <div className="p-12 rounded-3xl bg-card/60 backdrop-blur-md border border-border/50 flex flex-col items-center justify-center space-y-6 text-center h-[320px]">
+                                    <div className="relative flex items-center justify-center">
+                                        <div className="w-16 h-16 border-4 border-[var(--accent-teal)]/20 border-t-[var(--accent-teal)] rounded-full animate-spin" />
+                                        <Brain className="w-6 h-6 text-[var(--accent-teal)] absolute animate-pulse" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h3 className="text-sm font-bold text-foreground">AI Profile Extraction</h3>
+                                        <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
+                                            Extracting tech skills, job achievements, and project descriptions...
+                                        </p>
+                                    </div>
+                                    <div className="w-full max-w-xs bg-muted/40 h-2 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] transition-all duration-500"
+                                            style={{ width: `${uploadProgress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div
+                                    onDragEnter={handleDrag}
+                                    onDragOver={handleDrag}
+                                    onDragLeave={handleDrag}
+                                    onDrop={handleDrop}
+                                    className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all duration-300 flex flex-col items-center justify-center gap-4 cursor-pointer min-h-[320px] bg-card/40 hover:bg-card/75 ${dragActive
+                                        ? 'border-[var(--accent-teal)] bg-[var(--accent-teal)]/5'
+                                        : 'border-border/60'
+                                        }`}
+                                >
+                                    <input
+                                        type="file"
+                                        accept=".pdf"
+                                        id="resume-upload-file"
+                                        className="hidden"
+                                        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                                    />
+                                    <label htmlFor="resume-upload-file" className="cursor-pointer flex flex-col items-center gap-4">
+                                        <div className="p-4 rounded-full bg-[var(--accent-teal)]/10 text-[var(--accent-teal)]">
+                                            <UploadCloud className="w-10 h-10" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h3 className="text-base font-bold text-foreground">Select PDF Resume</h3>
+                                            <p className="text-xs text-muted-foreground">Drag & drop your PDF file here, or click to browse</p>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-muted/30 border border-border text-[9px] text-muted-foreground">
+                                            <AlertCircle className="w-3 h-3 text-amber-500" />
+                                            Max File Size: 5MB (PDF only)
+                                        </div>
+                                    </label>
+                                </div>
+                            )}
+
+                            {user?.parsedResume && !isParsing && (
+                                <button
+                                    onClick={() => enterReviewScreen(user.parsedResume)}
+                                    className="w-full p-3.5 rounded-xl border border-[var(--accent-teal)]/30 bg-[var(--accent-teal)]/5 hover:bg-[var(--accent-teal)]/10 text-xs font-bold text-[var(--accent-teal)] flex items-center justify-center gap-2 transition-colors shadow-sm"
+                                >
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                    Use previously uploaded resume profile
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Right column: JD text / details */}
+                        <div className="space-y-4">
+                            <label className="text-sm font-bold text-foreground">
+                                {currentFlow === 'resume_jd' || currentFlow === 'resume_github_jd'
+                                    ? '2. Target Job & GitHub Details'
+                                    : 'Resume Mode Information'}
+                            </label>
+
+                            {currentFlow === 'resume_jd' || currentFlow === 'resume_github_jd' ? (
+                                <div className="p-5 rounded-3xl bg-card/60 border border-border/50 space-y-4 min-h-[320px] flex flex-col justify-between">
+                                    <div className="space-y-3 flex-1">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Target Company</label>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {['General', 'Google', 'Meta', 'Stripe', 'Startup', 'Custom'].map(c => (
+                                                    <button
+                                                        key={c}
+                                                        type="button"
+                                                        onClick={() => { setTargetCompany(c); if (c !== 'Custom') setCustomCompany(''); }}
+                                                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${targetCompany === c
+                                                            ? 'border-amber-500 bg-amber-500/10 text-amber-500 dark:text-amber-400'
+                                                            : 'border-border bg-background/25 text-muted-foreground hover:bg-background/80'
+                                                            }`}
+                                                    >
+                                                        {c}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {targetCompany === 'Custom' && (
+                                                <input
+                                                    type="text"
+                                                    value={customCompany}
+                                                    onChange={(e) => setCustomCompany(e.target.value)}
+                                                    placeholder="Enter company name (e.g. OpenAI)..."
+                                                    className="w-full mt-2 px-3 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-amber-500 text-xs font-semibold"
+                                                />
+                                            )}
+                                        </div>
+
+                                        {currentFlow === 'resume_github_jd' && (
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                                    GitHub Username or Profile URL
+                                                    <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[8px] scale-90 py-0.5 px-1.5 font-bold">
+                                                        PRO
+                                                    </Badge>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={githubInput}
+                                                    onChange={(e) => setGithubInput(e.target.value)}
+                                                    placeholder="e.g. octocat or https://github.com/octocat"
+                                                    className="w-full px-3 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-amber-500 text-xs font-semibold"
+                                                />
+                                                {!isPro && (
+                                                    <div className="text-[10px] text-amber-500 flex items-center gap-1 mt-1 font-semibold">
+                                                        <Lock className="w-3 h-3" /> Basic match will mock Github info. Upgrade to Pro for live analysis.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-1.5">
+                                            <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Job Description Details</label>
+                                            <textarea
+                                                value={jobDescription}
+                                                onChange={(e) => setJobDescription(e.target.value)}
+                                                placeholder="Paste target job requirements, technologies, and skills here to calculate fit rating and validate missing skills..."
+                                                rows={currentFlow === 'resume_github_jd' ? 3 : 5}
+                                                className="w-full p-3 rounded-xl bg-background border border-border focus:outline-none focus:border-amber-500 text-xs font-medium"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="text-[10px] text-muted-foreground flex gap-1.5 items-start">
+                                        <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                        <span>
+                                            {currentFlow === 'resume_github_jd'
+                                                ? 'Our system evaluates matches across your resume, Github projects, and target job description to compute detailed hiring readiness scores.'
+                                                : 'Our comparison engine matches resume skills against target JD requirements to identify skill gaps.'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-6 rounded-3xl bg-card/60 border border-border/50 space-y-4 min-h-[320px] flex flex-col justify-center text-center">
+                                    <div className="mx-auto p-4 rounded-full bg-[var(--accent-teal)]/10 text-[var(--accent-teal)]">
+                                        <Brain className="w-10 h-10 animate-pulse" />
+                                    </div>
+                                    <div className="space-y-1.5 max-w-xs mx-auto">
+                                        <h3 className="text-sm font-bold text-foreground">Tailored Questioning</h3>
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
+                                            In this mode, mock questions focus 40% on your resume achievements, 30% on projects listed, and 30% on general scenarios.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                     </div>
+
+                    {/* Consolidated Analyze & Match Profile CTA */}
+                    <div className="pt-6 border-t border-border/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="text-left max-w-md">
+                            <h4 className="text-xs font-bold text-foreground">Ready to Compute Compatibility?</h4>
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                                {currentFlow === 'resume_github_jd'
+                                    ? 'We will extract resume content, parse repositories from your public GitHub profile, and perform a semantic analysis against the job description.'
+                                    : currentFlow === 'resume_jd'
+                                        ? 'We will parse your resume achievements and match them against the target Job Description to identify technical gaps.'
+                                        : 'We will parse the uploaded resume and extract your profile details to customize your interview path.'}
+                            </p>
+                        </div>
+                        <Button
+                            onClick={runProfileAnalysis}
+                            disabled={isParsing || (!selectedFile && !user?.parsedResume)}
+                            className="w-full sm:w-auto h-12 px-8 text-sm font-extrabold bg-gradient-to-r from-[var(--accent-violet)] to-[var(--accent-teal)] text-white hover:opacity-95 rounded-xl transition-all shadow-md shrink-0 flex items-center gap-2"
+                        >
+                            {isParsing ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Parsing & Matching Profile...
+                                </>
+                            ) : (
+                                <>
+                                    Analyze Profile & Compute Fit
+                                </>
+                            )}
+                        </Button>
+                    </div>
+
                 </div>
             )}
 
-            {/* Step 4: Resume Review & Customization */}
-            {step === 'resume_review' && (
-                <div className="space-y-6 max-w-4xl mx-auto">
-                    <div className="flex items-center justify-between pb-4 border-b border-border/40">
+            {/* Step 4: FLAGSHIP Candidate Review Screen */}
+            {step === 'candidate_review' && (
+                <div className="space-y-6 animate-fade-in">
+
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-4 border-b border-border/30">
                         <button
                             onClick={() => setStep('resume_upload')}
                             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" /> Upload Different Resume
                         </button>
-                        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                            <CheckCircle2 className="w-6 h-6 text-emerald-400" /> Profile Verification
+                        <h2 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
+                            <Award className="w-6 h-6 text-amber-500" /> Candidate Hiring Readiness Review
                         </h2>
                         <div className="w-10" />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                        {/* Primary details left column */}
-                        <div className="md:col-span-2 space-y-6">
-                            <div className="p-6 sm:p-8 rounded-3xl bg-secondary/10 border border-border/40 space-y-6">
+                        {/* Left/Middle: Readiness, Match breakdown, and gaps */}
+                        <div className="lg:col-span-2 space-y-6">
 
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Detected Profile Fields</h3>
+                            {/* Dial scores row */}
+                            {currentFlow === 'resume_github_jd' ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* 1. Overall Match Score */}
+                                    <div className="p-5 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Overall Blended Match</h3>
+                                                <p className="text-[10px] text-muted-foreground">Combined fit evaluation</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[9px] font-bold">
+                                                Blended Fit
+                                            </Badge>
+                                        </div>
 
-                                {/* Edit Role */}
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-muted-foreground">Job Role</label>
-                                    <input
-                                        type="text"
-                                        value={detectedRole}
-                                        onChange={(e) => setDetectedRole(e.target.value)}
-                                        className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:border-[var(--accent-teal)] focus:outline-none text-sm font-medium"
-                                        placeholder="e.g. Frontend Developer"
-                                    />
-                                </div>
+                                        <div className="flex items-center gap-4 mt-3">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-20 h-20 transform -rotate-90">
+                                                    <circle cx="40" cy="40" r="32" className="stroke-muted-foreground/10 fill-none" strokeWidth="5" />
+                                                    <circle
+                                                        cx="40"
+                                                        cy="40"
+                                                        r="32"
+                                                        className="stroke-amber-500 fill-none transition-all duration-1000"
+                                                        strokeWidth="6"
+                                                        strokeDasharray={2 * Math.PI * 32}
+                                                        strokeDashoffset={2 * Math.PI * 32 * (1 - (user?.atsScore?.overallMatchScore || user?.atsScore?.score || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-base font-black text-foreground">{user?.atsScore?.overallMatchScore || user?.atsScore?.score || 0}%</span>
+                                            </div>
 
-                                {/* Edit Experience */}
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-muted-foreground">Years of Experience</label>
-                                    <input
-                                        type="text"
-                                        value={detectedExperience}
-                                        onChange={(e) => setDetectedExperience(e.target.value)}
-                                        className="w-full px-4 py-2.5 rounded-xl bg-background border border-border focus:border-[var(--accent-teal)] focus:outline-none text-sm font-medium"
-                                        placeholder="e.g. 3 Years"
-                                    />
-                                </div>
-
-                                {/* Edit Skills tags */}
-                                <div className="space-y-2">
-                                    <label className="text-xs font-semibold text-muted-foreground">Target Skills (Used for question generation)</label>
-
-                                    <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-background/50 border border-border/50 min-h-[60px]">
-                                        {detectedSkills.map(skill => (
-                                            <span
-                                                key={skill}
-                                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--accent-teal)]/10 border border-[var(--accent-teal)]/30 text-[var(--accent-teal)]"
-                                            >
-                                                {skill}
-                                                <button onClick={() => removeResumeSkill(skill)} className="hover:text-red-400 ml-1">
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </span>
-                                        ))}
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">Target Role Fit</h4>
+                                                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                                    {user?.atsScore?.score && user.atsScore.score >= 80
+                                                        ? 'High fit score. Strong background match.'
+                                                        : 'Moderate compatibility. Technical alignments identified.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        {!isPro && (
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/70 backdrop-blur-[2px] p-4">
+                                                <Lock className="w-4 h-4 text-amber-500 mb-1" />
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-500">Overall Match (PRO)</span>
+                                                <Link href="/pricing" className="text-[8px] text-muted-foreground hover:underline mt-0.5">Upgrade to unlock</Link>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newResumeSkill}
-                                            onChange={(e) => setNewResumeSkill(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addResumeSkill(newResumeSkill))}
-                                            placeholder="Add skill (e.g. GraphQL, Tailwind)..."
-                                            className="flex-1 px-4 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-teal)] text-xs"
-                                        />
-                                        <button
-                                            onClick={() => addResumeSkill(newResumeSkill)}
-                                            className="px-3 rounded-xl bg-muted text-xs hover:bg-muted/80 text-foreground"
-                                        >
-                                            Add
-                                        </button>
+                                    {/* 2. Resume Match Score */}
+                                    <div className="p-5 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Resume Match</h3>
+                                                <p className="text-[10px] text-muted-foreground">Resume credentials vs JD</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] border-[var(--accent-teal)]/30 text-[9px] font-bold">
+                                                ATS Score
+                                            </Badge>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 mt-3">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-20 h-20 transform -rotate-90">
+                                                    <circle cx="40" cy="40" r="32" className="stroke-muted-foreground/10 fill-none" strokeWidth="5" />
+                                                    <circle
+                                                        cx="40"
+                                                        cy="40"
+                                                        r="32"
+                                                        className="stroke-[var(--accent-teal)] fill-none transition-all duration-1000"
+                                                        strokeWidth="6"
+                                                        strokeDasharray={2 * Math.PI * 32}
+                                                        strokeDashoffset={2 * Math.PI * 32 * (1 - (user?.atsScore?.resumeMatchScore || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-base font-black text-foreground">{user?.atsScore?.resumeMatchScore || 0}%</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">ATS Alignment</h4>
+                                                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                                    Matches skills and projects claimed on the CV with JD.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
 
-                            </div>
+                                    {/* 3. GitHub Match Score */}
+                                    <div className="p-5 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">GitHub Code Match</h3>
+                                                <p className="text-[10px] text-muted-foreground">Evidence from repositories vs JD</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-indigo-500/10 text-indigo-500 border-indigo-500/30 text-[9px] font-bold">
+                                                Code Proof
+                                            </Badge>
+                                        </div>
 
-                            {/* Job Description & ATS matching */}
-                            {renderJobDescriptionSection()}
-                        </div>
+                                        <div className="flex items-center gap-4 mt-3">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-20 h-20 transform -rotate-90">
+                                                    <circle cx="40" cy="40" r="32" className="stroke-muted-foreground/10 fill-none" strokeWidth="5" />
+                                                    <circle
+                                                        cx="40"
+                                                        cy="40"
+                                                        r="32"
+                                                        className="stroke-indigo-500 fill-none transition-all duration-1000"
+                                                        strokeWidth="6"
+                                                        strokeDasharray={2 * Math.PI * 32}
+                                                        strokeDashoffset={2 * Math.PI * 32 * (1 - (user?.atsScore?.githubMatchScore || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-base font-black text-foreground">{user?.atsScore?.githubMatchScore || 0}%</span>
+                                            </div>
 
-                        {/* Projects column */}
-                        <div className="space-y-6">
-                            <div className="p-6 rounded-3xl bg-secondary/10 border border-border/40 h-full flex flex-col justify-between">
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Detected Projects</h3>
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">GitHub Evaluation</h4>
+                                                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                                    Identifies codebase relevance and repository density.
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                    <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
-                                        {detectedProjects.length === 0 ? (
-                                            <p className="text-xs text-muted-foreground italic">No projects found. AI will ask general scenario questions.</p>
-                                        ) : (
-                                            detectedProjects.map((p, idx) => (
-                                                <div key={idx} className="p-3 rounded-xl bg-background/50 border border-border/40 space-y-1">
-                                                    <h4 className="text-xs font-bold text-foreground truncate">{p.name}</h4>
-                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">{p.description}</p>
-                                                    {p.techStack && p.techStack.length > 0 && (
-                                                        <div className="flex flex-wrap gap-1 pt-1">
-                                                            {p.techStack.slice(0, 3).map(tech => (
-                                                                <span key={tech} className="text-[8px] px-1.5 py-0.2 bg-muted rounded font-medium text-muted-foreground">
-                                                                    {tech}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                        {!isPro && (
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/70 backdrop-blur-[2px] p-4">
+                                                <Lock className="w-4 h-4 text-indigo-400 mb-1" />
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-indigo-400">GitHub Match (PRO)</span>
+                                                <Link href="/pricing" className="text-[8px] text-muted-foreground hover:underline mt-0.5">Upgrade to unlock</Link>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 4. Hiring Readiness Score */}
+                                    <div className="p-5 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hiring Readiness</h3>
+                                                <p className="text-[10px] text-muted-foreground">Predicted capability for real-world interviews</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-[var(--accent-violet)]/10 text-[var(--accent-violet)] border-[var(--accent-violet)]/30 text-[9px] font-bold">
+                                                Readiness
+                                            </Badge>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 mt-3">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-20 h-20 transform -rotate-90">
+                                                    <circle cx="40" cy="40" r="32" className="stroke-muted-foreground/10 fill-none" strokeWidth="5" />
+                                                    <circle
+                                                        cx="40"
+                                                        cy="40"
+                                                        r="32"
+                                                        className="stroke-[var(--accent-violet)] fill-none transition-all duration-1000"
+                                                        strokeWidth="6"
+                                                        strokeDasharray={2 * Math.PI * 32}
+                                                        strokeDashoffset={2 * Math.PI * 32 * (1 - (user?.atsScore?.hiringReadiness?.readinessScore || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-base font-black text-foreground">{user?.atsScore?.hiringReadiness?.readinessScore || 0}%</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">Suitability Check</h4>
+                                                <div className="text-[10px] text-muted-foreground space-y-0.5 leading-normal">
+                                                    <div>Ready for: <strong className="text-emerald-400">{user?.atsScore?.hiringReadiness?.readyFor?.[0] || 'Junior roles'}</strong></div>
+                                                    <div>Improve: <strong className="text-rose-400">{user?.atsScore?.hiringReadiness?.needsImprovementBefore?.[0] || 'Senior roles'}</strong></div>
                                                 </div>
-                                            ))
+                                            </div>
+                                        </div>
+
+                                        {!isPro && (
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/70 backdrop-blur-[2px] p-4">
+                                                <Lock className="w-4 h-4 text-violet-400 mb-1" />
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-violet-400">Readiness Score (PRO)</span>
+                                                <Link href="/pricing" className="text-[8px] text-muted-foreground hover:underline mt-0.5">Upgrade to unlock</Link>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* 1. Job Description Alignment Score */}
+                                    <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[200px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Job Match Score</h3>
+                                                <p className="text-[10px] text-muted-foreground">Resume vs Job Description compatibility</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[9px] font-bold">
+                                                JD Alignment
+                                            </Badge>
+                                        </div>
 
-                                <div className="pt-6 space-y-3">
-                                    <Button
-                                        onClick={startResumeInterview}
-                                        disabled={isLoading || isParsing}
-                                        className="w-full h-11 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-lg transition-transform hover:scale-[1.01]"
-                                    >
-                                        {isLoading ? 'Starting Interview...' : 'Confirm & Start Interview'}
-                                    </Button>
-                                    <p className="text-[10px] text-center text-muted-foreground">
-                                        Your questions will be tailored 40% to your skills, 30% to these projects, and 20% to scenarios.
-                                    </p>
+                                        <div className="flex items-center gap-6 mt-4">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-24 h-24 transform -rotate-90">
+                                                    <circle cx="48" cy="48" r="40" className="stroke-muted-foreground/10 fill-none" strokeWidth="6" />
+                                                    <circle
+                                                        cx="48"
+                                                        cy="48"
+                                                        r="40"
+                                                        className="stroke-amber-500 fill-none transition-all duration-1000"
+                                                        strokeWidth="8"
+                                                        strokeDasharray={2 * Math.PI * 40}
+                                                        strokeDashoffset={2 * Math.PI * 40 * (1 - (user?.atsScore?.score || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-xl font-black text-foreground">{user?.atsScore?.score || 0}%</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">Fit rating</h4>
+                                                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                    {user?.atsScore?.score && user.atsScore.score >= 80
+                                                        ? 'Strong match for this position. Candidate matches primary requirements.'
+                                                        : user?.atsScore?.score && user.atsScore.score >= 60
+                                                            ? 'Moderate match. Technical gaps found in required stack.'
+                                                            : 'Low match. Consider adding missing keywords to optimize.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Hiring Readiness Score */}
+                                    <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden flex flex-col justify-between min-h-[200px]">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hiring Readiness</h3>
+                                                <p className="text-[10px] text-muted-foreground">Predicted capability for real-world interviews</p>
+                                            </div>
+                                            <Badge variant="outline" className="bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] border-[var(--accent-teal)]/30 text-[9px] font-bold">
+                                                Readiness
+                                            </Badge>
+                                        </div>
+
+                                        <div className="flex items-center gap-6 mt-4">
+                                            <div className="relative flex items-center justify-center shrink-0">
+                                                <svg className="w-24 h-24 transform -rotate-90">
+                                                    <circle cx="48" cy="48" r="40" className="stroke-muted-foreground/10 fill-none" strokeWidth="6" />
+                                                    <circle
+                                                        cx="48"
+                                                        cy="48"
+                                                        r="40"
+                                                        className="stroke-[var(--accent-teal)] fill-none transition-all duration-1000"
+                                                        strokeWidth="8"
+                                                        strokeDasharray={2 * Math.PI * 40}
+                                                        strokeDashoffset={2 * Math.PI * 40 * (1 - (user?.atsScore?.hiringReadiness?.readinessScore || 50) / 100)}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute text-xl font-black text-foreground">{user?.atsScore?.hiringReadiness?.readinessScore || 0}%</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <h4 className="text-xs font-bold text-foreground">Suitability Check</h4>
+                                                <div className="text-[11px] text-muted-foreground space-y-0.5 leading-relaxed">
+                                                    <div>Ready for: <strong className="text-emerald-400">{user?.atsScore?.hiringReadiness?.readyFor?.[0] || 'Junior roles'}</strong></div>
+                                                    <div>Improve before: <strong className="text-rose-400">{user?.atsScore?.hiringReadiness?.needsImprovementBefore?.[0] || 'Senior roles'}</strong></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {!isPro && (currentFlow === 'resume_jd') && (
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/70 backdrop-blur-[2px] p-4">
+                                                <Lock className="w-4 h-4 text-violet-400 mb-1" />
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider text-violet-400">Readiness Score (PRO)</span>
+                                                <Link href="/pricing" className="text-[8px] text-muted-foreground hover:underline mt-0.5">Upgrade to unlock</Link>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
+                            )}
+
+                            {/* Strengths & Risk Areas (gated for Pro if resume_jd or resume_github_jd) */}
+                            {(currentFlow === 'resume_jd' || currentFlow === 'resume_github_jd') && (
+                                <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden space-y-4">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Candidate Profile Assessment</h3>
+                                    {isPro ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Strengths */}
+                                            <div className="space-y-2.5">
+                                                <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Key Strengths
+                                                </h4>
+                                                <div className="space-y-2">
+                                                    {user?.atsScore?.candidateStrengths && user.atsScore.candidateStrengths.length > 0 ? (
+                                                        user.atsScore.candidateStrengths.map((str: string, i: number) => (
+                                                            <div key={i} className="flex gap-2 items-start text-xs text-muted-foreground leading-relaxed">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
+                                                                <span>{str}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground italic">No strengths highlighted.</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Risks */}
+                                            <div className="space-y-2.5">
+                                                <h4 className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
+                                                    <AlertCircle className="w-4 h-4 text-amber-500" /> Potential Risks & Gaps
+                                                </h4>
+                                                <div className="space-y-2">
+                                                    {user?.atsScore?.potentialRiskAreas && user.atsScore.potentialRiskAreas.length > 0 ? (
+                                                        user.atsScore.potentialRiskAreas.map((risk: string, i: number) => (
+                                                            <div key={i} className="flex gap-2 items-start text-xs text-muted-foreground leading-relaxed">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                                                                <span>{risk}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground italic">No major risks identified.</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="relative rounded-2xl border border-border/50 bg-card/30 overflow-hidden min-h-[120px]">
+                                            {/* Blurred sample list */}
+                                            <div className="opacity-25 blur-[3px] pointer-events-none select-none p-4 grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-24 bg-white/10 rounded" />
+                                                    <div className="h-3 w-40 bg-white/10 rounded" />
+                                                    <div className="h-3 w-32 bg-white/10 rounded" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-24 bg-white/10 rounded" />
+                                                    <div className="h-3 w-40 bg-white/10 rounded" />
+                                                    <div className="h-3 w-32 bg-white/10 rounded" />
+                                                </div>
+                                            </div>
+                                            {/* Gating lock */}
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/50 backdrop-blur-[1.5px] p-4">
+                                                <Lock className="w-4 h-4 text-violet-400 mb-1.5" />
+                                                <h4 className="text-xs font-bold text-foreground mb-0.5">Strengths & Risks are Locked</h4>
+                                                <p className="text-[10px] text-muted-foreground mb-3 max-w-[280px]">Upgrade to Pro to view key strengths and risks analyzed by AI.</p>
+                                                <Link href="/pricing" className="h-7 px-4 rounded-lg bg-[var(--accent-violet)] text-white font-bold text-[10px] flex items-center justify-center hover:opacity-90">Upgrade to Pro</Link>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Job Match Breakdowns (Pro gated) */}
+                            <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Recruiter Profile breakdown</h3>
+
+                                {isPro ? (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {[
+                                            { label: 'Technical Match', val: user?.atsScore?.breakdown?.technicalMatch || 70, color: 'bg-indigo-500' },
+                                            { label: 'Experience Match', val: user?.atsScore?.breakdown?.experienceMatch || 70, color: 'bg-emerald-500' },
+                                            { label: 'Project Relevance', val: user?.atsScore?.breakdown?.projectRelevance || 75, color: 'bg-sky-500' },
+                                            { label: 'Communication Prediction', val: user?.atsScore?.breakdown?.communicationPrediction || 65, color: 'bg-amber-500' }
+                                        ].map((item, i) => (
+                                            <div key={i} className="space-y-1 bg-white/[0.01] border border-white/[0.03] p-3.5 rounded-xl">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-muted-foreground font-semibold">{item.label}</span>
+                                                    <span className="font-extrabold text-foreground">{item.val}%</span>
+                                                </div>
+                                                <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
+                                                    <div className={`h-full ${item.color} rounded-full`} style={{ width: `${item.val}%` }} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="relative rounded-2xl border border-border/50 bg-card/30 overflow-hidden">
+                                        {/* Blurred sample breakdown */}
+                                        <div className="opacity-30 blur-[4px] pointer-events-none select-none p-4 grid grid-cols-2 gap-4">
+                                            {[
+                                                { label: 'Technical Match', val: 78, color: 'bg-indigo-500' },
+                                                { label: 'Experience Match', val: 68, color: 'bg-emerald-500' },
+                                                { label: 'Project Relevance', val: 82, color: 'bg-sky-500' },
+                                                { label: 'Communication Prediction', val: 74, color: 'bg-amber-500' }
+                                            ].map((item, i) => (
+                                                <div key={i} className="space-y-1">
+                                                    <div className="flex justify-between items-center text-xs">
+                                                        <span>{item.label}</span>
+                                                        <span>{item.val}%</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {/* Gating lock */}
+                                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/50 backdrop-blur-[1.5px] p-4">
+                                            <Lock className="w-4 h-4 text-violet-400 mb-1.5" />
+                                            <h4 className="text-xs font-bold text-foreground mb-0.5">Recruiter Breakdown is Locked</h4>
+                                            <p className="text-[10px] text-muted-foreground mb-3 max-w-[280px]">Upgrade to Pro to review match details, communication predictions, and project relevance checks.</p>
+                                            <Link href="/pricing" className="h-7 px-4 rounded-lg bg-[var(--accent-violet)] text-white font-bold text-[10px] flex items-center justify-center hover:opacity-90">Upgrade to Pro</Link>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Readiness Reasoning & Gaps (Pro gated) */}
+                            <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md relative overflow-hidden">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Hiring Readiness Analysis</h3>
+
+                                {isPro ? (
+                                    <div className="space-y-3">
+                                        {user?.atsScore?.hiringReadiness?.reasoning && user.atsScore.hiringReadiness.reasoning.map((reason: string, i: number) => (
+                                            <div key={i} className="flex gap-2.5 items-start p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-2" />
+                                                <span className="text-xs text-muted-foreground leading-relaxed">{reason}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="relative rounded-2xl border border-border/50 bg-card/30 overflow-hidden">
+                                        <div className="opacity-30 blur-[4px] pointer-events-none select-none p-4 space-y-2">
+                                            <div className="h-10 bg-white/[0.04] rounded-lg" />
+                                            <div className="h-10 bg-white/[0.04] rounded-lg" />
+                                            <div className="h-10 bg-white/[0.04] rounded-lg" />
+                                        </div>
+                                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/50 backdrop-blur-[1.5px] p-4">
+                                            <Lock className="w-4 h-4 text-violet-400 mb-1.5" />
+                                            <h4 className="text-xs font-bold text-foreground mb-0.5">Readiness Explanations are Locked</h4>
+                                            <p className="text-[10px] text-muted-foreground mb-3 max-w-[280px]">Upgrade to Pro to read full recruiting analysis explaining why you are ready or what gaps are holding you back.</p>
+                                            <Link href="/pricing" className="h-7 px-4 rounded-lg bg-[var(--accent-violet)] text-white font-bold text-[10px] flex items-center justify-center hover:opacity-90">Upgrade to Pro</Link>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                        </div>
+
+                        {/* Right Column: Profile details & actions */}
+                        <div className="space-y-6">
+
+                            {/* Profile Info & Gaps */}
+                            <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md space-y-6">
+                                <div className="space-y-1">
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Resume Data Profile</h3>
+                                    <p className="text-[10px] text-muted-foreground">Adjust detected fields for better tailored questions</p>
+                                </div>
+
+                                {isEditingProfile ? (
+                                    <div className="space-y-4">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-muted-foreground">Detected Role</label>
+                                            <input
+                                                type="text"
+                                                value={detectedRole}
+                                                onChange={(e) => setDetectedRole(e.target.value)}
+                                                className="w-full px-3 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-teal)] text-xs font-semibold"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-muted-foreground">Experience Level</label>
+                                            <input
+                                                type="text"
+                                                value={detectedExperience}
+                                                onChange={(e) => setDetectedExperience(e.target.value)}
+                                                className="w-full px-3 py-2 rounded-xl bg-background border border-border focus:outline-none focus:border-[var(--accent-teal)] text-xs font-semibold"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-muted-foreground">Primary Skills</label>
+                                            <div className="flex flex-wrap gap-1 p-2 rounded-lg bg-background/50 border border-border min-h-[50px]">
+                                                {detectedSkills.map(sk => (
+                                                    <span key={sk} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] text-[9px] font-bold border border-[var(--accent-teal)]/20">
+                                                        {sk}
+                                                        <button onClick={() => removeResumeSkill(sk)} className="hover:text-red-400">
+                                                            <X className="w-2.5 h-2.5" />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <div className="flex gap-1.5">
+                                                <input
+                                                    type="text"
+                                                    value={newResumeSkill}
+                                                    onChange={(e) => setNewResumeSkill(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addResumeSkill(newResumeSkill))}
+                                                    placeholder="Add skill..."
+                                                    className="flex-1 px-3 py-1.5 rounded-lg bg-background border border-border focus:outline-none focus:border-[var(--accent-teal)] text-xs"
+                                                />
+                                                <button onClick={() => addResumeSkill(newResumeSkill)} className="px-2.5 rounded-lg bg-muted text-[10px] font-bold">Add</button>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setIsEditingProfile(false)}
+                                            className="w-full h-8 text-xs font-bold bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] border border-[var(--accent-teal)]/30 rounded-xl hover:bg-[var(--accent-teal)]/20 transition-colors"
+                                        >
+                                            Save Modifications
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4 text-xs">
+                                        <div className="pb-3 border-b border-border/30 space-y-1">
+                                            <span className="text-[10px] text-muted-foreground">Parsed Job Title</span>
+                                            <div className="font-bold text-foreground truncate">{detectedRole || 'Software Engineer'}</div>
+                                        </div>
+                                        <div className="pb-3 border-b border-border/30 space-y-1">
+                                            <span className="text-[10px] text-muted-foreground">Professional Experience</span>
+                                            <div className="font-bold text-foreground">{detectedExperience || '3+ Years'}</div>
+                                        </div>
+                                        <div className="pb-3 border-b border-border/30 space-y-1">
+                                            <span className="text-[10px] text-muted-foreground">Identified Tech Skills ({detectedSkills.length})</span>
+                                            <div className="flex flex-wrap gap-1 pt-1.5">
+                                                {detectedSkills.slice(0, 8).map(sk => (
+                                                    <span key={sk} className="px-2 py-0.5 rounded bg-muted text-[9px] font-bold text-muted-foreground">{sk}</span>
+                                                ))}
+                                                {detectedSkills.length > 8 && <span className="text-[9px] text-muted-foreground font-semibold px-1">+{detectedSkills.length - 8} more</span>}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setIsEditingProfile(true)}
+                                            className="w-full text-center text-[10px] font-bold text-[var(--accent-teal)] hover:underline"
+                                        >
+                                            Modify Extracted Profile &rarr;
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Gaps: Missing Skills */}
+                            {(currentFlow === 'resume_jd' || currentFlow === 'resume_github_jd') && (
+                                <div className="p-6 rounded-3xl border border-border/50 bg-card/60 backdrop-blur-md space-y-4">
+                                    <div className="space-y-1">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-rose-400">Missing Job Gaps</h3>
+                                        <p className="text-[10px] text-muted-foreground">Required by JD but missing from resume claims</p>
+                                    </div>
+
+                                    {isPro ? (
+                                        <div className="flex flex-wrap gap-1.5 min-h-[50px]">
+                                            {user?.atsScore?.missingSkills && user.atsScore.missingSkills.length > 0 ? (
+                                                user.atsScore.missingSkills.map((sk: string) => (
+                                                    <span key={sk} className="px-2.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold flex items-center gap-1">
+                                                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                                        {sk}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground italic">No major skills gaps detected!</span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="relative rounded-2xl border border-border/50 bg-card/30 overflow-hidden">
+                                            <div className="opacity-30 blur-[4px] pointer-events-none select-none p-3 flex flex-wrap gap-1">
+                                                <span className="px-2 py-0.5 bg-rose-500/10 text-rose-400 text-[9px] rounded">AWS</span>
+                                                <span className="px-2 py-0.5 bg-rose-500/10 text-rose-400 text-[9px] rounded">Docker</span>
+                                                <span className="px-2 py-0.5 bg-rose-500/10 text-rose-400 text-[9px] rounded">GraphQL</span>
+                                            </div>
+                                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/50 backdrop-blur-[1px] p-2">
+                                                <Lock className="w-3.5 h-3.5 text-violet-400 mb-1" />
+                                                <h4 className="text-[10px] font-bold text-foreground">Skills Gaps are Locked</h4>
+                                                <Link href="/pricing" className="text-[8px] text-[var(--accent-violet)] font-bold hover:underline">Upgrade to Unlock &rarr;</Link>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Start Actions */}
+                            <div className="space-y-3">
+                                <Button
+                                    onClick={startResumeInterview}
+                                    disabled={isLoading || isParsing}
+                                    className="w-full h-12 text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 text-white rounded-xl shadow-lg transition-transform hover:scale-[1.01]"
+                                >
+                                    {isLoading ? (
+                                        <><Loader2 className="w-4 h-4 animate-spin shrink-0" /> Creating Session...</>
+                                    ) : (
+                                        'Start Personalized Interview'
+                                    )}
+                                </Button>
+
+                                <p className="text-[10px] text-center text-muted-foreground leading-relaxed px-1">
+                                    {currentFlow === 'resume_github_jd'
+                                        ? 'Tailored: 30% Resume, 30% GitHub codebase evidence, 20% Job Description requirements, 10% Scenario, and 10% Behavioral questions.'
+                                        : currentFlow === 'resume_jd'
+                                            ? 'Tailored: 30% resume details, 30% JD requirements, 20% validation-testing missing skills, and 20% scenarios.'
+                                            : 'Tailored: 40% resume details, 30% project details, and 30% scenarios.'}
+                                </p>
+                            </div>
+
                         </div>
 
                     </div>

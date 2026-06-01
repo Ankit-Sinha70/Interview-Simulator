@@ -137,7 +137,8 @@ function HomeContent() {
     experienceLevel: 'Junior' | 'Mid' | 'Senior',
     interviewStyle: 'friendly' | 'strict' | 'faang',
     companyStyle: 'google' | 'startup' | 'product' | 'general',
-    useResumeFlag?: boolean
+    useResumeFlag?: boolean,
+    interviewModeParam?: 'manual' | 'resume' | 'resume_jd' | 'resume_github_jd'
   ) => {
     setIsLoading(true);
     setError(null);
@@ -150,7 +151,8 @@ function HomeContent() {
         mode: 'text',
         interviewStyle,
         companyStyle,
-        useResume: useResumeFlag
+        useResume: useResumeFlag,
+        interviewMode: interviewModeParam
       });
 
       setSessionId(result.sessionId);

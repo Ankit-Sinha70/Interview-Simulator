@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-    Award, 
+import Link from 'next/link';
+import {     Award, 
     BookOpen, 
     Briefcase, 
     Calendar, 
@@ -16,7 +16,14 @@ import {
     Sparkles, 
     TrendingUp, 
     User, 
-    AlertCircle
+    AlertCircle,
+    ThumbsUp,
+    ThumbsDown,
+    CheckCircle2,
+    Lock,
+    Code,
+    ShieldAlert,
+    FileText
 } from 'lucide-react';
 
 
@@ -421,6 +428,290 @@ export function ResumeAlignmentCard({ alignment }: ResumeAlignmentProps) {
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+// 6. MATCH BREAKDOWN WIDGET
+// ==========================================
+interface MatchBreakdownProps {
+    overallScore: number;
+    resumeScore: number;
+    githubScore: number;
+    detectedTechs?: string[];
+    strongAreas?: string[];
+    planType: string;
+}
+
+export function MatchBreakdownCard({ overallScore, resumeScore, githubScore, detectedTechs = [], strongAreas = [], planType }: MatchBreakdownProps) {
+    const isPro = planType === 'PRO';
+
+    return (
+        <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 space-y-6 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    <TrendingUp className="w-5 h-5" />
+                </div>
+                <div>
+                    <h3 className="text-lg font-bold text-foreground">Blended Profile Match</h3>
+                    <p className="text-xs text-muted-foreground">Match compatibility across resume, code, and JD</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Dial 1: Overall */}
+                <div className="flex flex-col items-center justify-center p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl relative">
+                    <svg className="w-24 h-24 transform -rotate-90">
+                        <circle cx="48" cy="48" r="40" className="stroke-muted-foreground/10 fill-none" strokeWidth="6" />
+                        <circle
+                            cx="48"
+                            cy="48"
+                            r="40"
+                            className="stroke-amber-500 fill-none transition-all duration-1000"
+                            strokeWidth="8"
+                            strokeDasharray={2 * Math.PI * 40}
+                            strokeDashoffset={2 * Math.PI * 40 * (1 - overallScore / 100)}
+                            strokeLinecap="round"
+                        />
+                    </svg>
+                    <span className="absolute top-[48px] text-lg font-black text-foreground">{overallScore}%</span>
+                    <span className="text-xs font-bold text-muted-foreground mt-3">Blended Overall Match</span>
+                </div>
+
+                {/* Dial 2: Resume */}
+                <div className="flex flex-col items-center justify-center p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl">
+                    <svg className="w-24 h-24 transform -rotate-90">
+                        <circle cx="48" cy="48" r="40" className="stroke-muted-foreground/10 fill-none" strokeWidth="6" />
+                        <circle
+                            cx="48"
+                            cy="48"
+                            r="40"
+                            className="stroke-[var(--accent-teal)] fill-none transition-all duration-1000"
+                            strokeWidth="8"
+                            strokeDasharray={2 * Math.PI * 40}
+                            strokeDashoffset={2 * Math.PI * 40 * (1 - resumeScore / 100)}
+                            strokeLinecap="round"
+                        />
+                    </svg>
+                    <span className="absolute top-[48px] text-lg font-black text-foreground">{resumeScore}%</span>
+                    <span className="text-xs font-bold text-muted-foreground mt-3">Resume vs JD Match</span>
+                </div>
+
+                {/* Dial 3: GitHub */}
+                <div className="flex flex-col items-center justify-center p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl relative">
+                    <svg className="w-24 h-24 transform -rotate-90">
+                        <circle cx="48" cy="48" r="40" className="stroke-muted-foreground/10 fill-none" strokeWidth="6" />
+                        <circle
+                            cx="48"
+                            cy="48"
+                            r="40"
+                            className="stroke-indigo-500 fill-none transition-all duration-1000"
+                            strokeWidth="8"
+                            strokeDasharray={2 * Math.PI * 40}
+                            strokeDashoffset={2 * Math.PI * 40 * (1 - (isPro ? githubScore : 50) / 100)}
+                            strokeLinecap="round"
+                        />
+                    </svg>
+                    <span className="absolute top-[48px] text-lg font-black text-foreground">{isPro ? githubScore : 0}%</span>
+                    <span className="text-xs font-bold text-muted-foreground mt-3">GitHub Code Match</span>
+                    
+                    {!isPro && (
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/80 backdrop-blur-[1.5px] p-2 rounded-xl">
+                            <Lock className="w-3.5 h-3.5 text-indigo-400 mb-1" />
+                            <span className="text-[8px] font-extrabold uppercase tracking-wider text-indigo-400">PRO Only</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Tech stack / highlights from Github summary if Pro */}
+            {isPro && (detectedTechs.length > 0 || strongAreas.length > 0) && (
+                <div className="grid md:grid-cols-2 gap-4 pt-2">
+                    {detectedTechs.length > 0 && (
+                        <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.01] border border-white/[0.03]">
+                            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                                <Code className="w-3.5 h-3.5 text-indigo-400" /> Detected Technologies
+                            </div>
+                            <div className="flex flex-wrap gap-1 pt-1">
+                                {detectedTechs.slice(0, 8).map(tech => (
+                                    <span key={tech} className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] font-semibold">
+                                        {tech}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {strongAreas.length > 0 && (
+                        <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.01] border border-white/[0.03]">
+                            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                                <Award className="w-3.5 h-3.5 text-[var(--accent-teal)]" /> Strongest Competencies
+                            </div>
+                            <div className="flex flex-wrap gap-1 pt-1">
+                                {strongAreas.slice(0, 4).map(area => (
+                                    <span key={area} className="px-2 py-0.5 rounded bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] border border-[var(--accent-teal)]/20 text-[9px] font-semibold">
+                                        {area}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ==========================================
+// 7. VALIDATION SCORES WIDGET
+// ==========================================
+interface ValidationScoresProps {
+    resumeValidation: number;
+    githubValidation: number;
+    planType: string;
+}
+
+export function ValidationScoresCard({ resumeValidation, githubValidation, planType }: ValidationScoresProps) {
+    const isPro = planType === 'PRO';
+
+    return (
+        <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 space-y-6 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent-teal)]/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] border border-[var(--accent-teal)]/20">
+                    <FileCheck2 className="w-5 h-5" />
+                </div>
+                <div>
+                    <h3 className="text-lg font-bold text-foreground">Knowledge & Evidence Verification</h3>
+                    <p className="text-xs text-muted-foreground">Post-interview score validation against profiles</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Resume Validation */}
+                <div className="p-4 bg-white/[0.01] border border-white/[0.03] rounded-xl space-y-3 relative">
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                            <FileText className="w-3.5 h-3.5 text-[var(--accent-teal)]" /> Resume Claim Verification
+                        </span>
+                        <span className="font-extrabold text-foreground">{resumeValidation}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-white/[0.06] rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-emerald-500 to-[var(--accent-teal)] rounded-full" style={{ width: `${resumeValidation}%` }} />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                        Measures how well mock interview answers back up claims on the CV.
+                    </p>
+                </div>
+
+                {/* GitHub Validation */}
+                <div className="p-4 bg-white/[0.01] border border-white/[0.03] rounded-xl space-y-3 relative">
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                            <Code className="w-3.5 h-3.5 text-indigo-400" /> GitHub Repository Evidence
+                        </span>
+                        <span className="font-extrabold text-foreground">{isPro ? githubValidation : 0}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-white/[0.06] rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 rounded-full" style={{ width: `${isPro ? githubValidation : 0}%` }} />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                        Measures correlation between codebase findings and interview answers.
+                    </p>
+                    
+                    {!isPro && (
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/80 backdrop-blur-[1.5px] p-4 rounded-xl">
+                            <Lock className="w-4 h-4 text-indigo-400 mb-1.5" />
+                            <h4 className="text-xs font-bold text-foreground mb-0.5">PRO Metric</h4>
+                            <Link href="/pricing" className="text-[8px] text-indigo-400 font-semibold hover:underline">Upgrade to unlock &rarr;</Link>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ==========================================
+// 8. RECRUITER RECOMMENDATION WIDGET
+// ==========================================
+interface RecruiterRecommendationProps {
+    recommendation: 'YES' | 'NO';
+    reason: string;
+    concerns: string[];
+    planType: string;
+}
+
+export function RecruiterRecommendationCard({ recommendation, reason, concerns = [], planType }: RecruiterRecommendationProps) {
+    const isPro = planType === 'PRO';
+
+    return (
+        <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md p-6 space-y-6 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                        <Award className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-foreground">Recruiter Decision Review</h3>
+                        <p className="text-xs text-muted-foreground">Simulated AI recruiter hire decision</p>
+                    </div>
+                </div>
+
+                <div className="flex shrink-0">
+                    {recommendation === 'YES' ? (
+                        <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                            <ThumbsUp className="w-4 h-4 text-emerald-400" />
+                            <span className="text-sm font-extrabold uppercase tracking-wider text-emerald-400">HIRE RECOMMENDATION</span>
+                        </div>
+                    ) : (
+                        <div className="px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/25 flex items-center gap-2 shadow-[0_0_15px_rgba(244,63,94,0.15)]">
+                            <ThumbsDown className="w-4 h-4 text-rose-400" />
+                            <span className="text-sm font-extrabold uppercase tracking-wider text-rose-400">HOLD / NO-HIRE</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="space-y-4">
+                <div className="bg-white/[0.01] border border-white/[0.03] p-4 rounded-xl space-y-2 relative">
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" /> Decision Rationale
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        {isPro ? reason : "AI recruiter reasoning is locked for Free plans. Upgrade to read the full decision justification."}
+                    </p>
+                    
+                    {!isPro && (
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-background/70 backdrop-blur-[1px] p-2 rounded-xl">
+                            <Lock className="w-4 h-4 text-violet-400 mb-1" />
+                            <Link href="/pricing" className="text-[10px] text-violet-400 font-bold hover:underline">Unlock Recruiter Rationale &rarr;</Link>
+                        </div>
+                    )}
+                </div>
+
+                {isPro && concerns && concerns.length > 0 && (
+                    <div className="space-y-2">
+                        <h4 className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                            <ShieldAlert className="w-4 h-4 text-rose-400" /> Recruiter Concerns
+                        </h4>
+                        <div className="grid gap-2">
+                            {concerns.map((con, i) => (
+                                <div key={i} className="flex gap-2.5 items-start p-3 bg-rose-500/[0.01] border border-rose-500/10 rounded-xl">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0 mt-1.5" />
+                                    <span className="text-xs text-muted-foreground leading-relaxed">{con}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
