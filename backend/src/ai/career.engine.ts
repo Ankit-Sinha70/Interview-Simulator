@@ -34,6 +34,8 @@ export interface CareerEngineInput {
         averageCommunication: number;
         weakestDimension: string;
         strongestDimension: string;
+        strongestAreas?: string[];
+        weakestAreas?: string[];
         focusScore: number;
         voiceConfidenceScore?: number | null;
         date: string;
@@ -162,6 +164,8 @@ export async function generateCareerAssessment(input: CareerEngineInput): Promis
 - Technical: ${s.averageTechnical}/10, Problem Solving: ${s.averageProblemSolving}/10
 - Communication: ${s.averageCommunication}/10, Clarity: ${s.averageClarity}/10, Depth: ${s.averageDepth}/10
 - Weakest Area: ${s.weakestDimension}, Strongest Area: ${s.strongestDimension}
+- Semantic Strengths: ${s.strongestAreas ? s.strongestAreas.join(', ') : 'None'}
+- Semantic Weaknesses: ${s.weakestAreas ? s.weakestAreas.join(', ') : 'None'}
 - Focus Score: ${s.focusScore}/100
 - Voice Confidence: ${s.voiceConfidenceScore ?? 'N/A'}`).join('\n\n')
             : 'No interview sessions completed yet.';

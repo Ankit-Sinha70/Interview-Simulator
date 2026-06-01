@@ -38,25 +38,43 @@ export async function refreshCareerReport(userId: string): Promise<any> {
     if (!user) throw new Error('User not found');
 
     // 1. Fetch recent sessions (last 5 completed interviews)
-    const dbSessions = await AnalyticsModel.find({ userId, questionsCount: { $gte: 5 } })
-        .sort({ createdAt: -1 })
-        .limit(5);
+    const dbSessions = await InterviewSessionModel.find({ 
+        userId, 
+        status: { $in: ['COMPLETED', 'MAX_QUESTIONS_REACHED'] } 
+    })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean();
 
-    const recentSessions = dbSessions.map(s => ({
-        role: s.role,
-        experienceLevel: s.experienceLevel,
-        averageScore: s.averageScore,
-        averageTechnical: s.averageTechnical,
-        averageDepth: s.averageDepth,
-        averageClarity: s.averageClarity,
-        averageProblemSolving: s.averageProblemSolving,
-        averageCommunication: s.averageCommunication,
-        weakestDimension: s.weakestDimension,
-        strongestDimension: s.strongestDimension,
-        focusScore: s.focusScore,
-        voiceConfidenceScore: s.voiceConfidenceScore,
-        date: s.createdAt.toISOString()
-    })).reverse(); // Oldest first for context chronological order
+    const recentSessions = dbSessions.map(s => {
+        const aggr = s.aggregatedScores || {
+            averageTechnical: 0,
+            averageDepth: 0,
+            averageClarity: 0,
+            averageProblemSolving: 0,
+            averageCommunication: 0,
+            overallAverage: 0,
+            weakestDimension: 'N/A',
+            strongestDimension: 'N/A'
+        };
+        return {
+            role: s.role,
+            experienceLevel: s.experienceLevel,
+            averageScore: s.finalReport?.averageScore || aggr.overallAverage,
+            averageTechnical: aggr.averageTechnical,
+            averageDepth: aggr.averageDepth,
+            averageClarity: aggr.averageClarity,
+            averageProblemSolving: aggr.averageProblemSolving,
+            averageCommunication: aggr.averageCommunication,
+            weakestDimension: aggr.weakestDimension,
+            strongestDimension: aggr.strongestDimension,
+            strongestAreas: s.finalReport?.strongestAreas || [],
+            weakestAreas: s.finalReport?.weakestAreas || [],
+            focusScore: s.attentionStats?.focusScore || 0,
+            voiceConfidenceScore: s.attentionStats?.focusScore ? Math.round(s.attentionStats.focusScore / 10) : null,
+            date: s.createdAt.toISOString()
+        };
+    }).reverse(); // Oldest first for context chronological order
 
     // 2. Fetch session statistics for consistency score
     const allSessions = await InterviewSessionModel.find(
@@ -85,10 +103,17 @@ export async function refreshCareerReport(userId: string): Promise<any> {
 
     // 4. Construct progress trend history points
     const progressHistory = dbSessions.map((s, idx) => {
+        const aggr = s.aggregatedScores || {
+            averageTechnical: 0,
+            averageDepth: 0,
+            averageClarity: 0,
+            averageProblemSolving: 0,
+            averageCommunication: 0
+        };
         // Calculate intermediate readiness proxy
-        const techScore = (s.averageTechnical + s.averageProblemSolving) / 2;
-        const commScore = (s.averageCommunication + s.averageClarity) / 2;
-        const confScore = (s.focusScore / 10 + (s.voiceConfidenceScore || 7.5)) / 2;
+        const techScore = (aggr.averageTechnical + aggr.averageProblemSolving) / 2;
+        const commScore = (aggr.averageCommunication + aggr.averageClarity) / 2;
+        const confScore = ((s.attentionStats?.focusScore || 70) / 10);
         const readiness = Math.round((techScore * 40 + commScore * 30 + confScore * 30));
 
         return {
