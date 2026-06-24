@@ -1,4 +1,3 @@
-
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUser extends Document {
@@ -52,6 +51,8 @@ export interface IUser extends Document {
     currentStreak: number;
     longestStreak: number;
     lastInterviewDate?: Date;
+
+    interviewScore: number;
 
     githubProfile?: {
         username: string;
@@ -163,6 +164,8 @@ const UserSchema: Schema = new Schema({
     longestStreak: { type: Number, default: 0 },
     lastInterviewDate: { type: Date },
 
+    interviewScore: { type: Number, default: 0, index: true },
+
     parsedResume: {
         role: { type: String },
         experienceYears: { type: String },
@@ -238,12 +241,10 @@ const UserSchema: Schema = new Schema({
     timestamps: true
 });
 
-// Reset monthly usage if needed
 UserSchema.methods.checkReset = function () {
     const now = new Date();
     if (now > this.monthlyResetDate) {
         this.interviewsUsedThisMonth = 0;
-        // set next reset date to 1 month from now
         const nextReset = new Date(now);
         nextReset.setMonth(nextReset.getMonth() + 1);
         this.monthlyResetDate = nextReset;

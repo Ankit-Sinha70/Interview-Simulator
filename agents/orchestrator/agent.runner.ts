@@ -30,10 +30,25 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5): Promise<T> {
     } catch (err: any) {
       const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.includes('Too Many Requests');
       if (is429 && attempt < maxRetries) {
-        // Parse retry-after from error or use exponential backoff
-        const retryAfterMatch = err?.message?.match(/retry.*?(\d+)s/i);
-        const waitSeconds = retryAfterMatch ? parseInt(retryAfterMatch[1]) + 2 : Math.pow(2, attempt) * 5;
-        console.log(`  ⏳ Rate limited. Waiting ${waitSeconds}s before retry (attempt ${attempt}/${maxRetries})...`);
+        const msg = err?.message || '';
+
+        // Daily limit (TPD) — wait time will be minutes, not seconds. Fail fast.
+        const isDaily = msg.includes('per day') || msg.includes('TPD');
+        if (isDaily) {
+          const minMatch = msg.match(/(\d+)m(\d+)s/);
+          const waitMin  = minMatch ? parseInt(minMatch[1]) : '?';
+          console.error(`\n  ❌ Daily token limit reached. Reset in ~${waitMin} minutes.`);
+          console.error('  Options:');
+          console.error('    1. Wait and retry later');
+          console.error('    2. Switch provider:  set AGENT_PROVIDER=gemini');
+          console.error('    3. Use a lighter model: set GROQ_MODEL=gemma2-9b-it\n');
+          throw err; // don't retry — won't help
+        }
+
+        // Per-minute limit (TPM) — parse actual wait time and retry
+        const secMatch = msg.match(/(\d+(?:\.\d+)?)s\b/);
+        const waitSeconds = secMatch ? Math.ceil(parseFloat(secMatch[1])) + 2 : Math.pow(2, attempt) * 5;
+        console.log(`  ⏳ Rate limited (TPM). Waiting ${waitSeconds}s... (attempt ${attempt}/${maxRetries})`);
         await new Promise(r => setTimeout(r, waitSeconds * 1000));
       } else {
         throw err;
