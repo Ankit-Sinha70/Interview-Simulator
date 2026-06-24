@@ -3,9 +3,11 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:mobile\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "dev:mobile": "cd mobile && npx expo start",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../mobile && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

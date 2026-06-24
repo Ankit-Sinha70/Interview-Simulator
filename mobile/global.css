@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tell react-native-css-interop to use class-based dark mode with the 'dark' class */
+:root {
+  --css-interop-darkMode: class dark;
+}
