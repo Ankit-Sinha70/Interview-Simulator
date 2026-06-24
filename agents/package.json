@@ -1,0 +1,24 @@
+{
+  "name": "interview-simulator-agents",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI development agents for Interview Simulator",
+  "scripts": {
+    "pr-review": "ts-node pr-reviewer.ts",
+    "error-scan": "ts-node error-handler.ts",
+    "implement": "ts-node feature-implementer.ts",
+    "test-write": "ts-node test-writer.ts",
+    "orchestrate": "ts-node orchestrator/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "latest",
+    "@google/generative-ai": "^0.21.0",
+    "cross-fetch": "^4.1.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3",
+    "@types/node": "^22.0.0"
+  }
+}
